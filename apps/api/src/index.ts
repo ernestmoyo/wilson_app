@@ -40,7 +40,7 @@ app.use('/api/reports', reportsRouter);
 
 // Serve built React app in production (single Railway service)
 if (IS_PROD) {
-  const webDist = path.join(__dirname, '../../apps/web/dist');
+  const webDist = path.join(__dirname, '../../../apps/web/dist');
   app.use(express.static(webDist));
   app.get('*', (_req: Request, res: Response) => {
     res.sendFile(path.join(webDist, 'index.html'));
