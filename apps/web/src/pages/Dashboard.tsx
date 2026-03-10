@@ -6,23 +6,45 @@ import { Client, Assessment, Certificate } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
-interface StatCardProps {
+// Silver fern SVG inline (simple leaf shape)
+const SilverFern = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2 C12 2 8 6 7 10 C6 14 9 17 12 22 C15 17 18 14 17 10 C16 6 12 2 12 2Z" fill="#C0C0C0" opacity="0.7"/>
+    <path d="M12 8 C10 9 9 11 9 13" stroke="#C0C0C0" strokeWidth="0.5" fill="none"/>
+    <path d="M12 8 C14 9 15 11 15 13" stroke="#C0C0C0" strokeWidth="0.5" fill="none"/>
+  </svg>
+)
+
+function StatCard({
+  label,
+  value,
+  icon,
+  accentColor = 'var(--nz-navy)',
+  iconBg = '#EEF2FF',
+  iconColor = 'var(--nz-navy)',
+}: {
   label: string
   value: number | string
   icon: React.ReactNode
-  color: string
-  bg: string
-}
-
-function StatCard({ label, value, icon, color, bg }: StatCardProps) {
+  accentColor?: string
+  iconBg?: string
+  iconColor?: string
+}) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bg}`}>
-        <span className={color}>{icon}</span>
+    <div
+      className="bg-white rounded-2xl p-6 flex items-center gap-4"
+      style={{
+        boxShadow: '0 2px 8px rgba(0,36,125,0.08)',
+        border: '1px solid rgba(0,36,125,0.08)',
+        borderTop: `3px solid ${accentColor}`,
+      }}
+    >
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconBg }}>
+        <span style={{ color: iconColor }}>{icon}</span>
       </div>
       <div>
-        <p className="text-sm text-gray-500 font-medium">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: '#94A3B8' }}>{label}</p>
+        <p className="text-3xl font-bold" style={{ color: 'var(--nz-navy)' }}>{value}</p>
       </div>
     </div>
   )
@@ -72,82 +94,127 @@ export default function Dashboard() {
 
   if (loading) return <LoadingSpinner />
 
+  const todayNZ = new Date().toLocaleDateString('en-NZ', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
   return (
-    <div className="space-y-6">
+    <div>
+      {/* Welcome heading */}
+      <h2 style={{ color: 'var(--nz-navy)', fontSize: 32, fontWeight: 700, margin: 0 }}>
+        Welcome back, Bryan.{' '}
+        <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: 8 }}>
+          <SilverFern />
+        </span>
+      </h2>
+      <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>{todayNZ}</p>
+
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mt-6">
         <StatCard
           label="Total Clients"
           value={clients.length}
           icon={<Building2 size={22} />}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          accentColor="var(--nz-navy)"
+          iconBg="#EEF2FF"
+          iconColor="var(--nz-navy)"
         />
         <StatCard
           label="Assessments This Month"
           value={thisMonthAssessments.length}
           icon={<ClipboardCheck size={22} />}
-          color="text-yellow-600"
-          bg="bg-yellow-50"
+          accentColor="var(--nz-navy)"
+          iconBg="#EEF2FF"
+          iconColor="var(--nz-navy)"
         />
         <StatCard
           label="Certificates Granted"
           value={grantedCerts.length}
           icon={<Award size={22} />}
-          color="text-green-600"
-          bg="bg-green-50"
+          accentColor="#16A34A"
+          iconBg="#DCFCE7"
+          iconColor="#16A34A"
         />
         <StatCard
           label="Expiring Soon"
           value={expiring.length}
           icon={<AlertTriangle size={22} />}
-          color="text-orange-600"
-          bg="bg-orange-50"
+          accentColor="#CC142B"
+          iconBg="#FEE2E2"
+          iconColor="#CC142B"
         />
         <StatCard
           label="Pending Decisions"
           value={pendingDecisions}
-          icon={<Clock size={24} />}
-          color="text-orange-600"
-          bg="bg-orange-50"
+          icon={<Clock size={22} />}
+          accentColor="#F59E0B"
+          iconBg="#FEF3C7"
+          iconColor="#92400E"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Two-column detail grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Recent Assessments */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">Recent Assessments</h2>
-            <Link to="/assessment" className="text-sm text-blue-600 hover:underline">View all</Link>
+        <div
+          className="bg-white rounded-2xl overflow-hidden"
+          style={{
+            boxShadow: '0 2px 8px rgba(0,36,125,0.08)',
+            border: '1px solid rgba(0,36,125,0.08)',
+          }}
+        >
+          <div
+            className="px-6 py-4 flex items-center justify-between"
+            style={{ borderBottom: '1px solid rgba(0,36,125,0.07)' }}
+          >
+            <h2 className="text-base font-semibold" style={{ color: 'var(--nz-navy)' }}>Recent Assessments</h2>
+            <Link
+              to="/assessment"
+              className="text-sm font-medium hover:underline"
+              style={{ color: 'var(--nz-light-blue)' }}
+            >
+              View all
+            </Link>
           </div>
           <div className="overflow-x-auto">
             {recentAssessments.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">No assessments yet</p>
+              <p className="text-sm text-center py-8" style={{ color: '#94A3B8' }}>No assessments yet</p>
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                  <tr style={{ borderBottom: '1px solid rgba(0,36,125,0.07)' }}>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Client</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody>
                   {recentAssessments.map(a => (
-                    <tr key={a.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 text-sm font-medium text-gray-900">
-                        <Link to={`/assessment/${a.id}`} className="hover:text-blue-600">
+                    <tr
+                      key={a.id}
+                      style={{ borderBottom: '1px solid rgba(0,36,125,0.04)' }}
+                      className="hover:bg-blue-50/30 transition-colors"
+                    >
+                      <td className="px-6 py-3 text-sm font-medium">
+                        <Link
+                          to={`/assessment/${a.id}`}
+                          className="hover:underline"
+                          style={{ color: 'var(--nz-navy)' }}
+                        >
                           {a.client_name || `Client #${a.client_id}`}
                         </Link>
                       </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">
+                      <td className="px-6 py-3 text-sm">
                         <StatusBadge status={a.type} />
                       </td>
                       <td className="px-6 py-3">
                         <StatusBadge status={a.status} />
                       </td>
-                      <td className="px-6 py-3 text-sm text-gray-500">
+                      <td className="px-6 py-3 text-sm" style={{ color: '#64748B' }}>
                         {a.inspection_date
                           ? new Date(a.inspection_date).toLocaleDateString('en-NZ')
                           : new Date(a.created_at).toLocaleDateString('en-NZ')}
@@ -160,25 +227,44 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Expiring Certificates */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">Expiring Soon</h2>
-            <Link to="/certificates" className="text-sm text-blue-600 hover:underline">View all</Link>
+        {/* Expiring Soon */}
+        <div
+          className="bg-white rounded-2xl overflow-hidden"
+          style={{
+            boxShadow: '0 2px 8px rgba(0,36,125,0.08)',
+            border: '1px solid rgba(0,36,125,0.08)',
+          }}
+        >
+          <div
+            className="px-6 py-4 flex items-center justify-between"
+            style={{ borderBottom: '1px solid rgba(0,36,125,0.07)' }}
+          >
+            <h2 className="text-base font-semibold" style={{ color: 'var(--nz-navy)' }}>Expiring Soon</h2>
+            <Link
+              to="/certificates"
+              className="text-sm font-medium hover:underline"
+              style={{ color: 'var(--nz-light-blue)' }}
+            >
+              View all
+            </Link>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div>
             {expiring.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">No certificates expiring soon</p>
+              <p className="text-sm text-center py-8" style={{ color: '#94A3B8' }}>No certificates expiring soon</p>
             ) : (
               expiring.slice(0, 6).map(cert => (
-                <div key={cert.id} className="px-6 py-3">
-                  <Link to={`/certificates/${cert.id}`} className="block hover:text-blue-600">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                <div
+                  key={cert.id}
+                  className="px-6 py-3 hover:bg-blue-50/30 transition-colors"
+                  style={{ borderBottom: '1px solid rgba(0,36,125,0.04)' }}
+                >
+                  <Link to={`/certificates/${cert.id}`} className="block">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--nz-navy)' }}>
                       {cert.client_name || `Client #${cert.client_id}`}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{cert.substance_class}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#64748B' }}>{cert.substance_class}</p>
                     {cert.expiry_date && (
-                      <p className="text-xs text-orange-600 font-medium mt-0.5">
+                      <p className="text-xs font-medium mt-0.5" style={{ color: '#CC142B' }}>
                         Expires {new Date(cert.expiry_date).toLocaleDateString('en-NZ')}
                       </p>
                     )}

@@ -116,7 +116,7 @@ export default function ReportsPage() {
       <div className="flex justify-end">
         <button
           onClick={() => { setShowGenModal(true); setGenError('') }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
         >
           <Plus size={16} />
           Generate Gap Analysis
@@ -124,7 +124,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }} className="overflow-hidden">
         {loading ? (
           <LoadingSpinner />
         ) : error ? (
@@ -135,7 +135,8 @@ export default function ReportsPage() {
             <p className="text-gray-500">No reports generated yet.</p>
             <button
               onClick={() => setShowGenModal(true)}
-              className="mt-3 text-sm text-blue-600 hover:underline"
+              className="mt-3 text-sm hover:underline"
+              style={{ color: 'var(--nz-navy)' }}
             >
               Generate your first report
             </button>
@@ -145,19 +146,19 @@ export default function ReportsPage() {
             <table className="w-full">
               <thead className="border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Title</th>
+                  <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Type</th>
+                  <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Client</th>
+                  <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Date</th>
+                  <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {reports.map(r => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} style={{ height: 52 }} className="transition-colors" onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{r.title}</td>
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">
+                      <span style={{ background: 'rgba(0,36,125,0.08)', color: 'var(--nz-navy)', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>
                         {TYPE_LABELS[r.type] || r.type}
                       </span>
                     </td>
@@ -171,14 +172,16 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setViewReport(r)}
-                          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          className="flex items-center gap-1.5 text-sm font-medium"
+                          style={{ color: 'var(--nz-navy)' }}
                         >
                           <Eye size={14} />
                           View
                         </button>
                         <button
                           onClick={() => handleDelete(r.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-1 rounded transition-colors hover:bg-red-50"
+                          style={{ color: 'var(--nz-red)' }}
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -233,7 +236,7 @@ export default function ReportsPage() {
               Cancel
             </button>
             <button type="submit" disabled={generating}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', opacity: generating ? 0.5 : 1 }}>
               {generating ? 'Generating...' : 'Generate Report'}
             </button>
           </div>
@@ -282,8 +285,14 @@ function ReportViewer({ report }: { report: Report }) {
         }
       `}</style>
 
-      {/* Report header */}
-      <div className="border-b border-gray-100 pb-4">
+      {/* NZ Government-style report header */}
+      <div style={{ background: 'var(--nz-navy)', borderRadius: '12px 12px 0 0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '-24px -24px 0 -24px' }}>
+        <span style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>WILSON COMPLIANCE</span>
+        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>LOCATION COMPLIANCE CERTIFICATE ASSESSMENT</span>
+      </div>
+
+      {/* Report metadata */}
+      <div className="border-b border-gray-100 pb-4 pt-2">
         <h2 className="text-lg font-bold text-gray-900">{report.title}</h2>
         <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
           {(report as Report & { client_name?: string }).client_name && (
@@ -299,7 +308,8 @@ function ReportViewer({ report }: { report: Report }) {
       <div className="flex justify-end gap-2">
         <button
           onClick={handlePrint}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+          className="flex items-center gap-2 text-sm"
+          style={{ background: 'white', color: 'var(--nz-navy)', border: '1.5px solid var(--nz-navy)', borderRadius: 10, fontWeight: 600, padding: '0 16px', height: 36, cursor: 'pointer' }}
         >
           <Printer size={15} />
           Print / PDF
@@ -310,11 +320,11 @@ function ReportViewer({ report }: { report: Report }) {
         <div className="space-y-6">
           {/* Decision badge */}
           {content.decision && (
-            <div className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold text-base ${
+            <div style={
               content.decision === 'compliant'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
+                ? { background: '#DCFCE7', color: '#16A34A', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 20, padding: '6px 16px', fontWeight: 700, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }
+                : { background: '#FEE2E2', color: '#CC142B', border: '1px solid rgba(204,20,43,0.3)', borderRadius: 20, padding: '6px 16px', fontWeight: 700, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }
+            }>
               {content.decision === 'compliant' ? 'COMPLIANT ✓' : 'NON-COMPLIANT ✗'}
             </div>
           )}
@@ -322,22 +332,22 @@ function ReportViewer({ report }: { report: Report }) {
           {/* Summary */}
           {content.summary && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Summary</h3>
+              <h3 className="text-sm uppercase mb-3" style={{ fontWeight: 600, color: 'var(--nz-navy)' }}>Summary</h3>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {content.summary.total_items !== undefined && (
-                  <StatCard label="Total" value={content.summary.total_items} color="text-gray-700" bg="bg-gray-50" />
+                  <StatCard label="Total" value={content.summary.total_items} borderColor="var(--nz-navy)" textColor="#00247D" />
                 )}
                 {content.summary.compliant !== undefined && (
-                  <StatCard label="Compliant" value={content.summary.compliant} color="text-green-700" bg="bg-green-50" />
+                  <StatCard label="Compliant" value={content.summary.compliant} borderColor="#16A34A" textColor="#16A34A" />
                 )}
                 {content.summary.non_compliant !== undefined && (
-                  <StatCard label="Non-Compliant" value={content.summary.non_compliant} color="text-red-700" bg="bg-red-50" />
+                  <StatCard label="Non-Compliant" value={content.summary.non_compliant} borderColor="#CC142B" textColor="#CC142B" />
                 )}
                 {content.summary.inapplicable !== undefined && (
-                  <StatCard label="N/A" value={content.summary.inapplicable} color="text-gray-500" bg="bg-gray-50" />
+                  <StatCard label="N/A" value={content.summary.inapplicable} borderColor="#94A3B8" textColor="#64748B" />
                 )}
                 {content.summary.pending !== undefined && (
-                  <StatCard label="Pending" value={content.summary.pending} color="text-yellow-700" bg="bg-yellow-50" />
+                  <StatCard label="Pending" value={content.summary.pending} borderColor="#F59E0B" textColor="#92400E" />
                 )}
               </div>
             </div>
@@ -354,21 +364,21 @@ function ReportViewer({ report }: { report: Report }) {
 
             return (
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Non-Compliant Items by Section</h3>
+                <h3 className="text-sm uppercase mb-3" style={{ fontWeight: 600, color: 'var(--nz-navy)' }}>Non-Compliant Items by Section</h3>
                 {sectionsWithNC.length === 0 ? (
                   <p className="text-sm text-green-700 font-medium">✓ No non-compliant items found.</p>
                 ) : (
                   <div className="space-y-4">
                     {sectionsWithNC.map(section => (
                       <div key={section.section}>
-                        <h4 className="text-xs font-semibold text-gray-700 uppercase bg-gray-100 px-3 py-1.5 rounded mb-2">
+                        <h4 style={{ background: 'rgba(0,36,125,0.08)', borderLeft: '3px solid var(--nz-navy)', padding: '8px 12px', borderRadius: '0 8px 8px 0', fontWeight: 600, color: 'var(--nz-navy)', fontSize: 13 }} className="mb-2">
                           Section {section.section}{SECTION_TITLES[section.section] ? ` — ${SECTION_TITLES[section.section]}` : ''}
                         </h4>
                         <div className="space-y-2 pl-1">
                           {section.ncItems.map((item, i) => (
-                            <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3">
+                            <div key={i} style={{ background: 'rgba(204,20,43,0.04)', borderLeft: '2px solid var(--nz-red)', padding: '8px 12px' }} className="rounded-r-lg">
                               <div className="flex items-start gap-2">
-                                <span className="font-mono text-xs text-red-600 font-bold mt-0.5 shrink-0">
+                                <span className="font-mono text-xs font-bold mt-0.5 shrink-0" style={{ color: 'var(--nz-red)' }}>
                                   {item.item_number}
                                 </span>
                                 <div>
@@ -398,11 +408,11 @@ function ReportViewer({ report }: { report: Report }) {
   )
 }
 
-function StatCard({ label, value, color, bg }: { label: string; value: number | string; color: string; bg: string }) {
+function StatCard({ label, value, borderColor, textColor }: { label: string; value: number | string; borderColor: string; textColor: string }) {
   return (
-    <div className={`${bg} rounded-lg p-3 text-center`}>
-      <p className={`text-xl font-bold ${color}`}>{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+    <div style={{ background: 'white', border: `1.5px solid ${borderColor}`, borderRadius: 10, padding: '10px 12px', textAlign: 'center', boxShadow: '0 1px 4px rgba(0,36,125,0.06)' }}>
+      <p style={{ fontSize: 22, fontWeight: 700, color: textColor }}>{value}</p>
+      <p style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{label}</p>
     </div>
   )
 }

@@ -34,19 +34,18 @@ export default function AssessmentList() {
   }, [fetchAssessments, statusFilter])
 
   return (
-    <div className="space-y-6">
+    <div style={{ background: 'var(--nz-bg)', minHeight: '100%' }} className="space-y-6 p-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {STATUS_OPTIONS.map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                statusFilter === s
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
+              style={statusFilter === s
+                ? { background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, border: 'none', cursor: 'pointer', fontSize: 13 }
+                : { background: 'white', color: '#64748B', border: '1px solid rgba(0,36,125,0.10)', borderRadius: 10, fontWeight: 500, padding: '0 14px', height: 36, cursor: 'pointer', fontSize: 13 }
+              }
             >
               {s === 'all' ? 'All' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </button>
@@ -54,7 +53,7 @@ export default function AssessmentList() {
         </div>
         <Link
           to="/assessment/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, textDecoration: 'none', fontSize: 14 }}
         >
           <Plus size={16} />
           New Assessment
@@ -62,55 +61,58 @@ export default function AssessmentList() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
         {loading ? (
           <LoadingSpinner />
         ) : error ? (
           <ErrorMessage message={error} onRetry={() => fetchAssessments(statusFilter)} />
         ) : assessments.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-500">No assessments found.</p>
-            <Link to="/assessment/new" className="text-sm text-blue-600 hover:underline mt-2 inline-block">
+          <div style={{ textAlign: 'center', padding: '64px 24px' }}>
+            <p style={{ color: '#94A3B8', fontSize: 14 }}>No assessments found.</p>
+            <Link to="/assessment/new" style={{ fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none', marginTop: 8, display: 'inline-block' }}>
               Create the first assessment
             </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200">
+              <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Inspector</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Client</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Type</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Status</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Date</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Inspector</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {assessments.map(a => (
-                  <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  <tr key={a.id} style={{ height: 52, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td style={{ padding: '0 24px', fontWeight: 600, color: 'var(--nz-navy)', fontSize: 14 }}>
                       {a.client_name || `Client #${a.client_id}`}
                     </td>
-                    <td className="px-6 py-4">
+                    <td style={{ padding: '0 24px' }}>
                       <StatusBadge status={a.type} />
                     </td>
-                    <td className="px-6 py-4">
+                    <td style={{ padding: '0 24px' }}>
                       <StatusBadge status={a.status} />
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td style={{ padding: '0 24px', fontSize: 13, color: '#64748B' }}>
                       {a.inspection_date
                         ? new Date(a.inspection_date).toLocaleDateString('en-NZ')
                         : '—'}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td style={{ padding: '0 24px', fontSize: 13, color: '#64748B' }}>
                       {a.inspector_name || `#${a.inspector_id}`}
                     </td>
-                    <td className="px-6 py-4">
+                    <td style={{ padding: '0 24px' }}>
                       <Link
                         to={`/assessment/${a.id}`}
-                        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}
                       >
                         <Eye size={14} />
                         View

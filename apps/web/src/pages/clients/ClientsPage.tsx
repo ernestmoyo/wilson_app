@@ -94,28 +94,34 @@ export default function ClientsPage() {
     setForm(f => ({ ...f, [field]: value }))
   }
 
+  const inputStyle = { width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const }
+  const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 } as const
+
   return (
-    <div className="space-y-6">
+    <div style={{ background: 'var(--nz-bg)', minHeight: '100%' }} className="space-y-6 p-1">
       {/* Header actions */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-md">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search clients..."
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              style={{ ...inputStyle, paddingLeft: 36 }}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
           </div>
-          <button type="submit" className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+          <button type="submit"
+            style={{ border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 16px', height: 40, cursor: 'pointer', fontSize: 14 }}>
             Search
           </button>
         </form>
         <button
           onClick={() => { setShowModal(true); setFormError('') }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}
         >
           <Plus size={16} />
           Add Client
@@ -123,40 +129,47 @@ export default function ClientsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
         {loading ? (
           <LoadingSpinner />
         ) : error ? (
           <ErrorMessage message={error} onRetry={() => fetchClients(search)} />
         ) : clients.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500">No clients found.</p>
+            <p style={{ color: '#94A3B8' }}>No clients found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200">
+              <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Legal Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Trading Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Site Address</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Manager</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Assessments</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Legal Name</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Trading Name</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Site Address</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Manager</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Assessments</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {clients.map(c => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{c.legal_name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{c.trading_name || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{c.site_address}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{c.manager_name || '—'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{c.assessment_count ?? 0}</td>
-                    <td className="px-6 py-4">
+                  <tr key={c.id} style={{ height: 52, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td style={{ padding: '0 24px', fontWeight: 600, color: 'var(--nz-navy)', fontSize: 14 }}>{c.legal_name}</td>
+                    <td style={{ padding: '0 24px', fontSize: 14, color: '#64748B' }}>{c.trading_name || '—'}</td>
+                    <td style={{ padding: '0 24px', fontSize: 14, color: '#64748B', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.site_address}</td>
+                    <td style={{ padding: '0 24px', fontSize: 14, color: '#64748B' }}>{c.manager_name || '—'}</td>
+                    <td style={{ padding: '0 24px' }}>
+                      <span style={{ background: 'rgba(0,36,125,0.08)', color: 'var(--nz-navy)', borderRadius: 9999, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>
+                        {c.assessment_count ?? 0}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0 24px' }}>
                       <Link
                         to={`/clients/${c.id}`}
-                        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}
                       >
                         <Eye size={14} />
                         View
@@ -174,133 +187,157 @@ export default function ClientsPage() {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add New Client" size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg">{formError}</div>
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: 'var(--nz-red)', fontSize: 13, padding: '8px 12px', borderRadius: 8 }}>{formError}</div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Legal Name *</label>
+              <label style={labelStyle}>Legal Name *</label>
               <input
                 type="text"
                 required
                 value={form.legal_name}
                 onChange={e => handleChange('legal_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Trading Name</label>
+              <label style={labelStyle}>Trading Name</label>
               <input
                 type="text"
                 value={form.trading_name}
                 onChange={e => handleChange('trading_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Site Address *</label>
+            <label style={labelStyle}>Site Address *</label>
             <input
               type="text"
               required
               value={form.site_address}
               onChange={e => handleChange('site_address', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Postal Address</label>
+            <label style={labelStyle}>Postal Address</label>
             <input
               type="text"
               value={form.postal_address}
               onChange={e => handleChange('postal_address', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label style={labelStyle}>Phone</label>
               <input
                 type="tel"
                 value={form.phone}
                 onChange={e => handleChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label style={labelStyle}>Email</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={e => handleChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+              <label style={labelStyle}>Industry</label>
               <input
                 type="text"
                 value={form.industry}
                 onChange={e => handleChange('industry', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">NZBN</label>
+              <label style={labelStyle}>NZBN</label>
               <input
                 type="text"
                 value={form.nzbn}
                 onChange={e => handleChange('nzbn', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Companies Number</label>
+            <label style={labelStyle}>Companies Number</label>
             <input
               type="text"
               value={form.companies_number}
               onChange={e => handleChange('companies_number', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
-            <p className="text-xs text-gray-400 mt-1">Companies Office Number (reg 6.26(2)(e)(ii))</p>
+            <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>Companies Office Number (reg 6.26(2)(e)(ii))</p>
           </div>
 
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Site Manager</p>
+          <div style={{ borderTop: '1px solid rgba(0,36,125,0.08)', paddingTop: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94A3B8', marginBottom: 12 }}>Site Manager</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label style={labelStyle}>Name</label>
                 <input
                   type="text"
                   value={form.manager_name}
                   onChange={e => handleChange('manager_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                  onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label style={labelStyle}>Phone</label>
                 <input
                   type="tel"
                   value={form.manager_phone}
                   onChange={e => handleChange('manager_phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                  onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   value={form.manager_email}
                   onChange={e => handleChange('manager_email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                  onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
                 />
               </div>
             </div>
@@ -310,14 +347,14 @@ export default function ClientsPage() {
             <button
               type="button"
               onClick={() => setShowModal(false)}
-              className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+              style={{ border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, cursor: 'pointer', fontSize: 14 }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', fontSize: 14, opacity: submitting ? 0.6 : 1 }}
             >
               {submitting ? 'Saving...' : 'Add Client'}
             </button>

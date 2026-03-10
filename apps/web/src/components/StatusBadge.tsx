@@ -3,37 +3,30 @@ interface StatusBadgeProps {
   className?: string
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  compliant: 'bg-green-100 text-green-800',
-  non_compliant: 'bg-red-100 text-red-800',
-  in_progress: 'bg-yellow-100 text-yellow-800',
-  draft: 'bg-gray-100 text-gray-700',
-  pending: 'bg-blue-100 text-blue-800',
-  granted: 'bg-green-100 text-green-800',
-  refused: 'bg-red-100 text-red-800',
-  expired: 'bg-orange-100 text-orange-800',
-  inapplicable: 'bg-gray-100 text-gray-500',
-  completed: 'bg-green-100 text-green-800',
-  validation: 'bg-purple-100 text-purple-800',
-  pre_inspection: 'bg-blue-100 text-blue-800',
-  site_inspection: 'bg-indigo-100 text-indigo-800',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  non_compliant: 'Non-Compliant',
-  in_progress: 'In Progress',
-  pre_inspection: 'Pre-Inspection',
-  site_inspection: 'Site Inspection',
-  inapplicable: 'N/A',
+const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+  compliant:      { bg: '#DCFCE7', text: '#16A34A', label: 'Compliant' },
+  non_compliant:  { bg: '#FEE2E2', text: '#CC142B', label: 'Non-Compliant' },
+  in_progress:    { bg: '#DBEAFE', text: '#00247D', label: 'In Progress' },
+  draft:          { bg: '#F1F5F9', text: '#64748B', label: 'Draft' },
+  pending:        { bg: '#FEF3C7', text: '#92400E', label: 'Pending' },
+  granted:        { bg: '#DCFCE7', text: '#16A34A', label: 'Granted' },
+  refused:        { bg: '#FEE2E2', text: '#CC142B', label: 'Refused' },
+  expired:        { bg: '#F1F5F9', text: '#64748B', label: 'Expired' },
+  inapplicable:   { bg: '#F1F5F9', text: '#94A3B8', label: 'N/A' },
+  completed:      { bg: '#DCFCE7', text: '#16A34A', label: 'Completed' },
+  validation:     { bg: '#F3E8FF', text: '#7C3AED', label: 'Validation' },
+  pre_inspection: { bg: '#DBEAFE', text: '#00247D', label: 'Pre-Inspection' },
+  site_inspection:{ bg: '#E0E7FF', text: '#3730A3', label: 'Site Inspection' },
 }
 
 export default function StatusBadge({ status, className = '' }: StatusBadgeProps) {
-  const colors = STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600'
-  const label = STATUS_LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1)
-
+  const cfg = STATUS_CONFIG[status] ?? { bg: '#F1F5F9', text: '#64748B', label: status.charAt(0).toUpperCase() + status.slice(1) }
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors} ${className}`}>
-      {label}
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${className}`}
+      style={{ background: cfg.bg, color: cfg.text }}
+    >
+      {cfg.label}
     </span>
   )
 }

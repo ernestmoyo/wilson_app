@@ -82,8 +82,8 @@ export default function SitePlannerPage() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // Grid
-    ctx.strokeStyle = '#e2e8f0'
+    // Grid — NZ light blue
+    ctx.strokeStyle = '#EEF2FF'
     ctx.lineWidth = 0.5
     for (let x = 0; x <= canvas.width; x += 40) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke()
@@ -321,10 +321,38 @@ export default function SitePlannerPage() {
   const unmetAll = LEGAL_REQUIREMENTS.filter(req => !elements.some(e => e.type === req.type));
   const legalSaveBlocked = unmetRequired.length > 0;
 
+  // Save button style: green when requirements met, grey when blocked
+  const saveButtonStyle: React.CSSProperties = saving || !selectedClient || legalSaveBlocked
+    ? { background: '#94A3B8', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'not-allowed', display: 'flex', alignItems: 'center', gap: 8, opacity: 0.6 }
+    : { background: '#16A34A', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }
+
+  const secondaryBtnStyle: React.CSSProperties = {
+    background: 'white',
+    color: 'var(--nz-navy)',
+    border: '1.5px solid var(--nz-navy)',
+    borderRadius: 8,
+    fontWeight: 500,
+    padding: '0 12px',
+    height: 34,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 13,
+  }
+
+  const secondaryBtnDisabledStyle: React.CSSProperties = {
+    ...secondaryBtnStyle,
+    opacity: 0.4,
+    cursor: 'not-allowed',
+    borderColor: '#CBD5E1',
+    color: '#94A3B8',
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={{ background: 'var(--nz-bg)', minHeight: '100%', padding: 0 }}>
       {/* Controls bar */}
-      <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4 flex-wrap">
+      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 16 }} className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Client:</label>
           <select
@@ -340,7 +368,7 @@ export default function SitePlannerPage() {
           <button
             onClick={handleUndo}
             disabled={historyIndex <= 0}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={historyIndex <= 0 ? secondaryBtnDisabledStyle : secondaryBtnStyle}
             title="Undo (Ctrl+Z)"
           >
             <Undo2 size={14} />
@@ -349,7 +377,7 @@ export default function SitePlannerPage() {
           <button
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={historyIndex >= history.length - 1 ? secondaryBtnDisabledStyle : secondaryBtnStyle}
             title="Redo (Ctrl+Y)"
           >
             <Redo2 size={14} />
@@ -358,7 +386,7 @@ export default function SitePlannerPage() {
           {elements.length > 0 && (
             <button
               onClick={() => { setElements([]); setSelectedEl(null) }}
-              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              style={{ ...secondaryBtnStyle, color: 'var(--nz-red)', borderColor: 'var(--nz-red)' }}
             >
               <Trash2 size={14} />
               Clear
@@ -368,7 +396,7 @@ export default function SitePlannerPage() {
             onClick={handleSave}
             disabled={saving || !selectedClient || legalSaveBlocked}
             title={legalSaveBlocked ? 'Plan does not meet minimum legal requirements (reg 10.26)' : undefined}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={saveButtonStyle}
           >
             <Save size={15} />
             {saving ? 'Saving...' : 'Save Plan'}
@@ -377,14 +405,16 @@ export default function SitePlannerPage() {
       </div>
 
       <div className="flex gap-4">
-        {/* Toolbar */}
-        <div className="w-44 shrink-0 bg-white rounded-xl shadow-sm p-3 space-y-1 self-start">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-3 px-1">Place Element</p>
+        {/* Tool palette panel */}
+        <div style={{ width: 176, flexShrink: 0, background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 12, alignSelf: 'flex-start' }}>
+          <p style={{ color: 'var(--nz-navy)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12, paddingLeft: 4 }}>Elements</p>
+          {/* Select/Move tool */}
           <button
             onClick={() => setSelectedTool(null)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-              !selectedTool ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            style={!selectedTool
+              ? { width: '100%', textAlign: 'left', borderRadius: 10, border: '1.5px solid var(--nz-navy)', background: 'rgba(0,36,125,0.04)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 4 }
+              : { width: '100%', textAlign: 'left', borderRadius: 10, border: '1.5px solid #E2E8F0', background: 'white', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 4, color: '#475569' }
+            }
           >
             Select / Move
           </button>
@@ -392,18 +422,20 @@ export default function SitePlannerPage() {
             <button
               key={et.type}
               onClick={() => setSelectedTool(selectedTool === et.type ? null : et.type)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                selectedTool === et.type ? 'bg-gray-100 font-medium' : 'text-gray-600 hover:bg-gray-50'
-              }`}
+              style={selectedTool === et.type
+                ? { width: '100%', textAlign: 'left', borderRadius: 10, border: '1.5px solid var(--nz-navy)', background: 'rgba(0,36,125,0.04)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 4, transition: 'border-color 150ms' }
+                : { width: '100%', textAlign: 'left', borderRadius: 10, border: '1.5px solid #E2E8F0', background: 'white', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', marginBottom: 4, color: '#475569', transition: 'border-color 150ms' }
+              }
+              onMouseEnter={e => { if (selectedTool !== et.type) { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--nz-navy)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,36,125,0.04)' } }}
+              onMouseLeave={e => { if (selectedTool !== et.type) { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E2E8F0'; (e.currentTarget as HTMLButtonElement).style.background = 'white' } }}
             >
               <span
-                className="w-3 h-3 rounded shrink-0"
-                style={{ background: et.color }}
+                style={{ width: 10, height: 10, borderRadius: '50%', background: et.color, flexShrink: 0 }}
               />
               {et.label}
             </button>
           ))}
-          <div className="border-t border-gray-100 pt-2 mt-2">
+          <div style={{ borderTop: '1px solid #EEF2FF', paddingTop: 8, marginTop: 8 }}>
             <p className="text-xs text-gray-400 px-1">Tips:</p>
             <p className="text-xs text-gray-400 px-1 mt-0.5">Right-click to delete</p>
             <p className="text-xs text-gray-400 px-1">Del key to remove selected</p>
@@ -411,7 +443,7 @@ export default function SitePlannerPage() {
         </div>
 
         {/* Canvas area */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div style={{ flex: 1, borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', overflow: 'hidden', background: 'white' }}>
           {loadingPlan ? (
             <LoadingSpinner message="Loading plan..." />
           ) : (
@@ -424,6 +456,7 @@ export default function SitePlannerPage() {
                   cursor: selectedTool ? 'crosshair' : dragging ? 'grabbing' : 'default',
                   display: 'block',
                   maxWidth: '100%',
+                  background: 'white',
                 }}
                 onClick={handleCanvasClick}
                 onDoubleClick={handleDoubleClick}
@@ -432,7 +465,6 @@ export default function SitePlannerPage() {
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
                 onContextMenu={handleContextMenu}
-                className="bg-slate-50"
               />
               {!selectedClient && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/70">
@@ -445,8 +477,8 @@ export default function SitePlannerPage() {
       </div>
 
       {/* Legend */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Legend</p>
+      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 16 }}>
+        <p style={{ color: 'var(--nz-navy)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Legend</p>
         <div className="flex flex-wrap gap-3">
           {ELEMENT_TYPES.map(et => (
             <div key={et.type} className="flex items-center gap-1.5">
@@ -458,30 +490,30 @@ export default function SitePlannerPage() {
       </div>
 
       {/* Site Plan Legal Compliance Checklist */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Site Plan Legal Compliance Checklist</p>
+      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 16 }}>
+        <p style={{ color: 'var(--nz-navy)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Site Plan Legal Compliance Checklist</p>
         <ul className="space-y-2">
           {LEGAL_REQUIREMENTS.map(req => {
             const met = elements.some(e => e.type === req.type);
             return (
-              <li key={req.type} className="flex items-start gap-2 text-sm">
+              <li key={req.type} className="flex items-start gap-2">
                 {met ? (
-                  <span className="font-bold text-green-600 shrink-0">✓</span>
+                  <span style={{ fontWeight: 700, color: '#16A34A', flexShrink: 0, fontSize: 14 }}>✓</span>
                 ) : req.required ? (
-                  <span className="font-bold text-red-600 shrink-0">✗</span>
+                  <span style={{ fontWeight: 700, color: 'var(--nz-red)', flexShrink: 0, fontSize: 14 }}>✗</span>
                 ) : (
-                  <span className="font-bold text-amber-600 shrink-0">✗</span>
+                  <span style={{ fontWeight: 700, color: '#F59E0B', flexShrink: 0, fontSize: 14 }}>✗</span>
                 )}
-                <span className={met ? 'text-green-700' : req.required ? 'text-red-700' : 'text-amber-700'}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: met ? '#16A34A' : req.required ? 'var(--nz-red)' : '#F59E0B' }}>
                   {req.label}
                 </span>
-                <span className="text-gray-400 text-xs ml-1 shrink-0">{req.ref}</span>
+                <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 4, flexShrink: 0 }}>{req.ref}</span>
               </li>
             );
           })}
         </ul>
         {savedOnce && unmetAll.length > 0 && (
-          <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          <div style={{ marginTop: 12, background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 12, padding: '12px 16px', color: '#92400E', fontSize: 13 }}>
             ⚠ This site plan may not fully comply with reg 10.26(4)(b). Missing: {unmetAll.map(r => r.label).join(', ')}
           </div>
         )}

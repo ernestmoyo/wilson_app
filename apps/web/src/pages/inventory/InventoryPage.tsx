@@ -44,6 +44,20 @@ const defaultForm: AddForm = {
   notes: '',
 }
 
+function getHazardBadgeStyle(hazardClass: string): React.CSSProperties {
+  if (hazardClass.startsWith('3.1')) {
+    return { background: '#FFF7ED', color: '#C2410C', borderLeft: '3px solid #F97316' }
+  } else if (hazardClass.startsWith('2.1')) {
+    return { background: '#EFF6FF', color: '#1D4ED8', borderLeft: '3px solid #3B82F6' }
+  } else if (hazardClass.startsWith('4.')) {
+    return { background: '#FAF5FF', color: '#7C3AED', borderLeft: '3px solid #8B5CF6' }
+  } else if (hazardClass.startsWith('6.')) {
+    return { background: '#FEF2F2', color: '#DC2626', borderLeft: '3px solid #EF4444' }
+  } else {
+    return { background: '#F8FAFC', color: '#64748B', borderLeft: '3px solid #CBD5E1' }
+  }
+}
+
 export default function InventoryPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<string>('')
@@ -185,7 +199,7 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       {/* Client selector */}
-      <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
+      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }} className="flex items-center gap-4">
         <label className="text-sm font-medium text-gray-700 shrink-0">Select Client:</label>
         <select
           value={selectedClient}
@@ -198,7 +212,8 @@ export default function InventoryPage() {
         {selectedClient && (
           <button
             onClick={() => { setShowModal(true); setFormError('') }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 ml-auto"
+            style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            className="ml-auto"
           >
             <Plus size={15} />
             Add Substance
@@ -207,7 +222,7 @@ export default function InventoryPage() {
       </div>
 
       {!selectedClient ? (
-        <div className="bg-white rounded-xl shadow-sm p-16 text-center">
+        <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }} className="py-16 text-center">
           <p className="text-gray-400">Select a client to view and manage their hazardous substances inventory.</p>
         </div>
       ) : loading ? (
@@ -218,16 +233,16 @@ export default function InventoryPage() {
         <>
           {/* Summary by Hazard Class */}
           {Object.keys(totalsByClass).length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">Summary by Hazard Class</h3>
+            <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }}>
+              <h3 style={{ color: 'var(--nz-navy)', fontWeight: 700 }} className="text-sm mb-4">Summary by Hazard Class</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hazard Class</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Qty</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
-                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">HSL Status</th>
+                      <th className="px-4 py-2 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Hazard Class</th>
+                      <th className="px-4 py-2 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Total Qty</th>
+                      <th className="px-4 py-2 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Unit</th>
+                      <th className="px-4 py-2 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>HSL Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -238,19 +253,19 @@ export default function InventoryPage() {
                       if (threshold) {
                         if (total >= threshold.value) {
                           badge = (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-300">
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium" style={{ background: '#FEE2E2', color: '#CC142B', border: '1px solid rgba(204,20,43,0.3)' }}>
                               ⚠ HSL threshold exceeded (reg 10.26) — Location Compliance Certificate required (reg 10.34/10.36)
                             </span>
                           );
                         } else if (total >= threshold.value * 0.8) {
                           badge = (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium" style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid rgba(245,158,11,0.3)' }}>
                               Approaching HSL threshold (reg 10.26) — certificate will be required above {threshold.value} {threshold.unit}
                             </span>
                           );
                         } else {
                           badge = (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium" style={{ background: '#DCFCE7', color: '#16A34A', border: '1px solid rgba(22,163,74,0.3)' }}>
                               Compliant
                             </span>
                           );
@@ -261,9 +276,9 @@ export default function InventoryPage() {
                         );
                       }
                       return (
-                        <tr key={hazardClass} className="hover:bg-gray-50">
+                        <tr key={hazardClass} style={{ height: 52 }} className="transition-colors" onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
                           <td className="px-4 py-3">
-                            <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-mono rounded">{hazardClass}</span>
+                            <span className="px-2 py-0.5 text-xs font-semibold rounded" style={getHazardBadgeStyle(hazardClass)}>{hazardClass}</span>
                           </td>
                           <td className="px-4 py-3 font-medium text-gray-900">{total}</td>
                           <td className="px-4 py-3 text-gray-500">{unitLabel}</td>
@@ -278,13 +293,14 @@ export default function InventoryPage() {
           )}
 
           {/* Inventory table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }} className="overflow-hidden">
             {inventory.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-gray-500">No inventory items for this client.</p>
                 <button
                   onClick={() => setShowModal(true)}
-                  className="mt-3 text-sm text-blue-600 hover:underline"
+                  className="mt-3 text-sm hover:underline"
+                  style={{ color: 'var(--nz-navy)' }}
                 >
                   Add the first substance
                 </button>
@@ -294,21 +310,21 @@ export default function InventoryPage() {
                 <table className="w-full">
                   <thead className="border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Substance</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hazard Class</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Container</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">SDS</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Substance</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Hazard Class</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Quantity</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Container</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Location</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>SDS</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {inventory.map(item => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.substance_name}</td>
+                      <tr key={item.id} style={{ height: 52 }} className="transition-colors" onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                        <td className="px-6 py-4 text-sm" style={{ fontWeight: 600, color: 'var(--nz-navy)' }}>{item.substance_name}</td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-mono rounded">
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded" style={getHazardBadgeStyle(item.hazard_class)}>
                             {item.hazard_class}
                           </span>
                         </td>
@@ -330,14 +346,20 @@ export default function InventoryPage() {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => setEditItem(item)}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              className="p-1.5 rounded transition-colors"
+                              style={{ color: 'var(--nz-navy)', background: 'transparent' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,36,125,0.08)' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                               title="Edit"
                             >
                               <Pencil size={15} />
                             </button>
                             <button
                               onClick={() => handleDelete(item.id)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 rounded transition-colors"
+                              style={{ color: 'var(--nz-red)', background: 'transparent' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(204,20,43,0.08)' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
                               title="Delete"
                             >
                               <Trash2 size={15} />
@@ -466,7 +488,7 @@ export default function InventoryPage() {
               Cancel
             </button>
             <button type="submit" disabled={editSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', opacity: editSubmitting ? 0.5 : 1 }}>
               {editSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
@@ -585,7 +607,7 @@ export default function InventoryPage() {
               Cancel
             </button>
             <button type="submit" disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', opacity: submitting ? 0.5 : 1 }}>
               {submitting ? 'Adding...' : 'Add Substance'}
             </button>
           </div>

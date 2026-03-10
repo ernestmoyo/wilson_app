@@ -13,19 +13,32 @@ interface LocalItem extends AssessmentItem {
   _dirty?: boolean
 }
 
-const STATUS_BTN: { value: ItemStatus; label: string; colors: string }[] = [
-  { value: 'compliant', label: 'C', colors: 'bg-green-500 text-white hover:bg-green-600' },
-  { value: 'non_compliant', label: 'NC', colors: 'bg-red-500 text-white hover:bg-red-600' },
-  { value: 'inapplicable', label: 'N/A', colors: 'bg-gray-400 text-white hover:bg-gray-500' },
-  { value: 'pending', label: '?', colors: 'bg-yellow-400 text-white hover:bg-yellow-500' },
+const STATUS_BTN: { value: ItemStatus; label: string; activeStyle: React.CSSProperties; inactiveStyle: React.CSSProperties }[] = [
+  {
+    value: 'compliant',
+    label: 'C',
+    activeStyle: { background: '#16A34A', color: 'white', border: '1px solid #16A34A' },
+    inactiveStyle: { background: 'white', color: '#16A34A', border: '1px solid #86EFAC' },
+  },
+  {
+    value: 'non_compliant',
+    label: 'NC',
+    activeStyle: { background: '#CC142B', color: 'white', border: '1px solid #CC142B' },
+    inactiveStyle: { background: 'white', color: '#CC142B', border: '1px solid #FCA5A5' },
+  },
+  {
+    value: 'inapplicable',
+    label: 'N/A',
+    activeStyle: { background: '#64748B', color: 'white', border: '1px solid #64748B' },
+    inactiveStyle: { background: 'white', color: '#94A3B8', border: '1px solid #CBD5E1' },
+  },
+  {
+    value: 'pending',
+    label: '?',
+    activeStyle: { background: '#F59E0B', color: 'white', border: '1px solid #F59E0B' },
+    inactiveStyle: { background: 'white', color: '#D97706', border: '1px solid #FCD34D' },
+  },
 ]
-
-const STATUS_INACTIVE: Record<ItemStatus, string> = {
-  compliant: 'bg-white border border-green-300 text-green-600 hover:bg-green-50',
-  non_compliant: 'bg-white border border-red-300 text-red-600 hover:bg-red-50',
-  inapplicable: 'bg-white border border-gray-300 text-gray-500 hover:bg-gray-50',
-  pending: 'bg-white border border-yellow-300 text-yellow-600 hover:bg-yellow-50',
-}
 
 function groupBySection(items: LocalItem[]) {
   const groups: Record<string, LocalItem[]> = {}
@@ -129,30 +142,32 @@ export default function AssessmentDetail() {
   const applicable = total - naCount
   const compliancePercent = applicable > 0 ? Math.round((compliantCount / applicable) * 100) : 0
 
+  const thStyle = { padding: '8px 24px', textAlign: 'left' as const, fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }
+
   return (
-    <div className="space-y-6">
+    <div style={{ background: 'var(--nz-bg)', minHeight: '100%' }} className="space-y-6 p-1">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
-        <Link to="/assessment" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <Link to="/assessment" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
           <ArrowLeft size={16} />
           Assessments
         </Link>
-        <span className="text-gray-400">/</span>
-        <span className="text-sm font-medium text-gray-900">Assessment #{id}</span>
+        <span style={{ color: '#CBD5E1' }}>/</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)' }}>Assessment #{id}</span>
       </div>
 
       {/* Header card */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }}>
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--nz-navy)', margin: 0 }}>
                 {assessment.client_name || `Client #${assessment.client_id}`}
               </h2>
               <StatusBadge status={assessment.type} />
               <StatusBadge status={assessment.status} />
             </div>
-            <p className="text-sm text-gray-500">
+            <p style={{ fontSize: 13, color: '#64748B' }}>
               Inspector: {assessment.inspector_name || `#${assessment.inspector_id}`}
               {assessment.inspection_date && (
                 <> · {new Date(assessment.inspection_date).toLocaleDateString('en-NZ')}</>
@@ -166,7 +181,7 @@ export default function AssessmentDetail() {
             <button
               onClick={handleGenerateReport}
               disabled={generating}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 16px', height: 40, cursor: 'pointer', fontSize: 13, opacity: generating ? 0.6 : 1 }}
             >
               <FileText size={15} />
               {generating ? 'Generating...' : 'Generate Report'}
@@ -174,7 +189,7 @@ export default function AssessmentDetail() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 16px', height: 40, border: 'none', cursor: 'pointer', fontSize: 13, opacity: saving ? 0.6 : 1 }}
             >
               <Save size={15} />
               {saving ? 'Saving...' : 'Save All Items'}
@@ -183,34 +198,29 @@ export default function AssessmentDetail() {
         </div>
 
         {saveMsg && (
-          <div className={`mt-3 text-sm px-3 py-2 rounded-lg ${
-            saveMsg.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-          }`}>
+          <div style={{ marginTop: 12, fontSize: 13, padding: '8px 12px', borderRadius: 8, background: saveMsg.includes('success') ? '#DCFCE7' : '#FEF2F2', color: saveMsg.includes('success') ? '#16A34A' : 'var(--nz-red)' }}>
             {saveMsg}
           </div>
         )}
 
         {/* Compliance stats */}
         {total > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,36,125,0.08)' }}>
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex-1 min-w-48">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <div style={{ flex: 1, minWidth: 192 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94A3B8', marginBottom: 4 }}>
                   <span>Compliance</span>
-                  <span className="font-semibold text-gray-900">{compliancePercent}%</span>
+                  <span style={{ fontWeight: 700, color: 'var(--nz-navy)' }}>{compliancePercent}%</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${compliancePercent}%` }}
-                  />
+                <div style={{ height: 8, borderRadius: 4, background: '#E2E8F0', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${compliancePercent}%`, background: 'linear-gradient(to right, var(--nz-navy), var(--nz-light-blue))' }} />
                 </div>
               </div>
               <div className="flex gap-4 text-sm flex-wrap">
-                <span className="text-green-600 font-medium">{compliantCount} Compliant</span>
-                <span className="text-red-600 font-medium">{nonCompliantCount} Non-Compliant</span>
-                <span className="text-gray-400">{naCount} N/A</span>
-                <span className="text-yellow-600">{pendingCount} Pending</span>
+                <span style={{ color: '#16A34A', fontWeight: 600, fontSize: 13 }}>{compliantCount} Compliant</span>
+                <span style={{ color: 'var(--nz-red)', fontWeight: 600, fontSize: 13 }}>{nonCompliantCount} Non-Compliant</span>
+                <span style={{ color: '#94A3B8', fontSize: 13 }}>{naCount} N/A</span>
+                <span style={{ color: '#D97706', fontSize: 13 }}>{pendingCount} Pending</span>
               </div>
             </div>
           </div>
@@ -219,9 +229,9 @@ export default function AssessmentDetail() {
 
       {/* Checklist */}
       {items.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-          <p className="text-gray-500">No checklist items found for this assessment.</p>
-          <p className="text-sm text-gray-400 mt-1">Items are generated automatically by assessment type.</p>
+        <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 32, textAlign: 'center' }}>
+          <p style={{ color: '#94A3B8', fontSize: 14 }}>No checklist items found for this assessment.</p>
+          <p style={{ color: '#CBD5E1', fontSize: 12, marginTop: 4 }}>Items are generated automatically by assessment type.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -232,59 +242,77 @@ export default function AssessmentDetail() {
             const sectionTotal = sectionItems.filter(i => i.status !== 'inapplicable').length
 
             return (
-              <div key={section} className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div key={section} style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
                 {/* Section header */}
                 <button
                   onClick={() => toggleSection(section)}
-                  className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <div className="flex items-center gap-3">
-                    {isCollapsed ? <ChevronRight size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
-                    <span className="font-semibold text-gray-900">Section {section}</span>
-                    <span className="text-sm text-gray-500">({sectionItems.length} items)</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {isCollapsed
+                      ? <ChevronRight size={18} style={{ color: '#94A3B8' }} />
+                      : <ChevronDown size={18} style={{ color: '#94A3B8' }} />
+                    }
+                    <span style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 9999, padding: '2px 12px', fontSize: 12, fontWeight: 700 }}>
+                      Section {section}
+                    </span>
+                    <span style={{ fontSize: 13, color: '#94A3B8' }}>({sectionItems.length} items)</span>
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div style={{ fontSize: 12, color: '#94A3B8' }}>
                     {sectionCompliant}/{sectionTotal} compliant
                   </div>
                 </button>
 
                 {!isCollapsed && (
-                  <div className="border-t border-gray-100">
+                  <div style={{ borderTop: '1px solid rgba(0,36,125,0.08)' }}>
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                          <th className="px-6 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-20">Item</th>
-                          <th className="px-6 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Description</th>
-                          <th className="px-6 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-52">Status</th>
-                          <th className="px-6 py-2 text-left text-xs font-semibold text-gray-500 uppercase w-64">Comments</th>
+                        <tr style={{ background: 'rgba(0,36,125,0.02)', borderBottom: '1px solid rgba(0,36,125,0.06)' }}>
+                          <th style={{ ...thStyle, width: 80 }}>Item</th>
+                          <th style={thStyle}>Description</th>
+                          <th style={{ ...thStyle, width: 208 }}>Status</th>
+                          <th style={{ ...thStyle, width: 256 }}>Comments</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody>
                         {sectionItems.sort((a, b) => a.sort_order - b.sort_order).map(item => (
-                          <tr key={item.id} className={`${item._dirty ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
-                            <td className="px-6 py-3 text-sm font-mono text-gray-600">{item.item_number}</td>
-                            <td className="px-6 py-3 text-sm text-gray-700">
+                          <tr key={item.id}
+                            style={{
+                              minHeight: 52,
+                              borderBottom: '1px solid rgba(0,36,125,0.04)',
+                              background: item._dirty ? 'rgba(0,36,125,0.03)' : 'transparent',
+                            }}
+                            onMouseEnter={e => { if (!item._dirty) e.currentTarget.style.background = 'rgba(0,36,125,0.03)' }}
+                            onMouseLeave={e => { if (!item._dirty) e.currentTarget.style.background = 'transparent' }}
+                          >
+                            <td style={{ padding: '10px 24px', fontSize: 12, fontFamily: 'monospace', color: '#64748B' }}>{item.item_number}</td>
+                            <td style={{ padding: '10px 24px', fontSize: 13, color: '#1E293B' }}>
                               {item.description}
                               {item.legal_ref && (
-                                <span className="relative group ml-2 inline-flex">
-                                  <button className="text-blue-400 hover:text-blue-600 text-xs font-bold w-4 h-4 rounded-full border border-current flex items-center justify-center" type="button">ⓘ</button>
+                                <span style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }} className="group">
+                                  <button style={{ color: 'var(--nz-light-blue)', fontSize: 11, fontWeight: 700, width: 16, height: 16, borderRadius: '50%', border: '1px solid currentColor', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} type="button">ⓘ</button>
                                   <span className="hidden group-hover:block absolute left-6 top-0 z-50 w-64 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl">
                                     {item.legal_ref}
                                   </span>
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-3">
-                              <div className="flex gap-1">
+                            <td style={{ padding: '10px 24px' }}>
+                              <div style={{ display: 'flex', gap: 4 }}>
                                 {STATUS_BTN.map(btn => (
                                   <button
                                     key={btn.value}
                                     onClick={() => updateItem(item.id, 'status', btn.value)}
-                                    className={`px-2 py-1 rounded text-xs font-bold transition-colors ${
-                                      item.status === btn.value
-                                        ? btn.colors
-                                        : STATUS_INACTIVE[btn.value]
-                                    }`}
+                                    style={{
+                                      padding: '3px 8px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      ...(item.status === btn.value ? btn.activeStyle : btn.inactiveStyle),
+                                    }}
                                     title={btn.value.replace('_', ' ')}
                                   >
                                     {btn.label}
@@ -292,13 +320,15 @@ export default function AssessmentDetail() {
                                 ))}
                               </div>
                             </td>
-                            <td className="px-6 py-3">
+                            <td style={{ padding: '10px 24px' }}>
                               <input
                                 type="text"
                                 value={item.comments || ''}
                                 onChange={e => updateItem(item.id, 'comments', e.target.value)}
                                 placeholder="Add comments..."
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                style={{ width: '100%', padding: '4px 8px', fontSize: 12, border: '1.5px solid #CBD5E1', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }}
+                                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
                               />
                             </td>
                           </tr>
@@ -315,17 +345,17 @@ export default function AssessmentDetail() {
 
       {/* Bottom save bar */}
       {items.length > 0 && (
-        <div className="sticky bottom-4 flex justify-end">
-          <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
+        <div style={{ position: 'sticky', bottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ background: 'white', border: '1px solid rgba(0,36,125,0.10)', borderRadius: 14, boxShadow: '0 4px 16px rgba(0,36,125,0.12)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
             {saveMsg && (
-              <span className={`text-sm ${saveMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+              <span style={{ fontSize: 13, color: saveMsg.includes('success') ? '#16A34A' : 'var(--nz-red)' }}>
                 {saveMsg}
               </span>
             )}
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', fontSize: 14, opacity: saving ? 0.6 : 1 }}
             >
               <Save size={15} />
               {saving ? 'Saving...' : 'Save All Items'}

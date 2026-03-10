@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Building2, ClipboardCheck, Award, Package, Map, FileText } from 'lucide-react'
+import Avatar from './Avatar'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
@@ -31,24 +32,28 @@ export default function Layout() {
   const pageTitle = getPageTitle(location.pathname)
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--nz-bg)' }}>
       {/* Sidebar */}
       <aside
-        className="flex flex-col shrink-0"
-        style={{ width: 240, background: '#0f172a' }}
+        className="flex flex-col shrink-0 h-full"
+        style={{ width: 220, background: 'var(--nz-navy)' }}
       >
         {/* Brand */}
-        <div className="px-6 py-5 border-b border-white/10">
-          <div className="flex items-center gap-2">
+        <div className="px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
+          <div className="flex items-center gap-3">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: '#2563eb' }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0"
+              style={{ background: 'var(--nz-red)' }}
             >
               W
             </div>
-            <span className="text-white font-bold text-lg tracking-tight">Wilson Suite</span>
+            <div className="min-w-0">
+              <div className="text-white font-bold text-base leading-tight tracking-tight">Wilson Suite</div>
+              <div className="text-xs leading-tight flex items-center gap-1 mt-0.5" style={{ color: '#93C5FD' }}>
+                🇳🇿 NZ Hazardous Substances
+              </div>
+            </div>
           </div>
-          <p className="text-xs mt-1" style={{ color: '#64748b' }}>NZ Hazardous Substances</p>
         </div>
 
         {/* Navigation */}
@@ -59,11 +64,20 @@ export default function Layout() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                    ? 'text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10'
                 }`
+              }
+              style={({ isActive }) =>
+                isActive
+                  ? {
+                      background: 'rgba(204, 20, 43, 0.18)',
+                      borderLeft: '3px solid var(--nz-red)',
+                      paddingLeft: '9px',
+                    }
+                  : {}
               }
             >
               <Icon size={18} />
@@ -72,53 +86,50 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* Certifier info */}
-        <div className="px-4 py-4 border-t border-white/10">
+        {/* Profile */}
+        <div className="px-4 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
           <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-              style={{ background: '#1e40af' }}
-            >
-              BW
-            </div>
+            <Avatar size={40} />
             <div className="min-w-0">
-              <p className="text-white text-sm font-medium truncate">Bryan Wilson</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                <span className="text-xs" style={{ color: '#94a3b8' }}>Active Certifier</span>
+              <div className="text-white text-sm font-semibold leading-tight truncate">Bryan Wilson</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                <span className="text-xs" style={{ color: '#86EFAC' }}>Active Certifier</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Legal citation footer */}
-        <div className="px-4 py-3 border-t border-slate-700 mt-auto">
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Operates under:<br/>
-            <span className="text-slate-400">HSW (Hazardous Substances) Regulations 2017 (LI 2017/131)</span><br/>
-            <span className="text-slate-500">WorkSafe New Zealand — v. 20 Oct 2025</span>
+        {/* Legal footer */}
+        <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            HSW (Hazardous Substances)<br />
+            Regulations 2017 · WorkSafe NZ<br />
+            v. 20 Oct 2025
           </p>
         </div>
       </aside>
 
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shrink-0">
-          <h1 className="text-xl font-semibold text-gray-900">{pageTitle}</h1>
+        {/* Top header */}
+        <header
+          className="flex items-center justify-between px-8 flex-shrink-0"
+          style={{
+            height: 64,
+            background: '#ffffff',
+            borderBottom: '1px solid rgba(0,36,125,0.10)',
+          }}
+        >
+          <h1 className="text-xl font-bold" style={{ color: 'var(--nz-navy)' }}>{pageTitle}</h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-500">Bryan Wilson</span>
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: '#2563eb' }}
-            >
-              BW
-            </div>
+            <span className="text-sm font-medium" style={{ color: '#64748B' }}>Bryan Wilson</span>
+            <Avatar size={40} />
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6" style={{ background: '#f8fafc' }}>
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto p-8">
           <Outlet />
         </main>
       </div>

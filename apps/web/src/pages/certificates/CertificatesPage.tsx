@@ -91,19 +91,18 @@ export default function CertificatesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ background: 'var(--nz-bg)', minHeight: '100%' }} className="space-y-6 p-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1 flex-wrap">
+        <div style={{ background: 'white', border: '1px solid rgba(0,36,125,0.10)', borderRadius: 10, padding: '4px' }} className="flex items-center gap-1 flex-wrap">
           {STATUS_TABS.map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              style={activeTab === tab
+                ? { background: 'var(--nz-navy)', color: 'white', borderRadius: 8, padding: '6px 14px', fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer' }
+                : { background: 'transparent', color: '#64748B', borderRadius: 8, padding: '6px 14px', fontWeight: 500, fontSize: 13, border: 'none', cursor: 'pointer' }
+              }
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -111,7 +110,7 @@ export default function CertificatesPage() {
         </div>
         <button
           onClick={() => { setShowModal(true); setFormError('') }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}
         >
           <Plus size={16} />
           New Certificate
@@ -119,60 +118,65 @@ export default function CertificatesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 0, overflow: 'hidden' }}>
         {loading ? (
           <LoadingSpinner />
         ) : error ? (
           <ErrorMessage message={error} onRetry={() => fetchCerts(activeTab)} />
         ) : certificates.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-500">No certificates found.</p>
+            <p style={{ color: '#94A3B8' }}>No certificates found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200">
+              <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Certificate #</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Client</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Substance Class</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Issue Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Expiry Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Certificate #</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Client</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Substance Class</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Status</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Issue Date</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Expiry Date</th>
+                  <th style={{ padding: '12px 24px', textAlign: 'left', color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {certificates.map(c => {
                   const expiring = isExpiringSoon(c.expiry_date)
                   const expired = c.status === 'expired'
                   return (
-                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-mono font-medium text-gray-900">
-                        {c.certificate_number || `CERT-${c.id}`}
+                    <tr key={c.id} style={{ height: 52, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <td style={{ padding: '0 24px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--nz-navy)', fontFamily: 'monospace', fontSize: 13 }}>
+                          {c.certificate_number || `CERT-${c.id}`}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                      <td style={{ padding: '0 24px', fontSize: 14, color: '#1E293B' }}>
                         {c.client_name || `Client #${c.client_id}`}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{c.substance_class || '—'}</td>
-                      <td className="px-6 py-4">
+                      <td style={{ padding: '0 24px', fontSize: 14, color: '#64748B' }}>{c.substance_class || '—'}</td>
+                      <td style={{ padding: '0 24px' }}>
                         <StatusBadge status={c.status} />
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td style={{ padding: '0 24px', fontSize: 14, color: '#64748B' }}>
                         {c.issue_date ? new Date(c.issue_date).toLocaleDateString('en-NZ') : '—'}
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td style={{ padding: '0 24px', fontSize: 14 }}>
                         {c.expiry_date ? (
-                          <span className={expired || expiring ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                          <span style={{ color: expired || expiring ? 'var(--nz-red)' : '#64748B', fontWeight: expired || expiring ? 600 : 400 }}>
                             {new Date(c.expiry_date).toLocaleDateString('en-NZ')}
                             {expiring && !expired && ' ⚠'}
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-6 py-4">
+                      <td style={{ padding: '0 24px' }}>
                         <Link
                           to={`/certificates/${c.id}`}
-                          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}
                         >
                           <Eye size={14} />
                           View
@@ -191,27 +195,27 @@ export default function CertificatesPage() {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="New Certificate" size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
           {formError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">{formError}</div>
+            <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: 'var(--nz-red)', fontSize: 13, padding: '8px 12px', borderRadius: 8 }}>{formError}</div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client *</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Client *</label>
             <select
               required
               value={form.client_id}
               onChange={e => setForm(f => ({ ...f, client_id: e.target.value, assessment_id: '' }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }}
             >
               <option value="">Select client...</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.legal_name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Assessment (optional)</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Assessment (optional)</label>
             <select
               value={form.assessment_id}
               onChange={e => setForm(f => ({ ...f, assessment_id: e.target.value }))}
               disabled={!form.client_id}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none' }}
             >
               {!form.client_id && <option value="" disabled>Select a client first…</option>}
               <option value="">None</option>
@@ -223,32 +227,36 @@ export default function CertificatesPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Substance Class</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Substance Class</label>
             <input
               type="text"
               value={form.substance_class}
               onChange={e => setForm(f => ({ ...f, substance_class: e.target.value }))}
               placeholder="e.g. 3.1A, 2.1.1"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Quantity</label>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Max Quantity</label>
             <input
               type="text"
               value={form.max_quantity}
               onChange={e => setForm(f => ({ ...f, max_quantity: e.target.value }))}
               placeholder="e.g. 1000L"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowModal(false)}
-              className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-50">
+              style={{ border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, cursor: 'pointer', fontSize: 14 }}>
               Cancel
             </button>
             <button type="submit" disabled={submitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 20px', height: 40, border: 'none', cursor: 'pointer', fontSize: 14, opacity: submitting ? 0.6 : 1 }}>
               {submitting ? 'Creating...' : 'Create Certificate'}
             </button>
           </div>

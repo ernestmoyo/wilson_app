@@ -73,41 +73,44 @@ export default function ClientDetail() {
     { key: 'inventory', label: 'Inventory' },
   ]
 
+  const inputStyle = { width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const }
+  const thStyle = { paddingBottom: 12, textAlign: 'left' as const, fontSize: 11, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase' as const, letterSpacing: '0.08em' }
+
   return (
-    <div className="space-y-6">
+    <div style={{ background: 'var(--nz-bg)', minHeight: '100%' }} className="space-y-6 p-1">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2">
-        <Link to="/clients" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <Link to="/clients" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
           <ArrowLeft size={16} />
           Clients
         </Link>
-        <span className="text-gray-400">/</span>
-        <span className="text-sm text-gray-900 font-medium">{client.legal_name}</span>
+        <span style={{ color: '#CBD5E1' }}>/</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)' }}>{client.legal_name}</span>
       </div>
 
       {/* Client header */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', padding: 24 }}>
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{client.legal_name}</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--nz-navy)', margin: 0 }}>{client.legal_name}</h2>
             {client.trading_name && (
-              <p className="text-sm text-gray-500 mt-0.5">Trading as: {client.trading_name}</p>
+              <p style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>Trading as: {client.trading_name}</p>
             )}
-            <p className="text-sm text-gray-600 mt-1">{client.site_address}</p>
+            <p style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>{client.site_address}</p>
           </div>
           <div className="flex gap-2">
             {editing ? (
               <>
                 <button
                   onClick={() => { setEditing(false); setEditForm(client) }}
-                  className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, cursor: 'pointer', fontSize: 13 }}
                 >
                   <X size={14} /> Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, border: 'none', cursor: 'pointer', fontSize: 13, opacity: saving ? 0.6 : 1 }}
                 >
                   <Save size={14} /> {saving ? 'Saving...' : 'Save'}
                 </button>
@@ -115,7 +118,7 @@ export default function ClientDetail() {
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, border: 'none', cursor: 'pointer', fontSize: 13 }}
               >
                 <Edit2 size={14} /> Edit
               </button>
@@ -125,24 +128,31 @@ export default function ClientDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div className="border-b border-gray-200 flex">
+      <div style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
+        <div style={{ borderBottom: '1px solid rgba(0,36,125,0.08)', display: 'flex' }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              style={{
+                padding: '12px 24px',
+                fontSize: 13,
+                fontWeight: 600,
+                borderTop: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                borderBottom: activeTab === tab.key ? '2px solid var(--nz-navy)' : '2px solid transparent',
+                color: activeTab === tab.key ? 'var(--nz-navy)' : '#94A3B8',
+                background: 'transparent',
+                cursor: 'pointer',
+              }}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="p-6">
+        <div style={{ padding: 24 }}>
           {activeTab === 'details' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {editing ? (
@@ -169,8 +179,8 @@ export default function ClientDetail() {
                   <InfoRow label="Phone" value={client.phone} />
                   <InfoRow label="Email" value={client.email} />
                   <InfoRow label="Industry" value={client.industry} />
-                  <InfoRow label="NZBN" value={client.nzbn} />
-                  <InfoRow label="Companies Number" value={client.companies_number} />
+                  <InfoRow label="NZBN" value={client.nzbn} isCode />
+                  <InfoRow label="Companies Number" value={client.companies_number} isCode />
                   <InfoRow label="Manager Name" value={client.manager_name} />
                   <InfoRow label="Manager Phone" value={client.manager_phone} />
                   <InfoRow label="Manager Email" value={client.manager_email} />
@@ -183,27 +193,30 @@ export default function ClientDetail() {
           {activeTab === 'assessments' && (
             tabLoading ? <LoadingSpinner /> : (
               assessments.length === 0 ? (
-                <p className="text-sm text-gray-500">No assessments for this client.</p>
+                <p style={{ fontSize: 13, color: '#94A3B8' }}>No assessments for this client.</p>
               ) : (
                 <table className="w-full">
-                  <thead className="border-b border-gray-100">
+                  <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                     <tr>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                      <th style={thStyle}>Type</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Date</th>
+                      <th style={thStyle}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody>
                     {assessments.map(a => (
-                      <tr key={a.id} className="hover:bg-gray-50">
-                        <td className="py-3"><StatusBadge status={a.type} /></td>
-                        <td className="py-3"><StatusBadge status={a.status} /></td>
-                        <td className="py-3 text-sm text-gray-600">
+                      <tr key={a.id} style={{ height: 48, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td style={{ paddingBottom: 0 }}><StatusBadge status={a.type} /></td>
+                        <td style={{ paddingBottom: 0 }}><StatusBadge status={a.status} /></td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>
                           {a.inspection_date ? new Date(a.inspection_date).toLocaleDateString('en-NZ') : '—'}
                         </td>
-                        <td className="py-3">
-                          <Link to={`/assessment/${a.id}`} className="text-sm text-blue-600 hover:underline">View</Link>
+                        <td>
+                          <Link to={`/assessment/${a.id}`} style={{ fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}>View</Link>
                         </td>
                       </tr>
                     ))}
@@ -216,29 +229,32 @@ export default function ClientDetail() {
           {activeTab === 'certificates' && (
             tabLoading ? <LoadingSpinner /> : (
               certificates.length === 0 ? (
-                <p className="text-sm text-gray-500">No certificates for this client.</p>
+                <p style={{ fontSize: 13, color: '#94A3B8' }}>No certificates for this client.</p>
               ) : (
                 <table className="w-full">
-                  <thead className="border-b border-gray-100">
+                  <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                     <tr>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Certificate #</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Substance Class</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Expiry</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                      <th style={thStyle}>Certificate #</th>
+                      <th style={thStyle}>Status</th>
+                      <th style={thStyle}>Substance Class</th>
+                      <th style={thStyle}>Expiry</th>
+                      <th style={thStyle}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody>
                     {certificates.map(c => (
-                      <tr key={c.id} className="hover:bg-gray-50">
-                        <td className="py-3 text-sm font-medium text-gray-900">{c.certificate_number || `#${c.id}`}</td>
-                        <td className="py-3"><StatusBadge status={c.status} /></td>
-                        <td className="py-3 text-sm text-gray-600">{c.substance_class || '—'}</td>
-                        <td className="py-3 text-sm text-gray-600">
+                      <tr key={c.id} style={{ height: 48, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td style={{ fontSize: 13, fontWeight: 700, color: 'var(--nz-navy)', fontFamily: 'monospace' }}>{c.certificate_number || `#${c.id}`}</td>
+                        <td><StatusBadge status={c.status} /></td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>{c.substance_class || '—'}</td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>
                           {c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('en-NZ') : '—'}
                         </td>
-                        <td className="py-3">
-                          <Link to={`/certificates/${c.id}`} className="text-sm text-blue-600 hover:underline">View</Link>
+                        <td>
+                          <Link to={`/certificates/${c.id}`} style={{ fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}>View</Link>
                         </td>
                       </tr>
                     ))}
@@ -252,31 +268,36 @@ export default function ClientDetail() {
             tabLoading ? <LoadingSpinner /> : (
               inventory.length === 0 ? (
                 <div>
-                  <p className="text-sm text-gray-500 mb-3">No inventory items for this client.</p>
-                  <Link to="/inventory" className="text-sm text-blue-600 hover:underline">Go to Inventory Manager</Link>
+                  <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 8 }}>No inventory items for this client.</p>
+                  <Link to="/inventory" style={{ fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, textDecoration: 'none' }}>Go to Inventory Manager</Link>
                 </div>
               ) : (
                 <table className="w-full">
-                  <thead className="border-b border-gray-100">
+                  <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
                     <tr>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Substance</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Hazard Class</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Quantity</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
-                      <th className="pb-3 text-left text-xs font-semibold text-gray-500 uppercase">SDS</th>
+                      <th style={thStyle}>Substance</th>
+                      <th style={thStyle}>Hazard Class</th>
+                      <th style={thStyle}>Quantity</th>
+                      <th style={thStyle}>Location</th>
+                      <th style={thStyle}>SDS</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody>
                     {inventory.map(item => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="py-3 text-sm font-medium text-gray-900">{item.substance_name}</td>
-                        <td className="py-3 text-sm text-gray-600">{item.hazard_class}</td>
-                        <td className="py-3 text-sm text-gray-600">{item.quantity} {item.unit}</td>
-                        <td className="py-3 text-sm text-gray-600">{item.storage_location || '—'}</td>
-                        <td className="py-3">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                            item.sds_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
+                      <tr key={item.id} style={{ height: 48, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)' }}>{item.substance_name}</td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>{item.hazard_class}</td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>{item.quantity} {item.unit}</td>
+                        <td style={{ fontSize: 13, color: '#64748B' }}>{item.storage_location || '—'}</td>
+                        <td>
+                          <span style={{
+                            display: 'inline-flex', padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
+                            background: item.sds_available ? '#DCFCE7' : '#FEF2F2',
+                            color: item.sds_available ? '#16A34A' : 'var(--nz-red)',
+                          }}>
                             {item.sds_available ? 'Yes' : 'No'}
                           </span>
                         </td>
@@ -293,11 +314,17 @@ export default function ClientDetail() {
   )
 }
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
+function InfoRow({ label, value, isCode }: { label: string; value?: string | null; isCode?: boolean }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{label}</p>
-      <p className="text-sm text-gray-900">{value || '—'}</p>
+      <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>{label}</p>
+      {isCode && value ? (
+        <span style={{ display: 'inline-block', background: 'rgba(0,36,125,0.07)', color: 'var(--nz-navy)', borderRadius: 6, padding: '2px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>
+          {value}
+        </span>
+      ) : (
+        <p style={{ fontSize: 15, color: '#1E293B', fontWeight: 500, margin: 0 }}>{value || '—'}</p>
+      )}
     </div>
   )
 }
@@ -305,12 +332,14 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{label}</label>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>{label}</label>
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+        onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+        onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
       />
     </div>
   )

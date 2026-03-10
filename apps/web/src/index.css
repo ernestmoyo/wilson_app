@@ -1,12 +1,45 @@
 @import "tailwindcss";
 
+@theme {
+  --color-nz-navy:       #00247D;
+  --color-nz-red:        #CC142B;
+  --color-nz-white:      #FFFFFF;
+  --color-nz-light-blue: #4B6CB7;
+  --color-nz-silver:     #C0C0C0;
+  --color-nz-bg:         #F0F4FF;
+}
+
+:root {
+  --nz-navy:       #00247D;
+  --nz-red:        #CC142B;
+  --nz-light-blue: #4B6CB7;
+  --nz-silver:     #C0C0C0;
+  --nz-bg:         #F0F4FF;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f8fafc;
-  color: #1e293b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--nz-bg);
+  color: #1E293B;
+}
+
+/* NZ card style */
+.nz-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 36, 125, 0.08);
+  border: 1px solid rgba(0, 36, 125, 0.10);
+  padding: 24px;
+}
+
+/* Print styles for reports */
+@media print {
+  nav, aside, header, button, .modal-backdrop, .no-print { display: none !important; }
+  .modal-content { box-shadow: none !important; border: none !important; }
+  body { background: white !important; }
 }
