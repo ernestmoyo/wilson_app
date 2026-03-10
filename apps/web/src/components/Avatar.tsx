@@ -10,7 +10,7 @@ export default function Avatar({ size = 40, className = '' }: AvatarProps) {
       style={{ width: size, height: size, background: 'var(--nz-navy)', fontSize: size * 0.35 }}
     >
       <img
-        src="/images/bryan-wilson-avatar.jpg"
+        src="/images/bryan.png"
         alt="Bryan Wilson"
         style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
         onError={(e) => {
