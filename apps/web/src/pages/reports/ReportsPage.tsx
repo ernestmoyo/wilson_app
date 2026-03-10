@@ -250,16 +250,52 @@ export default function ReportsPage() {
   )
 }
 
+const SECTION_TITLES: Record<string, string> = {
+  A: 'Notification & Maximum Quantities',
+  B: 'Site Security & Access Control',
+  C: 'Worker Information, Training & Instruction',
+  D: 'Hazardous Area Establishment',
+  E: 'Segregation of Incompatible Substances',
+  F: 'Signage',
+  G: 'Emergency Management',
+  H: 'Secondary Containment',
+  I: 'Site Plan Availability',
+  J: 'Documentation & Safety Data Sheets',
+}
+
 function ReportViewer({ report }: { report: Report }) {
   const content = (() => {
-    try { return JSON.parse(report.content) as ReportContent }
-    catch { return null }
+    try {
+      const raw = typeof report.content === 'string' ? JSON.parse(report.content) : report.content
+      return raw as ReportContent
+    } catch { return null }
   })()
 
   const handlePrint = () => window.print()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 modal-content">
+      <style>{`
+        @media print {
+          nav, .modal-backdrop, button, .sidebar { display: none !important; }
+          .modal-content { box-shadow: none; border: none; }
+        }
+      `}</style>
+
+      {/* Report header */}
+      <div className="border-b border-gray-100 pb-4">
+        <h2 className="text-lg font-bold text-gray-900">{report.title}</h2>
+        <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
+          {(report as Report & { client_name?: string }).client_name && (
+            <span>Client: <span className="font-medium text-gray-800">{(report as Report & { client_name?: string }).client_name}</span></span>
+          )}
+          {(report as Report & { inspector_name?: string }).inspector_name && (
+            <span>Inspector: <span className="font-medium text-gray-800">{(report as Report & { inspector_name?: string }).inspector_name}</span></span>
+          )}
+          <span>Date: <span className="font-medium text-gray-800">{new Date(report.created_at).toLocaleDateString('en-NZ')}</span></span>
+        </div>
+      </div>
+
       <div className="flex justify-end gap-2">
         <button
           onClick={handlePrint}
@@ -274,13 +310,12 @@ function ReportViewer({ report }: { report: Report }) {
         <div className="space-y-6">
           {/* Decision badge */}
           {content.decision && (
-            <div className={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold ${
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold text-base ${
               content.decision === 'compliant'
                 ? 'bg-green-50 text-green-800 border border-green-200'
                 : 'bg-red-50 text-red-800 border border-red-200'
             }`}>
-              <span className="text-lg">{content.decision === 'compliant' ? '✓' : '✗'}</span>
-              Decision: {content.decision}
+              {content.decision === 'compliant' ? 'COMPLIANT ✓' : 'NON-COMPLIANT ✗'}
             </div>
           )}
 
@@ -290,7 +325,7 @@ function ReportViewer({ report }: { report: Report }) {
               <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Summary</h3>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {content.summary.total_items !== undefined && (
-                  <StatCard label="Total Items" value={content.summary.total_items} color="text-gray-700" bg="bg-gray-50" />
+                  <StatCard label="Total" value={content.summary.total_items} color="text-gray-700" bg="bg-gray-50" />
                 )}
                 {content.summary.compliant !== undefined && (
                   <StatCard label="Compliant" value={content.summary.compliant} color="text-green-700" bg="bg-green-50" />
@@ -301,41 +336,55 @@ function ReportViewer({ report }: { report: Report }) {
                 {content.summary.inapplicable !== undefined && (
                   <StatCard label="N/A" value={content.summary.inapplicable} color="text-gray-500" bg="bg-gray-50" />
                 )}
-                {content.summary.compliance_rate !== undefined && (
-                  <StatCard label="Compliance Rate" value={`${content.summary.compliance_rate}%`} color="text-blue-700" bg="bg-blue-50" />
+                {content.summary.pending !== undefined && (
+                  <StatCard label="Pending" value={content.summary.pending} color="text-yellow-700" bg="bg-yellow-50" />
                 )}
               </div>
             </div>
           )}
 
-          {/* Non-compliant items derived from sections */}
+          {/* Non-compliant items grouped by section */}
           {content.sections && content.sections.length > 0 && (() => {
-            const nonCompliantItems = content.sections.flatMap(section =>
-              section.items
-                .filter(i => i.status === 'non_compliant')
-                .map(i => ({ ...i, sectionLabel: section.section }))
-            )
-            if (nonCompliantItems.length === 0) return null
+            const sectionsWithNC = content.sections!
+              .map(section => ({
+                ...section,
+                ncItems: section.items.filter(i => i.status === 'non_compliant'),
+              }))
+              .filter(s => s.ncItems.length > 0)
+
             return (
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Non-Compliant Items</h3>
-                <div className="space-y-2">
-                  {nonCompliantItems.map((item, i) => (
-                    <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3">
-                      <div className="flex items-start gap-2">
-                        <span className="font-mono text-xs text-red-600 font-bold mt-0.5 shrink-0">
-                          {item.sectionLabel}{item.item_number}
-                        </span>
-                        <div>
-                          <p className="text-sm text-gray-800">{item.description}</p>
-                          {item.comments && (
-                            <p className="text-xs text-gray-500 mt-1">Comment: {item.comments}</p>
-                          )}
+                <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">Non-Compliant Items by Section</h3>
+                {sectionsWithNC.length === 0 ? (
+                  <p className="text-sm text-green-700 font-medium">✓ No non-compliant items found.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {sectionsWithNC.map(section => (
+                      <div key={section.section}>
+                        <h4 className="text-xs font-semibold text-gray-700 uppercase bg-gray-100 px-3 py-1.5 rounded mb-2">
+                          Section {section.section}{SECTION_TITLES[section.section] ? ` — ${SECTION_TITLES[section.section]}` : ''}
+                        </h4>
+                        <div className="space-y-2 pl-1">
+                          {section.ncItems.map((item, i) => (
+                            <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3">
+                              <div className="flex items-start gap-2">
+                                <span className="font-mono text-xs text-red-600 font-bold mt-0.5 shrink-0">
+                                  {item.item_number}
+                                </span>
+                                <div>
+                                  <p className="text-sm text-gray-800">{item.description}</p>
+                                  {item.comments && (
+                                    <p className="text-xs text-gray-500 mt-1">Comment: {item.comments}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })()}

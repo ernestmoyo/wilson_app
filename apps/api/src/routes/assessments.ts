@@ -5,27 +5,35 @@ const router = Router();
 
 // Standard NZ HSW checklist template for site_inspection assessments
 const SITE_INSPECTION_TEMPLATE = [
-  { section: 'A', item_number: 'A1', description: 'Notification to Enforcement Officer', sort_order: 1 },
-  { section: 'B', item_number: 'B1', description: 'Security measures', sort_order: 2 },
-  { section: 'C', item_number: 'C1', description: 'Training records and competency', sort_order: 3 },
-  { section: 'C', item_number: 'C2', description: 'Observed experience', sort_order: 4 },
-  { section: 'D', item_number: 'D1', description: 'Hazardous area established', sort_order: 5 },
-  { section: 'D', item_number: 'D2', description: 'Complies with AS/NZS 60079.10.1', sort_order: 6 },
-  { section: 'E', item_number: 'E1', description: 'Segregation of substances', sort_order: 7 },
-  { section: 'F', item_number: 'F1', description: 'Appropriate signage at entrances', sort_order: 8 },
-  { section: 'F', item_number: 'F2', description: 'Inscription', sort_order: 9 },
-  { section: 'F', item_number: 'F3', description: 'Precautions', sort_order: 10 },
-  { section: 'F', item_number: 'F4', description: 'Material of construction', sort_order: 11 },
-  { section: 'F', item_number: 'F5', description: 'Emergency response', sort_order: 12 },
-  { section: 'G', item_number: 'G1', description: 'Fire extinguishers', sort_order: 13 },
-  { section: 'G', item_number: 'G2', description: 'Hydrant system', sort_order: 14 },
-  { section: 'G', item_number: 'G3', description: 'Emergency response plan', sort_order: 15 },
-  { section: 'G', item_number: 'G4', description: 'ERP reviewed by FENZ', sort_order: 16 },
-  { section: 'G', item_number: 'G5', description: 'Test and revision', sort_order: 17 },
-  { section: 'H', item_number: 'H1', description: 'Work room/storage type', sort_order: 18 },
-  { section: 'H', item_number: 'H2', description: 'Electrical certificate', sort_order: 19 },
-  { section: 'I', item_number: 'I1', description: 'Secondary containment', sort_order: 20 },
-  { section: 'J', item_number: 'J1', description: 'Scaled site plan', sort_order: 21 },
+  // Section A — Notification & Maximum Quantities
+  { section: 'A', item_number: 'A1', description: 'Notification to WorkSafe completed and maximum quantities not exceeded', legal_ref: 'HSW Regs 2017, reg 10.26(2), 10.34(1)(a)', sort_order: 1 },
+  // Section B — Site Security & Access Control
+  { section: 'B', item_number: 'B1', description: 'Hazardous substance location can be appropriately secured from unauthorised access', legal_ref: 'HSW Regs 2017, reg 10.34(1)(b)', sort_order: 2 },
+  { section: 'B', item_number: 'B2', description: 'Site plan is available for inspection showing physical position of all HSLs and hazardous areas', legal_ref: 'HSW Regs 2017, reg 10.26(4)(b)', sort_order: 3 },
+  // Section C — Worker Training & Instruction
+  { section: 'C', item_number: 'C1', description: 'Training records demonstrate workers have received information, training and instruction', legal_ref: 'HSW Regs 2017, reg 4.5, 10.34(1)(c)', sort_order: 4 },
+  { section: 'C', item_number: 'C2', description: 'Supervision arrangements are adequate for all workers handling hazardous substances', legal_ref: 'HSW Regs 2017, reg 4.6', sort_order: 5 },
+  // Section D — Hazardous Area
+  { section: 'D', item_number: 'D1', description: 'Hazardous area established (if required) and extent is documented', legal_ref: 'HSW Regs 2017, reg 10.6, 10.34(1)(d)', sort_order: 6 },
+  { section: 'D', item_number: 'D2', description: 'Electrical installations in hazardous areas comply with AS/NZS 60079.10.1:2009', legal_ref: 'HSW Regs 2017, reg 10.7', sort_order: 7 },
+  // Section E — Segregation of Incompatible Substances
+  { section: 'E', item_number: 'E1', description: 'Class 2/3/4 substances are not in contact with incompatible substances or materials', legal_ref: 'HSW Regs 2017, reg 10.5(1)(a), 10.34(1)(e)', sort_order: 8 },
+  { section: 'E', item_number: 'E2', description: 'Containers of incompatible substances are stored separately', legal_ref: 'HSW Regs 2017, reg 10.5(1)(b)', sort_order: 9 },
+  // Section F — Signage
+  { section: 'F', item_number: 'F1', description: 'Signage is in place at all entry points, is legible at 10 m, durable and weather-resistant', legal_ref: 'HSW Regs 2017, reg 2.5, 10.34(1)(f)', sort_order: 10 },
+  // Section G — Emergency Management
+  { section: 'G', item_number: 'G1', description: 'Fire extinguishers present in the number and type required by Schedule 4', legal_ref: 'HSW Regs 2017, reg 5.3–5.5, 10.34(1)(g)', sort_order: 11 },
+  { section: 'G', item_number: 'G2', description: 'Emergency Response Plan (ERP) prepared, covering all foreseeable emergencies', legal_ref: 'HSW Regs 2017, reg 5.7, 10.34(1)(g)', sort_order: 12 },
+  { section: 'G', item_number: 'G3', description: 'ERP has been tested and revised; test records available', legal_ref: 'HSW Regs 2017, reg 5.12', sort_order: 13 },
+  { section: 'G', item_number: 'G4', description: 'ERP and emergency equipment readily accessible to workers and emergency services', legal_ref: 'HSW Regs 2017, reg 5.9, 5.10', sort_order: 14 },
+  // Section H — Secondary Containment
+  { section: 'H', item_number: 'H1', description: 'Secondary containment system in place where required (Class 3/4 pooling substances above Schedule 9 threshold)', legal_ref: 'HSW Regs 2017, reg 10.30, 10.34(1)(h)', sort_order: 15 },
+  { section: 'H', item_number: 'H2', description: 'Secondary containment is impervious to contained substance and fire-resistant (above-ground tanks)', legal_ref: 'HSW Regs 2017, reg 17.102', sort_order: 16 },
+  // Section I — Site Plan
+  { section: 'I', item_number: 'I1', description: 'Site plan shows all HSLs, hazardous areas, and controlled zones relative to legal boundary', legal_ref: 'HSW Regs 2017, reg 10.26(4)(b)', sort_order: 17 },
+  // Section J — Documentation & Safety Data Sheets
+  { section: 'J', item_number: 'J1', description: 'Current SDS obtained from manufacturer/supplier for each hazardous substance', legal_ref: 'HSW Regs 2017, reg 2.11(1)', sort_order: 18 },
+  { section: 'J', item_number: 'J2', description: 'SDS (or condensed product safety card) is readily accessible to workers and emergency services at all times', legal_ref: 'HSW Regs 2017, reg 2.11(3)', sort_order: 19 },
 ];
 
 // GET / — list assessments with optional filters, join client and inspector names
@@ -114,13 +122,13 @@ router.post('/', (req: Request, res: Response) => {
     // Auto-populate checklist for site_inspection
     if (type === 'site_inspection') {
       const insertItem = db.prepare(`
-        INSERT INTO assessment_items (assessment_id, section, item_number, description, status, sort_order)
-        VALUES (?, ?, ?, ?, 'pending', ?)
+        INSERT INTO assessment_items (assessment_id, section, item_number, description, status, legal_ref, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       db.exec('BEGIN');
       try {
         for (const item of SITE_INSPECTION_TEMPLATE) {
-          insertItem.run(assessmentId, item.section, item.item_number, item.description, item.sort_order);
+          insertItem.run(assessmentId, item.section, item.item_number, item.description, 'pending', item.legal_ref, item.sort_order);
         }
         db.exec('COMMIT');
       } catch (e) {

@@ -51,6 +51,7 @@ export function initSchema() {
       description TEXT NOT NULL,
       status TEXT CHECK(status IN ('compliant', 'non_compliant', 'inapplicable', 'pending')),
       comments TEXT,
+      legal_ref TEXT,
       sort_order INTEGER DEFAULT 0
     );
 
@@ -107,6 +108,21 @@ export function initSchema() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Run schema migrations (add columns introduced in v1.1)
+  const migrations = [
+    "ALTER TABLE certificates ADD COLUMN is_conditional INTEGER DEFAULT 0",
+    "ALTER TABLE certificates ADD COLUMN condition_details TEXT",
+    "ALTER TABLE certificates ADD COLUMN condition_deadline TEXT",
+    "ALTER TABLE certificates ADD COLUMN applicant_notified INTEGER DEFAULT 0",
+    "ALTER TABLE certificates ADD COLUMN worksafe_notified INTEGER DEFAULT 0",
+    "ALTER TABLE certificates ADD COLUMN worksafe_registered INTEGER DEFAULT 0",
+    "ALTER TABLE clients ADD COLUMN companies_number TEXT",
+    "ALTER TABLE assessment_items ADD COLUMN legal_ref TEXT",
+  ];
+  for (const sql of migrations) {
+    try { db.exec(sql); } catch (_) { /* column already exists */ }
+  }
 
   // Seed default user (Bryan Wilson)
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get('bryan.wilson@wilsoncompliance.co.nz');

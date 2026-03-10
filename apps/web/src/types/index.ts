@@ -18,6 +18,7 @@ export interface Client {
   email?: string
   website?: string
   nzbn?: string
+  companies_number?: string
   industry?: string
   manager_name?: string
   manager_phone?: string
@@ -52,6 +53,7 @@ export interface AssessmentItem {
   status: 'compliant' | 'non_compliant' | 'inapplicable' | 'pending'
   comments?: string
   sort_order: number
+  legal_ref?: string
 }
 
 export interface Certificate {
@@ -66,6 +68,16 @@ export interface Certificate {
   issue_date?: string
   expiry_date?: string
   refusal_reasons?: string
+  applicant_notified?: boolean
+  worksafe_notified?: boolean
+  worksafe_registered?: boolean
+  is_conditional?: boolean
+  condition_details?: string
+  condition_deadline?: string
+  certifier_name?: string
+  trading_name?: string
+  nzbn?: string
+  companies_number?: string
   created_at: string
   client_name?: string
 }

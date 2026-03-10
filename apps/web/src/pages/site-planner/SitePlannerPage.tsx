@@ -46,6 +46,7 @@ export default function SitePlannerPage() {
   const [history, setHistory] = useState<PlanElement[][]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const isUndoRedo = useRef(false)
+  const [savedOnce, setSavedOnce] = useState(false)
 
   useEffect(() => {
     api.get<Client[]>('/clients').then(setClients)
@@ -298,6 +299,7 @@ export default function SitePlannerPage() {
         })
         setPlanId(created.id)
       }
+      setSavedOnce(true)
       setToast({ message: 'Site plan saved!', type: 'success' })
     } catch (e) {
       setToast({ message: e instanceof Error ? e.message : 'Failed to save', type: 'error' })
@@ -305,6 +307,19 @@ export default function SitePlannerPage() {
       setSaving(false)
     }
   }
+
+  const LEGAL_REQUIREMENTS = [
+    { type: 'storage_area',    label: 'At least one Storage Area (HSL) placed on plan',          ref: 'reg 10.26(4)(b)(i)',  required: true },
+    { type: 'hazmat_zone',     label: 'At least one Hazmat Zone (Hazardous Area) placed on plan', ref: 'reg 10.26(4)(b)(ii)', required: true },
+    { type: 'exit',            label: 'At least one Exit marked',                                 ref: 'reg 5.7',             required: false },
+    { type: 'assembly_point',  label: 'At least one Assembly Point marked',                       ref: 'reg 5.7(3)(a)',       required: false },
+    { type: 'extinguisher',    label: 'At least one Extinguisher location marked',                ref: 'reg 5.3',             required: false },
+    { type: 'sds_location',    label: 'At least one SDS Location marked',                         ref: 'reg 2.11(3)',         required: false },
+  ];
+
+  const unmetRequired = LEGAL_REQUIREMENTS.filter(req => req.required && !elements.some(e => e.type === req.type));
+  const unmetAll = LEGAL_REQUIREMENTS.filter(req => !elements.some(e => e.type === req.type));
+  const legalSaveBlocked = unmetRequired.length > 0;
 
   return (
     <div className="space-y-4">
@@ -351,8 +366,9 @@ export default function SitePlannerPage() {
           )}
           <button
             onClick={handleSave}
-            disabled={saving || !selectedClient}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            disabled={saving || !selectedClient || legalSaveBlocked}
+            title={legalSaveBlocked ? 'Plan does not meet minimum legal requirements (reg 10.26)' : undefined}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={15} />
             {saving ? 'Saving...' : 'Save Plan'}
@@ -439,6 +455,36 @@ export default function SitePlannerPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Site Plan Legal Compliance Checklist */}
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Site Plan Legal Compliance Checklist</p>
+        <ul className="space-y-2">
+          {LEGAL_REQUIREMENTS.map(req => {
+            const met = elements.some(e => e.type === req.type);
+            return (
+              <li key={req.type} className="flex items-start gap-2 text-sm">
+                {met ? (
+                  <span className="font-bold text-green-600 shrink-0">✓</span>
+                ) : req.required ? (
+                  <span className="font-bold text-red-600 shrink-0">✗</span>
+                ) : (
+                  <span className="font-bold text-amber-600 shrink-0">✗</span>
+                )}
+                <span className={met ? 'text-green-700' : req.required ? 'text-red-700' : 'text-amber-700'}>
+                  {req.label}
+                </span>
+                <span className="text-gray-400 text-xs ml-1 shrink-0">{req.ref}</span>
+              </li>
+            );
+          })}
+        </ul>
+        {savedOnce && unmetAll.length > 0 && (
+          <div className="mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+            ⚠ This site plan may not fully comply with reg 10.26(4)(b). Missing: {unmetAll.map(r => r.label).join(', ')}
+          </div>
+        )}
       </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

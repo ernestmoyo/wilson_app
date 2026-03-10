@@ -116,12 +116,18 @@ router.put('/:id', (req: Request, res: Response) => {
     const cert = db.prepare('SELECT * FROM certificates WHERE id = ?').get(req.params.id) as any;
     if (!cert) return res.status(404).json({ error: 'Certificate not found' });
 
-    const { status, issue_date, expiry_date, refusal_reasons, substance_class, max_quantity } = req.body;
+    const {
+      status, issue_date, expiry_date, refusal_reasons, substance_class, max_quantity,
+      is_conditional, condition_details, condition_deadline,
+      applicant_notified, worksafe_notified, worksafe_registered,
+    } = req.body;
 
     db.prepare(`
       UPDATE certificates SET
         status = ?, issue_date = ?, expiry_date = ?, refusal_reasons = ?,
-        substance_class = ?, max_quantity = ?
+        substance_class = ?, max_quantity = ?,
+        is_conditional = ?, condition_details = ?, condition_deadline = ?,
+        applicant_notified = ?, worksafe_notified = ?, worksafe_registered = ?
       WHERE id = ?
     `).run(
       status ?? cert.status,
@@ -130,6 +136,12 @@ router.put('/:id', (req: Request, res: Response) => {
       refusal_reasons !== undefined ? refusal_reasons : cert.refusal_reasons,
       substance_class !== undefined ? substance_class : cert.substance_class,
       max_quantity !== undefined ? max_quantity : cert.max_quantity,
+      is_conditional !== undefined ? is_conditional : cert.is_conditional,
+      condition_details !== undefined ? condition_details : cert.condition_details,
+      condition_deadline !== undefined ? condition_deadline : cert.condition_deadline,
+      applicant_notified !== undefined ? applicant_notified : cert.applicant_notified,
+      worksafe_notified !== undefined ? worksafe_notified : cert.worksafe_notified,
+      worksafe_registered !== undefined ? worksafe_registered : cert.worksafe_registered,
       req.params.id
     );
 

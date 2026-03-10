@@ -6,6 +6,7 @@ import Modal from '@/components/Modal'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 import Toast from '@/components/Toast'
+import { HSL_THRESHOLDS } from '@/lib/thresholds'
 
 const HAZARD_CLASSES = [
   '2.1.1', '2.1.2', '3.1A', '3.1B', '3.1C', '3.1D',
@@ -176,6 +177,11 @@ export default function InventoryPage() {
     }
   }
 
+  const totalsByClass = inventory.reduce<Record<string, number>>((acc, item) => {
+    acc[item.hazard_class] = (acc[item.hazard_class] || 0) + item.quantity;
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-6">
       {/* Client selector */}
@@ -210,18 +216,63 @@ export default function InventoryPage() {
         <ErrorMessage message={error} onRetry={() => fetchInventory(selectedClient)} />
       ) : (
         <>
-          {/* Summary by hazard class */}
-          {summary.length > 0 && (
+          {/* Summary by Hazard Class */}
+          {Object.keys(totalsByClass).length > 0 && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-sm font-semibold text-gray-900 mb-4">Summary by Hazard Class</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {summary.map(s => (
-                  <div key={s.hazard_class} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                    <p className="text-xs font-bold text-orange-700 font-mono">{s.hazard_class}</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">{s.total_quantity}</p>
-                    <p className="text-xs text-gray-500">{s.unit} · {s.item_count} item{s.item_count !== 1 ? 's' : ''}</p>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Hazard Class</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Qty</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Unit</th>
+                      <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">HSL Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {Object.entries(totalsByClass).map(([hazardClass, total]) => {
+                      const threshold = HSL_THRESHOLDS[hazardClass];
+                      const unitLabel = inventory.find(i => i.hazard_class === hazardClass)?.unit ?? '';
+                      let badge: React.ReactNode;
+                      if (threshold) {
+                        if (total >= threshold.value) {
+                          badge = (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-300">
+                              ⚠ HSL threshold exceeded (reg 10.26) — Location Compliance Certificate required (reg 10.34/10.36)
+                            </span>
+                          );
+                        } else if (total >= threshold.value * 0.8) {
+                          badge = (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                              Approaching HSL threshold (reg 10.26) — certificate will be required above {threshold.value} {threshold.unit}
+                            </span>
+                          );
+                        } else {
+                          badge = (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                              Compliant
+                            </span>
+                          );
+                        }
+                      } else {
+                        badge = (
+                          <span className="text-xs text-gray-400">No HSL threshold defined</span>
+                        );
+                      }
+                      return (
+                        <tr key={hazardClass} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 bg-orange-100 text-orange-800 text-xs font-mono rounded">{hazardClass}</span>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900">{total}</td>
+                          <td className="px-4 py-3 text-gray-500">{unitLabel}</td>
+                          <td className="px-4 py-3">{badge}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

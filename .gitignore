@@ -43,3 +43,5 @@ Thumbs.db
 # Generated documents
 Wilson_Suite_SOP.docx
 generate-sop.mjs
+*.sqlite-shm
+*.sqlite-wal

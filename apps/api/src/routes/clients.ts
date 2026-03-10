@@ -11,14 +11,18 @@ router.get('/', (req: Request, res: Response) => {
     if (search) {
       const like = `%${search}%`;
       clients = db.prepare(`
-        SELECT c.*, (SELECT COUNT(*) FROM assessments a WHERE a.client_id = c.id) AS assessment_count
+        SELECT c.*,
+          (SELECT COUNT(*) FROM assessments a WHERE a.client_id = c.id) AS assessment_count,
+          (SELECT COUNT(*) FROM certificates cert WHERE cert.client_id = c.id) AS certificate_count
         FROM clients c
         WHERE c.legal_name LIKE ? OR c.trading_name LIKE ? OR c.site_address LIKE ?
         ORDER BY c.legal_name ASC
       `).all(like, like, like);
     } else {
       clients = db.prepare(`
-        SELECT c.*, (SELECT COUNT(*) FROM assessments a WHERE a.client_id = c.id) AS assessment_count
+        SELECT c.*,
+          (SELECT COUNT(*) FROM assessments a WHERE a.client_id = c.id) AS assessment_count,
+          (SELECT COUNT(*) FROM certificates cert WHERE cert.client_id = c.id) AS certificate_count
         FROM clients c
         ORDER BY c.legal_name ASC
       `).all();

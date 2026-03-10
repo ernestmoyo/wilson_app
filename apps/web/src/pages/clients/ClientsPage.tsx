@@ -19,6 +19,7 @@ interface ClientFormData {
   manager_email: string
   industry: string
   nzbn: string
+  companies_number: string
 }
 
 const defaultForm: ClientFormData = {
@@ -33,6 +34,7 @@ const defaultForm: ClientFormData = {
   manager_email: '',
   industry: '',
   nzbn: '',
+  companies_number: '',
 }
 
 export default function ClientsPage() {
@@ -258,6 +260,17 @@ export default function ClientsPage() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Companies Number</label>
+            <input
+              type="text"
+              value={form.companies_number}
+              onChange={e => handleChange('companies_number', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">Companies Office Number (reg 6.26(2)(e)(ii))</p>
           </div>
 
           <div className="border-t border-gray-100 pt-4">

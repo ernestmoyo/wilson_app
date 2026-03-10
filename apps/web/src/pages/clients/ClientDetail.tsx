@@ -155,6 +155,7 @@ export default function ClientDetail() {
                   <Field label="Email" value={editForm.email || ''} onChange={v => setEditForm(f => ({ ...f, email: v }))} />
                   <Field label="Industry" value={editForm.industry || ''} onChange={v => setEditForm(f => ({ ...f, industry: v }))} />
                   <Field label="NZBN" value={editForm.nzbn || ''} onChange={v => setEditForm(f => ({ ...f, nzbn: v }))} />
+                  <Field label="Companies Number" value={editForm.companies_number || ''} onChange={v => setEditForm(f => ({ ...f, companies_number: v }))} />
                   <Field label="Manager Name" value={editForm.manager_name || ''} onChange={v => setEditForm(f => ({ ...f, manager_name: v }))} />
                   <Field label="Manager Phone" value={editForm.manager_phone || ''} onChange={v => setEditForm(f => ({ ...f, manager_phone: v }))} />
                   <Field label="Manager Email" value={editForm.manager_email || ''} onChange={v => setEditForm(f => ({ ...f, manager_email: v }))} />
@@ -169,6 +170,7 @@ export default function ClientDetail() {
                   <InfoRow label="Email" value={client.email} />
                   <InfoRow label="Industry" value={client.industry} />
                   <InfoRow label="NZBN" value={client.nzbn} />
+                  <InfoRow label="Companies Number" value={client.companies_number} />
                   <InfoRow label="Manager Name" value={client.manager_name} />
                   <InfoRow label="Manager Phone" value={client.manager_phone} />
                   <InfoRow label="Manager Email" value={client.manager_email} />

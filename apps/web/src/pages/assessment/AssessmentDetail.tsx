@@ -263,7 +263,17 @@ export default function AssessmentDetail() {
                         {sectionItems.sort((a, b) => a.sort_order - b.sort_order).map(item => (
                           <tr key={item.id} className={`${item._dirty ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}>
                             <td className="px-6 py-3 text-sm font-mono text-gray-600">{item.item_number}</td>
-                            <td className="px-6 py-3 text-sm text-gray-700">{item.description}</td>
+                            <td className="px-6 py-3 text-sm text-gray-700">
+                              {item.description}
+                              {item.legal_ref && (
+                                <span className="relative group ml-2 inline-flex">
+                                  <button className="text-blue-400 hover:text-blue-600 text-xs font-bold w-4 h-4 rounded-full border border-current flex items-center justify-center" type="button">ⓘ</button>
+                                  <span className="hidden group-hover:block absolute left-6 top-0 z-50 w-64 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl">
+                                    {item.legal_ref}
+                                  </span>
+                                </span>
+                              )}
+                            </td>
                             <td className="px-6 py-3">
                               <div className="flex gap-1">
                                 {STATUS_BTN.map(btn => (

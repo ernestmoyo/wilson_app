@@ -90,6 +90,15 @@ export default function Layout() {
             </div>
           </div>
         </div>
+
+        {/* Legal citation footer */}
+        <div className="px-4 py-3 border-t border-slate-700 mt-auto">
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Operates under:<br/>
+            <span className="text-slate-400">HSW (Hazardous Substances) Regulations 2017 (LI 2017/131)</span><br/>
+            <span className="text-slate-500">WorkSafe New Zealand — v. 20 Oct 2025</span>
+          </p>
+        </div>
       </aside>
 
       {/* Main area */}
