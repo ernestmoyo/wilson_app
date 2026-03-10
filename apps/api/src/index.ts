@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
 import { initSchema } from './db/schema';
 
 import usersRouter from './routes/users';
@@ -11,10 +12,13 @@ import sitePlansRouter from './routes/site-plans';
 import reportsRouter from './routes/reports';
 
 const app = express();
-const PORT = 8000;
+const PORT = Number(process.env.PORT) || 8000;
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({
+  origin: IS_PROD ? true : 'http://localhost:3000',
+}));
 app.use(express.json());
 
 // Initialise DB schema and seed data
@@ -34,7 +38,16 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/site-plans', sitePlansRouter);
 app.use('/api/reports', reportsRouter);
 
-// 404 handler
+// Serve built React app in production (single Railway service)
+if (IS_PROD) {
+  const webDist = path.join(__dirname, '../../apps/web/dist');
+  app.use(express.static(webDist));
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(webDist, 'index.html'));
+  });
+}
+
+// 404 handler (dev only — prod is caught by React Router above)
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
