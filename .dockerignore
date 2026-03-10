@@ -1,0 +1,13 @@
+node_modules
+apps/*/node_modules
+apps/*/dist
+dist
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.log
+.git
+.gitignore
+apps/api/data
