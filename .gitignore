@@ -1,0 +1,45 @@
+# Private client documents — never commit
+*.pdf
+*.docx
+*.doc
+*.xlsx
+*.xls
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+
+# Database files (contain real client data)
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Generated documents
+Wilson_Suite_SOP.docx
+generate-sop.mjs
