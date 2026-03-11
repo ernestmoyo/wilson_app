@@ -5,7 +5,7 @@ import { api } from '@/lib/api'
 import { Client, Assessment } from '@/types'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
-type AssessmentType = 'pre_inspection' | 'site_inspection' | 'validation'
+type AssessmentType = 'pre_inspection' | 'site_inspection' | 'validation' | 'certified_handler'
 
 interface FormData {
   client_id: string
@@ -57,7 +57,8 @@ export default function NewAssessment() {
 
   const typeOptions: { value: AssessmentType; label: string; desc: string }[] = [
     { value: 'pre_inspection', label: 'Pre-Inspection', desc: 'Initial document review before site visit' },
-    { value: 'site_inspection', label: 'Site Inspection', desc: 'On-site hazardous substances inspection' },
+    { value: 'site_inspection', label: 'Site Inspection', desc: 'On-site hazardous substances inspection (46-item clause-mapped checklist)' },
+    { value: 'certified_handler', label: 'Certified Handler', desc: 'Handler competency assessment — identity, knowledge & practical tests (13-item checklist)' },
     { value: 'validation', label: 'Validation', desc: 'Compliance validation and certification check' },
   ]
 

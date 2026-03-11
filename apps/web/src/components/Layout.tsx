@@ -1,19 +1,23 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Building2, ClipboardCheck, Award, Package, Map, FileText } from 'lucide-react'
+import { LayoutDashboard, Building2, ClipboardCheck, Award, Package, Map, FileText, MessageSquarePlus, Camera, Shield } from 'lucide-react'
 import Avatar from './Avatar'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/enquiries', icon: MessageSquarePlus, label: 'Enquiries' },
   { to: '/clients', icon: Building2, label: 'Clients' },
   { to: '/assessment', icon: ClipboardCheck, label: 'Assessment' },
   { to: '/certificates', icon: Award, label: 'Certificates' },
   { to: '/inventory', icon: Package, label: 'Inventory' },
+  { to: '/evidence', icon: Camera, label: 'Evidence' },
   { to: '/site-planner', icon: Map, label: 'Site Planner' },
   { to: '/reports', icon: FileText, label: 'Reports' },
+  { to: '/audit-log', icon: Shield, label: 'Audit Log' },
 ]
 
 function getPageTitle(pathname: string): string {
   if (pathname === '/') return 'Dashboard'
+  if (pathname.startsWith('/enquiries')) return 'Enquiries'
   if (pathname.startsWith('/clients/')) return 'Client Details'
   if (pathname.startsWith('/clients')) return 'Clients'
   if (pathname === '/assessment/new') return 'New Assessment'
@@ -22,8 +26,10 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/certificates/')) return 'Certificate Detail'
   if (pathname.startsWith('/certificates')) return 'Certificates'
   if (pathname.startsWith('/inventory')) return 'Inventory'
+  if (pathname.startsWith('/evidence')) return 'Evidence'
   if (pathname.startsWith('/site-planner')) return 'Site Planner'
   if (pathname.startsWith('/reports')) return 'Reports'
+  if (pathname.startsWith('/audit-log')) return 'Audit Log'
   return 'Wilson Suite'
 }
 
