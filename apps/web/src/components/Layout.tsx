@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Building2, ClipboardCheck, Award, Package, Map, FileText, MessageSquarePlus, Camera, Shield } from 'lucide-react'
+import { LayoutDashboard, Building2, ClipboardCheck, Award, Package, Map, FileText, MessageSquarePlus, Camera, Shield, GraduationCap } from 'lucide-react'
 import Avatar from './Avatar'
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/certificates', icon: Award, label: 'Certificates' },
   { to: '/inventory', icon: Package, label: 'Inventory' },
   { to: '/evidence', icon: Camera, label: 'Evidence' },
+  { to: '/training', icon: GraduationCap, label: 'Training' },
   { to: '/site-planner', icon: Map, label: 'Site Planner' },
   { to: '/reports', icon: FileText, label: 'Reports' },
   { to: '/audit-log', icon: Shield, label: 'Audit Log' },
@@ -27,6 +28,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/certificates')) return 'Certificates'
   if (pathname.startsWith('/inventory')) return 'Inventory'
   if (pathname.startsWith('/evidence')) return 'Evidence'
+  if (pathname.startsWith('/training')) return 'Training Records'
   if (pathname.startsWith('/site-planner')) return 'Site Planner'
   if (pathname.startsWith('/reports')) return 'Reports'
   if (pathname.startsWith('/audit-log')) return 'Audit Log'

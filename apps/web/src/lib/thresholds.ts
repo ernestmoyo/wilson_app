@@ -16,4 +16,10 @@ export const HSL_THRESHOLDS: Record<string, Threshold> = {
   '4.1.1B':    { value: 100,  unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
   '4.2A':      { value: 1,    unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
   '6.1A':      { value: 1,    unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '6.1B':      { value: 10,   unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '6.1C':      { value: 100,  unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '5.1.1':     { value: 100,  unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '5.2':       { value: 10,   unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '4.3A':      { value: 10,   unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
+  '8.2A':      { value: 100,  unit: 'kg', source: 'HSW Regs 2017, Schedule 9 Table 4' },
 };

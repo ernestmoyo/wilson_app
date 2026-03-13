@@ -13,6 +13,9 @@ import sitePlansRouter from './routes/site-plans';
 import reportsRouter from './routes/reports';
 import evidenceRouter from './routes/evidence';
 import auditLogRouter from './routes/audit-log';
+import storageAreasRouter from './routes/storage-areas';
+import trainingRouter from './routes/training';
+import handlerAssessmentsRouter from './routes/handler-assessments';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
@@ -43,6 +46,9 @@ app.use('/api/site-plans', sitePlansRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/evidence', evidenceRouter);
 app.use('/api/audit-log', auditLogRouter);
+app.use('/api/storage-areas', storageAreasRouter);
+app.use('/api/training', trainingRouter);
+app.use('/api/handler-assessments', handlerAssessmentsRouter);
 
 // Serve uploaded evidence files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

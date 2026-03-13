@@ -56,7 +56,10 @@ router.post('/', (req: Request, res: Response) => {
     const {
       client_id, substance_name, hazard_class, quantity, unit,
       container_size, container_count, storage_location,
-      sds_available, sds_document, notes
+      sds_available, sds_document, notes,
+      un_number, hazard_classifications, storage_requirements,
+      incompatible_items, sds_expiry_date, sku, substance_state,
+      max_quantity, storage_area_id, hsno_approval
     } = req.body;
 
     if (!client_id || !substance_name || !hazard_class || quantity === undefined) {
@@ -67,20 +70,16 @@ router.post('/', (req: Request, res: Response) => {
     if (!client) return res.status(400).json({ error: 'Client not found' });
 
     const result = db.prepare(`
-      INSERT INTO inventory (client_id, substance_name, hazard_class, quantity, unit, container_size, container_count, storage_location, sds_available, sds_document, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO inventory (client_id, substance_name, hazard_class, quantity, unit, container_size, container_count, storage_location, sds_available, sds_document, notes, un_number, hazard_classifications, storage_requirements, incompatible_items, sds_expiry_date, sku, substance_state, max_quantity, storage_area_id, hsno_approval)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      client_id,
-      substance_name,
-      hazard_class,
-      quantity,
-      unit || 'litres',
-      container_size ?? null,
-      container_count ?? null,
-      storage_location || null,
-      sds_available ? 1 : 0,
-      sds_document || null,
-      notes || null
+      client_id, substance_name, hazard_class, quantity,
+      unit || 'litres', container_size ?? null, container_count ?? null,
+      storage_location || null, sds_available ? 1 : 0, sds_document || null,
+      notes || null, un_number || null, hazard_classifications || null,
+      storage_requirements || null, incompatible_items || null,
+      sds_expiry_date || null, sku || null, substance_state || null,
+      max_quantity ?? null, storage_area_id ?? null, hsno_approval || null
     );
 
     const item = db.prepare('SELECT * FROM inventory WHERE id = ?').get(result.lastInsertRowid);
@@ -99,7 +98,10 @@ router.put('/:id', (req: Request, res: Response) => {
     const {
       substance_name, hazard_class, quantity, unit,
       container_size, container_count, storage_location,
-      sds_available, sds_document, notes
+      sds_available, sds_document, notes,
+      un_number, hazard_classifications, storage_requirements,
+      incompatible_items, sds_expiry_date, sku, substance_state,
+      max_quantity, storage_area_id, hsno_approval
     } = req.body;
 
     db.prepare(`
@@ -107,7 +109,10 @@ router.put('/:id', (req: Request, res: Response) => {
         substance_name = ?, hazard_class = ?, quantity = ?, unit = ?,
         container_size = ?, container_count = ?, storage_location = ?,
         sds_available = ?, sds_document = ?, notes = ?,
-        updated_at = datetime('now')
+        un_number = ?, hazard_classifications = ?, storage_requirements = ?,
+        incompatible_items = ?, sds_expiry_date = ?, sku = ?,
+        substance_state = ?, max_quantity = ?, storage_area_id = ?,
+        hsno_approval = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(
       substance_name ?? item.substance_name,
@@ -120,6 +125,16 @@ router.put('/:id', (req: Request, res: Response) => {
       sds_available !== undefined ? (sds_available ? 1 : 0) : item.sds_available,
       sds_document !== undefined ? sds_document : item.sds_document,
       notes !== undefined ? notes : item.notes,
+      un_number !== undefined ? un_number : item.un_number,
+      hazard_classifications !== undefined ? hazard_classifications : item.hazard_classifications,
+      storage_requirements !== undefined ? storage_requirements : item.storage_requirements,
+      incompatible_items !== undefined ? incompatible_items : item.incompatible_items,
+      sds_expiry_date !== undefined ? sds_expiry_date : item.sds_expiry_date,
+      sku !== undefined ? sku : item.sku,
+      substance_state !== undefined ? substance_state : item.substance_state,
+      max_quantity !== undefined ? max_quantity : item.max_quantity,
+      storage_area_id !== undefined ? storage_area_id : item.storage_area_id,
+      hsno_approval !== undefined ? hsno_approval : item.hsno_approval,
       req.params.id
     );
 

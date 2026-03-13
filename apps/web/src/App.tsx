@@ -14,6 +14,7 @@ import EvidencePage from '@/pages/evidence/EvidencePage'
 import SitePlannerPage from '@/pages/site-planner/SitePlannerPage'
 import ReportsPage from '@/pages/reports/ReportsPage'
 import AuditLogPage from '@/pages/audit-log/AuditLogPage'
+import TrainingPage from '@/pages/training/TrainingPage'
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="certificates/:id" element={<CertificateDetail />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="evidence" element={<EvidencePage />} />
+          <Route path="training" element={<TrainingPage />} />
           <Route path="site-planner" element={<SitePlannerPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="audit-log" element={<AuditLogPage />} />

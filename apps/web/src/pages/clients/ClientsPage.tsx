@@ -7,6 +7,29 @@ import Modal from '@/components/Modal'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 
+const INDUSTRIES: { value: string; label: string }[] = [
+  { value: 'agriculture_farming', label: 'Agriculture & Farming' },
+  { value: 'chemical_manufacturing', label: 'Chemical Manufacturing' },
+  { value: 'construction', label: 'Construction' },
+  { value: 'education_research', label: 'Education & Research' },
+  { value: 'food_beverage', label: 'Food & Beverage Manufacturing' },
+  { value: 'forestry', label: 'Forestry' },
+  { value: 'healthcare', label: 'Healthcare & Hospitals' },
+  { value: 'horticulture', label: 'Horticulture & Viticulture' },
+  { value: 'industrial_manufacturing', label: 'Industrial Manufacturing' },
+  { value: 'laboratory', label: 'Laboratories' },
+  { value: 'mining_quarrying', label: 'Mining & Quarrying' },
+  { value: 'oil_gas', label: 'Oil & Gas' },
+  { value: 'paint_coatings', label: 'Paint & Coatings' },
+  { value: 'pest_control', label: 'Pest Control' },
+  { value: 'retail', label: 'Retail (Hardware / Farm Supply)' },
+  { value: 'transport_logistics', label: 'Transport & Logistics' },
+  { value: 'veterinary', label: 'Veterinary Services' },
+  { value: 'waste_management', label: 'Waste Management' },
+  { value: 'water_treatment', label: 'Water Treatment' },
+  { value: 'other', label: 'Other' },
+]
+
 interface ClientFormData {
   legal_name: string
   trading_name: string
@@ -269,14 +292,16 @@ export default function ClientsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label style={labelStyle}>Industry</label>
-              <input
-                type="text"
+              <select
                 value={form.industry}
                 onChange={e => handleChange('industry', e.target.value)}
                 style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-              />
+              >
+                <option value="">Select industry...</option>
+                {INDUSTRIES.map(ind => (
+                  <option key={ind.value} value={ind.value}>{ind.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={labelStyle}>NZBN</label>

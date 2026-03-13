@@ -1,17 +1,40 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Client, InventoryItem } from '@/types'
+import { Client, InventoryItem, StorageArea } from '@/types'
 import Modal from '@/components/Modal'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 import Toast from '@/components/Toast'
 import { HSL_THRESHOLDS } from '@/lib/thresholds'
 
-const HAZARD_CLASSES = [
-  '2.1.1', '2.1.2', '3.1A', '3.1B', '3.1C', '3.1D',
-  '6.3A', '6.4A', '6.4B', '9.1A', '9.3C',
+const HAZARD_CLASSES_WITH_LABELS: { value: string; label: string }[] = [
+  { value: '2.1.1', label: '2.1.1 — Flammable Gas Cat.1' },
+  { value: '2.1.2', label: '2.1.2 — Flammable Gas Cat.2' },
+  { value: '3.1A', label: '3.1A — Flammable Liquid Cat.1' },
+  { value: '3.1B', label: '3.1B — Flammable Liquid Cat.2' },
+  { value: '3.1C', label: '3.1C — Flammable Liquid Cat.3' },
+  { value: '3.1D', label: '3.1D — Flammable Liquid Cat.4' },
+  { value: '4.1.1', label: '4.1.1 — Flammable Solid' },
+  { value: '4.2A', label: '4.2A — Spontaneously Combustible' },
+  { value: '4.3A', label: '4.3A — Dangerous When Wet' },
+  { value: '5.1.1', label: '5.1.1 — Oxidising Substance' },
+  { value: '5.2', label: '5.2 — Organic Peroxide' },
+  { value: '6.1A', label: '6.1A — Acutely Toxic Cat.1' },
+  { value: '6.1B', label: '6.1B — Acutely Toxic Cat.2' },
+  { value: '6.1C', label: '6.1C — Acutely Toxic Cat.3' },
+  { value: '6.3A', label: '6.3A — Skin Irritant' },
+  { value: '6.4A', label: '6.4A — Eye Irritant' },
+  { value: '6.4B', label: '6.4B — Eye Irritant Cat.2' },
+  { value: '6.5A', label: '6.5A — Sensitiser' },
+  { value: '8.1A', label: '8.1A — Metallic Corrosive' },
+  { value: '8.2A', label: '8.2A — Skin Corrosive Cat.1' },
+  { value: '8.3A', label: '8.3A — Eye Corrosive' },
+  { value: '9.1A', label: '9.1A — Aquatic Ecotoxic' },
+  { value: '9.3C', label: '9.3C — Terrestrial Vertebrate Ecotoxic' },
 ]
+
+const HAZARD_CLASSES = HAZARD_CLASSES_WITH_LABELS.map(h => h.value)
 
 interface SummaryItem {
   hazard_class: string
@@ -19,6 +42,14 @@ interface SummaryItem {
   unit: string
   item_count: number
 }
+
+const SUBSTANCE_STATES = [
+  { value: '', label: 'Select state...' },
+  { value: 'solid', label: 'Solid' },
+  { value: 'liquid', label: 'Liquid' },
+  { value: 'gas', label: 'Gas' },
+  { value: 'aerosol', label: 'Aerosol' },
+]
 
 interface AddForm {
   substance_name: string
@@ -30,6 +61,12 @@ interface AddForm {
   storage_location: string
   sds_available: boolean
   notes: string
+  un_number: string
+  hsno_approval: string
+  substance_state: string
+  sds_expiry_date: string
+  max_quantity: string
+  storage_area_id: string
 }
 
 const defaultForm: AddForm = {
@@ -42,6 +79,12 @@ const defaultForm: AddForm = {
   storage_location: '',
   sds_available: false,
   notes: '',
+  un_number: '',
+  hsno_approval: '',
+  substance_state: '',
+  sds_expiry_date: '',
+  max_quantity: '',
+  storage_area_id: '',
 }
 
 function getHazardBadgeStyle(hazardClass: string): React.CSSProperties {
@@ -56,6 +99,20 @@ function getHazardBadgeStyle(hazardClass: string): React.CSSProperties {
   } else {
     return { background: '#F8FAFC', color: '#64748B', borderLeft: '3px solid #CBD5E1' }
   }
+}
+
+function getSdsExpiryStyle(expiryDate?: string): { background: string; color: string; label: string } {
+  if (!expiryDate) return { background: '#F1F5F9', color: '#64748B', label: '—' }
+  const now = new Date()
+  const expiry = new Date(expiryDate)
+  const sixMonths = new Date()
+  sixMonths.setMonth(sixMonths.getMonth() + 6)
+  if (expiry < now) {
+    return { background: '#FEE2E2', color: '#DC2626', label: expiryDate }
+  } else if (expiry <= sixMonths) {
+    return { background: '#FEF3C7', color: '#92400E', label: expiryDate }
+  }
+  return { background: '#DCFCE7', color: '#16A34A', label: expiryDate }
 }
 
 export default function InventoryPage() {
@@ -74,10 +131,21 @@ export default function InventoryPage() {
   const [editFormError, setEditFormError] = useState('')
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [storageAreas, setStorageAreas] = useState<StorageArea[]>([])
 
   useEffect(() => {
     api.get<Client[]>('/clients').then(setClients)
   }, [])
+
+  useEffect(() => {
+    if (selectedClient) {
+      api.get<StorageArea[]>(`/storage-areas?client_id=${selectedClient}`)
+        .then(setStorageAreas)
+        .catch(() => setStorageAreas([]))
+    } else {
+      setStorageAreas([])
+    }
+  }, [selectedClient])
 
   const fetchInventory = useCallback(async (clientId: string) => {
     if (!clientId) return
@@ -114,6 +182,12 @@ export default function InventoryPage() {
         storage_location: editItem.storage_location || '',
         sds_available: Boolean(editItem.sds_available),
         notes: editItem.notes || '',
+        un_number: editItem.un_number || '',
+        hsno_approval: editItem.hsno_approval || editItem.hazard_classifications || '',
+        substance_state: editItem.substance_state || '',
+        sds_expiry_date: editItem.sds_expiry_date || '',
+        max_quantity: editItem.max_quantity != null ? String(editItem.max_quantity) : '',
+        storage_area_id: editItem.storage_area_id != null ? String(editItem.storage_area_id) : '',
       })
       setEditFormError('')
     }
@@ -139,6 +213,12 @@ export default function InventoryPage() {
         storage_location: editForm.storage_location,
         sds_available: editForm.sds_available ? 1 : 0,
         notes: editForm.notes,
+        un_number: editForm.un_number || undefined,
+        hsno_approval: editForm.hsno_approval || undefined,
+        substance_state: editForm.substance_state || undefined,
+        sds_expiry_date: editForm.sds_expiry_date || undefined,
+        max_quantity: editForm.max_quantity ? Number(editForm.max_quantity) : undefined,
+        storage_area_id: editForm.storage_area_id ? Number(editForm.storage_area_id) : undefined,
       })
       setEditItem(null)
       fetchInventory(selectedClient)
@@ -180,6 +260,12 @@ export default function InventoryPage() {
         storage_location: form.storage_location,
         sds_available: form.sds_available ? 1 : 0,
         notes: form.notes,
+        un_number: form.un_number || undefined,
+        hsno_approval: form.hsno_approval || undefined,
+        substance_state: form.substance_state || undefined,
+        sds_expiry_date: form.sds_expiry_date || undefined,
+        max_quantity: form.max_quantity ? Number(form.max_quantity) : undefined,
+        storage_area_id: form.storage_area_id ? Number(form.storage_area_id) : undefined,
       })
       setShowModal(false)
       setForm(defaultForm)
@@ -312,10 +398,12 @@ export default function InventoryPage() {
                     <tr>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Substance</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Hazard Class</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>UN No.</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Quantity</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Container</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Location</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>SDS</th>
+                      <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>SDS Expiry</th>
                       <th className="px-6 py-3 text-left" style={{ color: '#94A3B8', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Actions</th>
                     </tr>
                   </thead>
@@ -328,19 +416,34 @@ export default function InventoryPage() {
                             {item.hazard_class}
                           </span>
                         </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{item.un_number || '—'}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{item.quantity} {item.unit}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {item.container_size && item.container_count
                             ? `${item.container_count} × ${item.container_size}L`
                             : '—'}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{item.storage_location || '—'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {item.storage_area_id
+                            ? storageAreas.find(a => a.id === item.storage_area_id)?.area_name || item.storage_location || '—'
+                            : item.storage_location || '—'}
+                        </td>
                         <td className="px-6 py-4">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                             item.sds_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                           }`}>
                             {item.sds_available ? 'Yes' : 'No'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          {(() => {
+                            const sdsStyle = getSdsExpiryStyle(item.sds_expiry_date)
+                            return (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: sdsStyle.background, color: sdsStyle.color }}>
+                                {sdsStyle.label}
+                              </span>
+                            )
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1">
@@ -401,7 +504,7 @@ export default function InventoryPage() {
                 onChange={e => setEditForm(f => ({ ...f, hazard_class: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {HAZARD_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                {HAZARD_CLASSES_WITH_LABELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
             <div>
@@ -452,13 +555,81 @@ export default function InventoryPage() {
               />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">UN Number</label>
+              <input
+                type="text"
+                value={editForm.un_number}
+                onChange={e => setEditForm(f => ({ ...f, un_number: e.target.value }))}
+                placeholder="e.g. UN1203"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">HSNO Approval</label>
+              <input
+                type="text"
+                value={editForm.hsno_approval}
+                onChange={e => setEditForm(f => ({ ...f, hsno_approval: e.target.value }))}
+                placeholder="e.g. HSR001375"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Substance State</label>
+              <select
+                value={editForm.substance_state}
+                onChange={e => setEditForm(f => ({ ...f, substance_state: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {SUBSTANCE_STATES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max Quantity</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={editForm.max_quantity}
+                onChange={e => setEditForm(f => ({ ...f, max_quantity: e.target.value }))}
+                placeholder="Maximum permitted quantity"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Storage Area</label>
+              <select
+                value={editForm.storage_area_id}
+                onChange={e => setEditForm(f => ({ ...f, storage_area_id: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">None (use free-text location)</option>
+                {storageAreas.map(a => <option key={a.id} value={a.id}>{a.area_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
+              <input
+                type="text"
+                value={editForm.storage_location}
+                onChange={e => setEditForm(f => ({ ...f, storage_location: e.target.value }))}
+                placeholder="e.g. Chemical Store Room A"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">SDS Expiry Date</label>
             <input
-              type="text"
-              value={editForm.storage_location}
-              onChange={e => setEditForm(f => ({ ...f, storage_location: e.target.value }))}
-              placeholder="e.g. Chemical Store Room A"
+              type="date"
+              value={editForm.sds_expiry_date}
+              onChange={e => setEditForm(f => ({ ...f, sds_expiry_date: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -520,7 +691,7 @@ export default function InventoryPage() {
                 onChange={e => setForm(f => ({ ...f, hazard_class: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {HAZARD_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                {HAZARD_CLASSES_WITH_LABELS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
             <div>
@@ -571,13 +742,81 @@ export default function InventoryPage() {
               />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">UN Number</label>
+              <input
+                type="text"
+                value={form.un_number}
+                onChange={e => setForm(f => ({ ...f, un_number: e.target.value }))}
+                placeholder="e.g. UN1203"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">HSNO Approval</label>
+              <input
+                type="text"
+                value={form.hsno_approval}
+                onChange={e => setForm(f => ({ ...f, hsno_approval: e.target.value }))}
+                placeholder="e.g. HSR001375"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Substance State</label>
+              <select
+                value={form.substance_state}
+                onChange={e => setForm(f => ({ ...f, substance_state: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {SUBSTANCE_STATES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Max Quantity</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.max_quantity}
+                onChange={e => setForm(f => ({ ...f, max_quantity: e.target.value }))}
+                placeholder="Maximum permitted quantity"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Storage Area</label>
+              <select
+                value={form.storage_area_id}
+                onChange={e => setForm(f => ({ ...f, storage_area_id: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">None (use free-text location)</option>
+                {storageAreas.map(a => <option key={a.id} value={a.id}>{a.area_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
+              <input
+                type="text"
+                value={form.storage_location}
+                onChange={e => setForm(f => ({ ...f, storage_location: e.target.value }))}
+                placeholder="e.g. Chemical Store Room A"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">SDS Expiry Date</label>
             <input
-              type="text"
-              value={form.storage_location}
-              onChange={e => setForm(f => ({ ...f, storage_location: e.target.value }))}
-              placeholder="e.g. Chemical Store Room A"
+              type="date"
+              value={form.sds_expiry_date}
+              onChange={e => setForm(f => ({ ...f, sds_expiry_date: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

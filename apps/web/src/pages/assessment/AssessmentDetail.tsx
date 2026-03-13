@@ -40,13 +40,33 @@ const STATUS_BTN: { value: ItemStatus; label: string; activeStyle: React.CSSProp
   },
 ]
 
-function groupBySection(items: LocalItem[]) {
-  const groups: Record<string, LocalItem[]> = {}
+const GROUP_ORDER = ['general', 'class_2_3', 'class_4', 'class_5', 'class_6_8', 'handler'] as const
+const GROUP_LABELS: Record<string, string> = {
+  general: 'Part 1: General Requirements',
+  class_2_3: 'Part 2: Class 2 & 3.1 — Flammable Gases & Liquids',
+  class_4: 'Part 2: Class 4 — Flammable Solids',
+  class_5: 'Part 2: Class 5.1/5.2 — Oxidisers & Organic Peroxides',
+  class_6_8: 'Part 2: Class 6 & 8 — Toxic & Corrosive Substances',
+}
+
+function groupByChecklistGroupAndSection(items: LocalItem[]) {
+  const result: { group: string; sections: Record<string, LocalItem[]> }[] = []
+  const byGroup: Record<string, LocalItem[]> = {}
   for (const item of items) {
-    if (!groups[item.section]) groups[item.section] = []
-    groups[item.section].push(item)
+    const g = item.checklist_group || 'general'
+    if (!byGroup[g]) byGroup[g] = []
+    byGroup[g].push(item)
   }
-  return groups
+  for (const g of GROUP_ORDER) {
+    if (!byGroup[g]) continue
+    const sections: Record<string, LocalItem[]> = {}
+    for (const item of byGroup[g]) {
+      if (!sections[item.section]) sections[item.section] = []
+      sections[item.section].push(item)
+    }
+    result.push({ group: g, sections })
+  }
+  return result
 }
 
 export default function AssessmentDetail() {
@@ -131,8 +151,7 @@ export default function AssessmentDetail() {
   if (error) return <ErrorMessage message={error} onRetry={fetchData} />
   if (!assessment) return <ErrorMessage message="Assessment not found" />
 
-  const groups = groupBySection(items)
-  const sections = Object.keys(groups).sort()
+  const groupedData = groupByChecklistGroupAndSection(items)
 
   const total = items.length
   const compliantCount = items.filter(i => i.status === 'compliant').length
@@ -235,108 +254,137 @@ export default function AssessmentDetail() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sections.map(section => {
-            const sectionItems = groups[section]
-            const isCollapsed = collapsed[section]
-            const sectionCompliant = sectionItems.filter(i => i.status === 'compliant').length
-            const sectionTotal = sectionItems.filter(i => i.status !== 'inapplicable').length
+          {groupedData.map(({ group, sections }) => {
+            const sortedSections = Object.keys(sections).sort()
+            const groupLabel = GROUP_LABELS[group]
 
             return (
-              <div key={section} style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
-                {/* Section header */}
-                <button
-                  onClick={() => toggleSection(section)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {isCollapsed
-                      ? <ChevronRight size={18} style={{ color: '#94A3B8' }} />
-                      : <ChevronDown size={18} style={{ color: '#94A3B8' }} />
-                    }
-                    <span style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 9999, padding: '2px 12px', fontSize: 12, fontWeight: 700 }}>
-                      Section {section}
-                    </span>
-                    <span style={{ fontSize: 13, color: '#94A3B8' }}>({sectionItems.length} items)</span>
-                  </div>
-                  <div style={{ fontSize: 12, color: '#94A3B8' }}>
-                    {sectionCompliant}/{sectionTotal} compliant
-                  </div>
-                </button>
-
-                {!isCollapsed && (
-                  <div style={{ borderTop: '1px solid rgba(0,36,125,0.08)' }}>
-                    <table className="w-full">
-                      <thead>
-                        <tr style={{ background: 'rgba(0,36,125,0.02)', borderBottom: '1px solid rgba(0,36,125,0.06)' }}>
-                          <th style={{ ...thStyle, width: 80 }}>Item</th>
-                          <th style={thStyle}>Description</th>
-                          <th style={{ ...thStyle, width: 208 }}>Status</th>
-                          <th style={{ ...thStyle, width: 256 }}>Comments</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sectionItems.sort((a, b) => a.sort_order - b.sort_order).map(item => (
-                          <tr key={item.id}
-                            style={{
-                              minHeight: 52,
-                              borderBottom: '1px solid rgba(0,36,125,0.04)',
-                              background: item._dirty ? 'rgba(0,36,125,0.03)' : 'transparent',
-                            }}
-                            onMouseEnter={e => { if (!item._dirty) e.currentTarget.style.background = 'rgba(0,36,125,0.03)' }}
-                            onMouseLeave={e => { if (!item._dirty) e.currentTarget.style.background = 'transparent' }}
-                          >
-                            <td style={{ padding: '10px 24px', fontSize: 12, fontFamily: 'monospace', color: '#64748B' }}>{item.item_number}</td>
-                            <td style={{ padding: '10px 24px', fontSize: 13, color: '#1E293B' }}>
-                              {item.description}
-                              {item.legal_ref && (
-                                <span style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }} className="group">
-                                  <button style={{ color: 'var(--nz-light-blue)', fontSize: 11, fontWeight: 700, width: 16, height: 16, borderRadius: '50%', border: '1px solid currentColor', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} type="button">ⓘ</button>
-                                  <span className="hidden group-hover:block absolute left-6 top-0 z-50 w-64 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl">
-                                    {item.legal_ref}
-                                  </span>
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '10px 24px' }}>
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                {STATUS_BTN.map(btn => (
-                                  <button
-                                    key={btn.value}
-                                    onClick={() => updateItem(item.id, 'status', btn.value)}
-                                    style={{
-                                      padding: '3px 8px',
-                                      borderRadius: 6,
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                      cursor: 'pointer',
-                                      ...(item.status === btn.value ? btn.activeStyle : btn.inactiveStyle),
-                                    }}
-                                    title={btn.value.replace('_', ' ')}
-                                  >
-                                    {btn.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </td>
-                            <td style={{ padding: '10px 24px' }}>
-                              <input
-                                type="text"
-                                value={item.comments || ''}
-                                onChange={e => updateItem(item.id, 'comments', e.target.value)}
-                                placeholder="Add comments..."
-                                style={{ width: '100%', padding: '4px 8px', fontSize: 12, border: '1.5px solid #CBD5E1', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }}
-                                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-                                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div key={group}>
+                {/* Group header (skip for handler) */}
+                {groupLabel && (
+                  <div style={{ margin: '24px 0 12px', padding: '12px 24px', background: 'linear-gradient(135deg, var(--nz-navy), #1a3a7a)', borderRadius: 12, boxShadow: '0 2px 8px rgba(0,36,125,0.18)' }}>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'white', letterSpacing: '0.01em' }}>
+                      {groupLabel}
+                    </h3>
                   </div>
                 )}
+
+                <div className="space-y-3">
+                  {sortedSections.map(section => {
+                    const sectionItems = sections[section]
+                    const sectionKey = `${group}::${section}`
+                    const isCollapsed = collapsed[sectionKey]
+                    const sectionCompliant = sectionItems.filter(i => i.status === 'compliant').length
+                    const sectionTotal = sectionItems.filter(i => i.status !== 'inapplicable').length
+
+                    return (
+                      <div key={sectionKey} style={{ borderRadius: 16, background: 'white', boxShadow: '0 2px 8px rgba(0,36,125,0.08)', border: '1px solid rgba(0,36,125,0.10)', overflow: 'hidden' }}>
+                        {/* Section header */}
+                        <button
+                          onClick={() => toggleSection(sectionKey)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {isCollapsed
+                              ? <ChevronRight size={18} style={{ color: '#94A3B8' }} />
+                              : <ChevronDown size={18} style={{ color: '#94A3B8' }} />
+                            }
+                            <span style={{ background: 'var(--nz-navy)', color: 'white', borderRadius: 9999, padding: '2px 12px', fontSize: 12, fontWeight: 700 }}>
+                              Section {section}
+                            </span>
+                            <span style={{ fontSize: 13, color: '#94A3B8' }}>({sectionItems.length} items)</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: '#94A3B8' }}>
+                            {sectionCompliant}/{sectionTotal} compliant
+                          </div>
+                        </button>
+
+                        {!isCollapsed && (
+                          <div style={{ borderTop: '1px solid rgba(0,36,125,0.08)' }}>
+                            <table className="w-full">
+                              <thead>
+                                <tr style={{ background: 'rgba(0,36,125,0.02)', borderBottom: '1px solid rgba(0,36,125,0.06)' }}>
+                                  <th style={{ ...thStyle, width: 80 }}>Item</th>
+                                  <th style={thStyle}>Description</th>
+                                  <th style={{ ...thStyle, width: 160 }}>Action</th>
+                                  <th style={{ ...thStyle, width: 160 }}>Records</th>
+                                  <th style={{ ...thStyle, width: 208 }}>Status</th>
+                                  <th style={{ ...thStyle, width: 256 }}>Comments</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sectionItems.sort((a, b) => a.sort_order - b.sort_order).map(item => (
+                                  <tr key={item.id}
+                                    style={{
+                                      minHeight: 52,
+                                      borderBottom: '1px solid rgba(0,36,125,0.04)',
+                                      background: item._dirty ? 'rgba(0,36,125,0.03)' : 'transparent',
+                                    }}
+                                    onMouseEnter={e => { if (!item._dirty) e.currentTarget.style.background = 'rgba(0,36,125,0.03)' }}
+                                    onMouseLeave={e => { if (!item._dirty) e.currentTarget.style.background = 'transparent' }}
+                                  >
+                                    <td style={{ padding: '10px 24px', fontSize: 12, fontFamily: 'monospace', color: '#64748B' }}>{item.item_number}</td>
+                                    <td style={{ padding: '10px 24px', fontSize: 13, color: '#1E293B' }}>
+                                      {item.description}
+                                      {item.legal_ref && (
+                                        <span style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }} className="group">
+                                          <button style={{ color: 'var(--nz-light-blue)', fontSize: 11, fontWeight: 700, width: 16, height: 16, borderRadius: '50%', border: '1px solid currentColor', background: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }} type="button">ⓘ</button>
+                                          <span className="hidden group-hover:block absolute left-6 top-0 z-50 w-64 bg-gray-900 text-white text-xs rounded-lg p-2 shadow-xl">
+                                            {item.legal_ref}
+                                          </span>
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '10px 24px', fontSize: 12, color: '#64748B' }}>
+                                      {item.action || '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 24px', fontSize: 12, color: '#64748B' }}>
+                                      {item.records || '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 24px' }}>
+                                      <div style={{ display: 'flex', gap: 4 }}>
+                                        {STATUS_BTN.map(btn => (
+                                          <button
+                                            key={btn.value}
+                                            onClick={() => updateItem(item.id, 'status', btn.value)}
+                                            style={{
+                                              padding: '3px 8px',
+                                              borderRadius: 6,
+                                              fontSize: 11,
+                                              fontWeight: 700,
+                                              cursor: 'pointer',
+                                              ...(item.status === btn.value ? btn.activeStyle : btn.inactiveStyle),
+                                            }}
+                                            title={btn.value.replace('_', ' ')}
+                                          >
+                                            {btn.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '10px 24px' }}>
+                                      <input
+                                        type="text"
+                                        value={item.comments || ''}
+                                        onChange={e => updateItem(item.id, 'comments', e.target.value)}
+                                        placeholder="Add comments..."
+                                        style={{ width: '100%', padding: '4px 8px', fontSize: 12, border: '1.5px solid #CBD5E1', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }}
+                                        onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+                                        onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             )
           })}

@@ -1,13 +1,47 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Edit2, Save, X } from 'lucide-react'
+import { ArrowLeft, Edit2, Save, X, Plus, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Client, Assessment, Certificate, InventoryItem } from '@/types'
+import { Client, Assessment, Certificate, InventoryItem, StorageArea } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
+import Modal from '@/components/Modal'
 
-type Tab = 'details' | 'assessments' | 'certificates' | 'inventory'
+const INDUSTRIES: { value: string; label: string }[] = [
+  { value: 'agriculture_farming', label: 'Agriculture & Farming' },
+  { value: 'chemical_manufacturing', label: 'Chemical Manufacturing' },
+  { value: 'construction', label: 'Construction' },
+  { value: 'education_research', label: 'Education & Research' },
+  { value: 'food_beverage', label: 'Food & Beverage Manufacturing' },
+  { value: 'forestry', label: 'Forestry' },
+  { value: 'healthcare', label: 'Healthcare & Hospitals' },
+  { value: 'horticulture', label: 'Horticulture & Viticulture' },
+  { value: 'industrial_manufacturing', label: 'Industrial Manufacturing' },
+  { value: 'laboratory', label: 'Laboratories' },
+  { value: 'mining_quarrying', label: 'Mining & Quarrying' },
+  { value: 'oil_gas', label: 'Oil & Gas' },
+  { value: 'paint_coatings', label: 'Paint & Coatings' },
+  { value: 'pest_control', label: 'Pest Control' },
+  { value: 'retail', label: 'Retail (Hardware / Farm Supply)' },
+  { value: 'transport_logistics', label: 'Transport & Logistics' },
+  { value: 'veterinary', label: 'Veterinary Services' },
+  { value: 'waste_management', label: 'Waste Management' },
+  { value: 'water_treatment', label: 'Water Treatment' },
+  { value: 'other', label: 'Other' },
+]
+
+type Tab = 'details' | 'assessments' | 'certificates' | 'inventory' | 'storage_areas'
+
+const AREA_TYPES: { value: string; label: string }[] = [
+  { value: 'room', label: 'Room' },
+  { value: 'cabinet', label: 'Cabinet' },
+  { value: 'bunker', label: 'Bunker' },
+  { value: 'outdoor', label: 'Outdoor' },
+  { value: 'coolroom', label: 'Coolroom' },
+  { value: 'tank_farm', label: 'Tank Farm' },
+  { value: 'other', label: 'Other' },
+]
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>()
@@ -18,10 +52,15 @@ export default function ClientDetail() {
   const [assessments, setAssessments] = useState<Assessment[]>([])
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [storageAreas, setStorageAreas] = useState<StorageArea[]>([])
   const [tabLoading, setTabLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState<Partial<Client>>({})
   const [saving, setSaving] = useState(false)
+  const [storageModalOpen, setStorageModalOpen] = useState(false)
+  const [editingStorageArea, setEditingStorageArea] = useState<StorageArea | null>(null)
+  const [storageForm, setStorageForm] = useState<Partial<StorageArea>>({})
+  const [storageSaving, setStorageSaving] = useState(false)
 
   useEffect(() => {
     api.get<Client>(`/clients/${id}`)
@@ -46,6 +85,11 @@ export default function ClientDetail() {
       api.get<InventoryItem[]>(`/inventory?client_id=${id}`)
         .then(setInventory)
         .finally(() => setTabLoading(false))
+    } else if (activeTab === 'storage_areas' && client) {
+      setTabLoading(true)
+      api.get<StorageArea[]>(`/storage-areas?client_id=${id}`)
+        .then(setStorageAreas)
+        .finally(() => setTabLoading(false))
     }
   }, [activeTab, client, id])
 
@@ -62,6 +106,45 @@ export default function ClientDetail() {
     }
   }
 
+  const openStorageModal = (area?: StorageArea) => {
+    if (area) {
+      setEditingStorageArea(area)
+      setStorageForm(area)
+    } else {
+      setEditingStorageArea(null)
+      setStorageForm({ client_id: Number(id) })
+    }
+    setStorageModalOpen(true)
+  }
+
+  const handleStorageSave = async () => {
+    setStorageSaving(true)
+    try {
+      if (editingStorageArea) {
+        const updated = await api.put<StorageArea>(`/storage-areas/${editingStorageArea.id}`, storageForm)
+        setStorageAreas(prev => prev.map(a => a.id === updated.id ? updated : a))
+      } else {
+        const created = await api.post<StorageArea>('/storage-areas', storageForm)
+        setStorageAreas(prev => [...prev, created])
+      }
+      setStorageModalOpen(false)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to save storage area')
+    } finally {
+      setStorageSaving(false)
+    }
+  }
+
+  const handleStorageDelete = async (areaId: number) => {
+    if (!confirm('Delete this storage area?')) return
+    try {
+      await api.delete(`/storage-areas/${areaId}`)
+      setStorageAreas(prev => prev.filter(a => a.id !== areaId))
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to delete storage area')
+    }
+  }
+
   if (loading) return <LoadingSpinner />
   if (error) return <ErrorMessage message={error} />
   if (!client) return <ErrorMessage message="Client not found" />
@@ -71,6 +154,7 @@ export default function ClientDetail() {
     { key: 'assessments', label: 'Assessments' },
     { key: 'certificates', label: 'Certificates' },
     { key: 'inventory', label: 'Inventory' },
+    { key: 'storage_areas', label: 'Storage Areas' },
   ]
 
   const inputStyle = { width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' as const }
@@ -163,7 +247,7 @@ export default function ClientDetail() {
                   <Field label="Postal Address" value={editForm.postal_address || ''} onChange={v => setEditForm(f => ({ ...f, postal_address: v }))} />
                   <Field label="Phone" value={editForm.phone || ''} onChange={v => setEditForm(f => ({ ...f, phone: v }))} />
                   <Field label="Email" value={editForm.email || ''} onChange={v => setEditForm(f => ({ ...f, email: v }))} />
-                  <Field label="Industry" value={editForm.industry || ''} onChange={v => setEditForm(f => ({ ...f, industry: v }))} />
+                  <SelectField label="Industry" value={editForm.industry || ''} onChange={v => setEditForm(f => ({ ...f, industry: v }))} options={INDUSTRIES} />
                   <Field label="NZBN" value={editForm.nzbn || ''} onChange={v => setEditForm(f => ({ ...f, nzbn: v }))} />
                   <Field label="Companies Number" value={editForm.companies_number || ''} onChange={v => setEditForm(f => ({ ...f, companies_number: v }))} />
                   <Field label="Manager Name" value={editForm.manager_name || ''} onChange={v => setEditForm(f => ({ ...f, manager_name: v }))} />
@@ -178,7 +262,7 @@ export default function ClientDetail() {
                   <InfoRow label="Postal Address" value={client.postal_address} />
                   <InfoRow label="Phone" value={client.phone} />
                   <InfoRow label="Email" value={client.email} />
-                  <InfoRow label="Industry" value={client.industry} />
+                  <InfoRow label="Industry" value={INDUSTRIES.find(i => i.value === client.industry)?.label || client.industry} />
                   <InfoRow label="NZBN" value={client.nzbn} isCode />
                   <InfoRow label="Companies Number" value={client.companies_number} isCode />
                   <InfoRow label="Manager Name" value={client.manager_name} />
@@ -308,8 +392,161 @@ export default function ClientDetail() {
               )
             )
           )}
+
+          {activeTab === 'storage_areas' && (
+            tabLoading ? <LoadingSpinner /> : (
+              <div>
+                <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--nz-navy)', margin: 0 }}>Storage Areas</h3>
+                  <button
+                    onClick={() => openStorageModal()}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, border: 'none', cursor: 'pointer', fontSize: 13 }}
+                  >
+                    <Plus size={14} /> Add Storage Area
+                  </button>
+                </div>
+                {storageAreas.length === 0 ? (
+                  <p style={{ fontSize: 13, color: '#94A3B8' }}>No storage areas for this client.</p>
+                ) : (
+                  <table className="w-full">
+                    <thead style={{ borderBottom: '1px solid rgba(0,36,125,0.08)' }}>
+                      <tr>
+                        <th style={thStyle}>Area Name</th>
+                        <th style={thStyle}>Type</th>
+                        <th style={thStyle}>Substance Classes</th>
+                        <th style={thStyle}>Max Capacity</th>
+                        <th style={thStyle}>Building Type</th>
+                        <th style={thStyle}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {storageAreas.map(area => (
+                        <tr key={area.id} style={{ height: 48, borderBottom: '1px solid rgba(0,36,125,0.05)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,36,125,0.03)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)' }}>{area.area_name}</td>
+                          <td style={{ fontSize: 13, color: '#64748B' }}>{AREA_TYPES.find(t => t.value === area.area_type)?.label || area.area_type || '—'}</td>
+                          <td style={{ fontSize: 13, color: '#64748B' }}>{area.substance_classes || '—'}</td>
+                          <td style={{ fontSize: 13, color: '#64748B' }}>{area.max_capacity || '—'}</td>
+                          <td style={{ fontSize: 13, color: '#64748B' }}>{area.building_type || '—'}</td>
+                          <td>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => openStorageModal(area)}
+                                style={{ fontSize: 13, color: 'var(--nz-navy)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleStorageDelete(area.id)}
+                                style={{ color: 'var(--nz-red)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
+          )}
         </div>
       </div>
+
+      {/* Storage Area Modal */}
+      <Modal isOpen={storageModalOpen} onClose={() => setStorageModalOpen(false)} title={editingStorageArea ? 'Edit Storage Area' : 'Add Storage Area'}>
+        <div className="space-y-4">
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Area Name *</label>
+            <input
+              type="text"
+              value={storageForm.area_name || ''}
+              onChange={e => setStorageForm(f => ({ ...f, area_name: e.target.value }))}
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+              required
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Area Type</label>
+            <select
+              value={storageForm.area_type || ''}
+              onChange={e => setStorageForm(f => ({ ...f, area_type: e.target.value }))}
+              style={inputStyle}
+            >
+              <option value="">Select...</option>
+              {AREA_TYPES.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Substance Classes</label>
+            <input
+              type="text"
+              value={storageForm.substance_classes || ''}
+              onChange={e => setStorageForm(f => ({ ...f, substance_classes: e.target.value }))}
+              placeholder="e.g. 3.1A, 6.1A"
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Max Capacity</label>
+            <input
+              type="text"
+              value={storageForm.max_capacity || ''}
+              onChange={e => setStorageForm(f => ({ ...f, max_capacity: e.target.value }))}
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Building Type</label>
+            <input
+              type="text"
+              value={storageForm.building_type || ''}
+              onChange={e => setStorageForm(f => ({ ...f, building_type: e.target.value }))}
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>Notes</label>
+            <textarea
+              value={storageForm.notes || ''}
+              onChange={e => setStorageForm(f => ({ ...f, notes: e.target.value }))}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+            />
+          </div>
+          <div className="flex justify-end gap-3" style={{ paddingTop: 8 }}>
+            <button
+              onClick={() => setStorageModalOpen(false)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1.5px solid var(--nz-navy)', color: 'var(--nz-navy)', background: 'transparent', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, cursor: 'pointer', fontSize: 13 }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleStorageSave}
+              disabled={storageSaving || !storageForm.area_name}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--nz-navy)', color: 'white', borderRadius: 10, fontWeight: 600, padding: '0 14px', height: 36, border: 'none', cursor: 'pointer', fontSize: 13, opacity: storageSaving || !storageForm.area_name ? 0.6 : 1 }}
+            >
+              {storageSaving ? 'Saving...' : editingStorageArea ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -341,6 +578,24 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
         onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
         onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
       />
+    </div>
+  )
+}
+
+function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', marginBottom: 4 }}>{label}</label>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+      >
+        <option value="">Select...</option>
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
     </div>
   )
 }

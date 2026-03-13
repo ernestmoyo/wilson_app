@@ -53,6 +53,26 @@ router.get('/', (req: Request, res: Response) => {
   }
 });
 
+// GET /by-appendix/:client_id — evidence grouped by appendix category
+router.get('/by-appendix/:client_id', (req: Request, res: Response) => {
+  try {
+    const evidence = db.prepare(`
+      SELECT * FROM evidence WHERE client_id = ? ORDER BY appendix_number ASC, created_at DESC
+    `).all(req.params.client_id);
+
+    const grouped: Record<string, any[]> = {};
+    for (const item of evidence as any[]) {
+      const key = item.appendix_category || 'uncategorised';
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    }
+
+    res.json({ data: grouped });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /:id — get single evidence record
 router.get('/:id', (req: Request, res: Response) => {
   try {
@@ -73,7 +93,8 @@ router.post('/', upload.single('file') as any, (req: Request, res: Response) => 
     const {
       assessment_id, assessment_item_id, client_id, certificate_id,
       description, evidence_type, gps_latitude, gps_longitude,
-      captured_by, captured_at, device_info
+      captured_by, captured_at, device_info,
+      appendix_category, appendix_number, location_area
     } = req.body;
 
     const validTypes = [
@@ -95,8 +116,9 @@ router.post('/', upload.single('file') as any, (req: Request, res: Response) => 
         assessment_id, assessment_item_id, client_id, certificate_id,
         file_name, file_path, file_type, file_size,
         description, evidence_type, gps_latitude, gps_longitude,
-        captured_by, captured_at, device_info, sha256_hash
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        captured_by, captured_at, device_info, sha256_hash,
+        appendix_category, appendix_number, location_area
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       assessment_id || null,
       assessment_item_id || null,
@@ -113,7 +135,10 @@ router.post('/', upload.single('file') as any, (req: Request, res: Response) => 
       captured_by || null,
       captured_at || null,
       device_info || null,
-      sha256Hash
+      sha256Hash,
+      appendix_category || null,
+      appendix_number ?? null,
+      location_area || null
     );
 
     // Log to audit_log

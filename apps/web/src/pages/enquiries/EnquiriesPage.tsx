@@ -34,6 +34,41 @@ const PRIORITIES: { value: Enquiry['priority']; label: string }[] = [
   { value: 'urgent', label: 'Urgent' },
 ]
 
+const ENQUIRY_SOURCES: { value: string; label: string }[] = [
+  { value: 'phone_call', label: 'Phone Call' },
+  { value: 'email', label: 'Email' },
+  { value: 'website', label: 'Website' },
+  { value: 'referral', label: 'Referral' },
+  { value: 'worksafe_nz', label: 'WorkSafe NZ' },
+  { value: 'repeat_client', label: 'Repeat Client' },
+  { value: 'other', label: 'Other' },
+]
+
+const SUBSTANCE_CLASS_OPTIONS: { value: string; label: string }[] = [
+  { value: '2.1.1', label: '2.1.1 — Flammable Gas Cat.1' },
+  { value: '2.1.2', label: '2.1.2 — Flammable Gas Cat.2' },
+  { value: '3.1A', label: '3.1A — Flammable Liquid Cat.1' },
+  { value: '3.1B', label: '3.1B — Flammable Liquid Cat.2' },
+  { value: '3.1C', label: '3.1C — Flammable Liquid Cat.3' },
+  { value: '3.1D', label: '3.1D — Flammable Liquid Cat.4' },
+  { value: '4.1.1', label: '4.1.1 — Flammable Solid' },
+  { value: '4.2A', label: '4.2A — Spontaneously Combustible' },
+  { value: '4.3A', label: '4.3A — Dangerous When Wet' },
+  { value: '5.1.1', label: '5.1.1 — Oxidising Substance' },
+  { value: '5.2', label: '5.2 — Organic Peroxide' },
+  { value: '6.1A', label: '6.1A — Acutely Toxic Cat.1' },
+  { value: '6.1B', label: '6.1B — Acutely Toxic Cat.2' },
+  { value: '6.1C', label: '6.1C — Acutely Toxic Cat.3' },
+  { value: '6.3A', label: '6.3A — Skin Irritant' },
+  { value: '6.4A', label: '6.4A — Eye Irritant' },
+  { value: '6.5A', label: '6.5A — Sensitiser' },
+  { value: '8.1A', label: '8.1A — Metallic Corrosive' },
+  { value: '8.2A', label: '8.2A — Skin Corrosive Cat.1' },
+  { value: '8.3A', label: '8.3A — Eye Corrosive' },
+  { value: '9.1A', label: '9.1A — Aquatic Ecotoxic' },
+  { value: '9.3C', label: '9.3C — Terrestrial Vertebrate Ecotoxic' },
+]
+
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
   urgent: { bg: '#FEE2E2', text: '#DC2626' },
   high:   { bg: '#FFF7ED', text: '#EA580C' },
@@ -316,7 +351,7 @@ export default function EnquiriesPage() {
                               )}
                               {enq.source && (
                                 <div style={{ fontSize: 13, color: '#94A3B8', marginTop: 8 }}>
-                                  Source: <span style={{ color: '#64748B' }}>{enq.source}</span>
+                                  Source: <span style={{ color: '#64748B' }}>{ENQUIRY_SOURCES.find(s => s.value === enq.source)?.label || enq.source}</span>
                                 </div>
                               )}
                             </div>
@@ -540,31 +575,43 @@ export default function EnquiriesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label style={labelStyle}>Substance Classes</label>
-              <input
-                type="text"
-                value={form.substance_classes}
-                onChange={e => handleChange('substance_classes', e.target.value)}
-                placeholder="e.g. 2.1, 3.1, 6.1"
-                style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-              />
+          <div>
+            <label style={labelStyle}>Substance Classes</label>
+            <div style={{ border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', maxHeight: 160, overflowY: 'auto' }}>
+              {SUBSTANCE_CLASS_OPTIONS.map(opt => {
+                const selected = form.substance_classes.split(',').map(s => s.trim()).filter(Boolean)
+                const checked = selected.includes(opt.value)
+                return (
+                  <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', cursor: 'pointer', fontSize: 13 }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        const next = checked
+                          ? selected.filter(v => v !== opt.value)
+                          : [...selected, opt.value]
+                        handleChange('substance_classes', next.join(', '))
+                      }}
+                      style={{ width: 16, height: 16 }}
+                    />
+                    <span style={{ color: '#1E293B' }}>{opt.label}</span>
+                  </label>
+                )
+              })}
             </div>
-            <div>
-              <label style={labelStyle}>Estimated Quantities</label>
-              <input
-                type="text"
-                value={form.estimated_quantities}
-                onChange={e => handleChange('estimated_quantities', e.target.value)}
-                placeholder="e.g. 500L LPG, 200kg fertiliser"
-                style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-                onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Estimated Quantities</label>
+            <input
+              type="text"
+              value={form.estimated_quantities}
+              onChange={e => handleChange('estimated_quantities', e.target.value)}
+              placeholder="e.g. 500L LPG, 200kg fertiliser"
+              style={inputStyle}
+              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
+              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
+            />
           </div>
 
           <div>
@@ -581,15 +628,16 @@ export default function EnquiriesPage() {
 
           <div>
             <label style={labelStyle}>Source</label>
-            <input
-              type="text"
+            <select
               value={form.source}
               onChange={e => handleChange('source', e.target.value)}
-              placeholder="e.g. Phone call, Email, Referral"
               style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-            />
+            >
+              <option value="">Select source...</option>
+              {ENQUIRY_SOURCES.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
           </div>
 
           <div>

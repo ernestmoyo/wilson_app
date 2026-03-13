@@ -8,6 +8,31 @@ import Modal from '@/components/Modal'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 
+const SUBSTANCE_CLASS_OPTIONS: { value: string; label: string }[] = [
+  { value: '2.1.1', label: '2.1.1 — Flammable Gas Cat.1' },
+  { value: '2.1.2', label: '2.1.2 — Flammable Gas Cat.2' },
+  { value: '3.1A', label: '3.1A — Flammable Liquid Cat.1' },
+  { value: '3.1B', label: '3.1B — Flammable Liquid Cat.2' },
+  { value: '3.1C', label: '3.1C — Flammable Liquid Cat.3' },
+  { value: '3.1D', label: '3.1D — Flammable Liquid Cat.4' },
+  { value: '4.1.1', label: '4.1.1 — Flammable Solid' },
+  { value: '4.2A', label: '4.2A — Spontaneously Combustible' },
+  { value: '4.3A', label: '4.3A — Dangerous When Wet' },
+  { value: '5.1.1', label: '5.1.1 — Oxidising Substance' },
+  { value: '5.2', label: '5.2 — Organic Peroxide' },
+  { value: '6.1A', label: '6.1A — Acutely Toxic Cat.1' },
+  { value: '6.1B', label: '6.1B — Acutely Toxic Cat.2' },
+  { value: '6.1C', label: '6.1C — Acutely Toxic Cat.3' },
+  { value: '6.3A', label: '6.3A — Skin Irritant' },
+  { value: '6.4A', label: '6.4A — Eye Irritant' },
+  { value: '6.5A', label: '6.5A — Sensitiser' },
+  { value: '8.1A', label: '8.1A — Metallic Corrosive' },
+  { value: '8.2A', label: '8.2A — Skin Corrosive Cat.1' },
+  { value: '8.3A', label: '8.3A — Eye Corrosive' },
+  { value: '9.1A', label: '9.1A — Aquatic Ecotoxic' },
+  { value: '9.3C', label: '9.3C — Terrestrial Vertebrate Ecotoxic' },
+]
+
 type StatusTab = 'all' | 'pending' | 'granted' | 'refused' | 'expired'
 
 const STATUS_TABS: StatusTab[] = ['all', 'pending', 'granted', 'refused', 'expired']
@@ -228,15 +253,16 @@ export default function CertificatesPage() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Substance Class</label>
-            <input
-              type="text"
+            <select
               value={form.substance_class}
               onChange={e => setForm(f => ({ ...f, substance_class: e.target.value }))}
-              placeholder="e.g. 3.1A, 2.1.1"
               style={{ width: '100%', border: '1.5px solid #CBD5E1', borderRadius: 8, padding: '8px 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              onFocus={e => (e.target.style.borderColor = 'var(--nz-navy)')}
-              onBlur={e => (e.target.style.borderColor = '#CBD5E1')}
-            />
+            >
+              <option value="">Select substance class...</option>
+              {SUBSTANCE_CLASS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--nz-navy)', marginBottom: 4 }}>Max Quantity</label>

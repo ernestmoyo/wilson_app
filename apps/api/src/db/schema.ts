@@ -231,10 +231,62 @@ export function initSchema() {
     "ALTER TABLE inventory ADD COLUMN hsno_approval TEXT",
     // reports v1.2
     "ALTER TABLE reports ADD COLUMN type_new TEXT",
+    // v2.0 — Class-conditional checklists
+    "ALTER TABLE assessment_items ADD COLUMN action TEXT",
+    "ALTER TABLE assessment_items ADD COLUMN records TEXT",
+    "ALTER TABLE assessment_items ADD COLUMN checklist_group TEXT DEFAULT 'general'",
+    // v2.0 — Enriched inventory
+    "ALTER TABLE inventory ADD COLUMN un_number TEXT",
+    "ALTER TABLE inventory ADD COLUMN hazard_classifications TEXT",
+    "ALTER TABLE inventory ADD COLUMN storage_requirements TEXT",
+    "ALTER TABLE inventory ADD COLUMN incompatible_items TEXT",
+    "ALTER TABLE inventory ADD COLUMN sds_expiry_date TEXT",
+    "ALTER TABLE inventory ADD COLUMN sku TEXT",
+    "ALTER TABLE inventory ADD COLUMN substance_state TEXT",
+    "ALTER TABLE inventory ADD COLUMN max_quantity REAL",
+    "ALTER TABLE inventory ADD COLUMN storage_area_id INTEGER",
+    // v2.0 — Appendix-based evidence filing
+    "ALTER TABLE evidence ADD COLUMN appendix_category TEXT",
+    "ALTER TABLE evidence ADD COLUMN appendix_number INTEGER",
+    "ALTER TABLE evidence ADD COLUMN location_area TEXT",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch (_) { /* column already exists */ }
   }
+
+  // v2.0 — Storage areas
+  db.exec(`CREATE TABLE IF NOT EXISTS storage_areas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    area_name TEXT NOT NULL, area_type TEXT, substance_classes TEXT,
+    max_capacity TEXT, building_type TEXT, notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+
+  // v2.0 — Training records
+  db.exec(`CREATE TABLE IF NOT EXISTS training_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER NOT NULL REFERENCES clients(id),
+    worker_name TEXT NOT NULL, department TEXT, course_name TEXT NOT NULL,
+    training_date TEXT, competent INTEGER DEFAULT 0, expiry_date TEXT,
+    certificate_evidence_id INTEGER REFERENCES evidence(id),
+    notes TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+
+  // v2.0 — Handler assessments
+  db.exec(`CREATE TABLE IF NOT EXISTS handler_assessments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    assessment_id INTEGER NOT NULL REFERENCES assessments(id),
+    applicant_name TEXT, applicant_address TEXT, applicant_dob TEXT,
+    employer_pcbu TEXT, employer_nzbn TEXT,
+    substance_lifecycle_phases TEXT, qualifications TEXT,
+    education_verified INTEGER DEFAULT 0,
+    id_type TEXT, id_number TEXT, id_expiry TEXT, id_sighted INTEGER DEFAULT 0,
+    knowledge_score REAL, written_score REAL,
+    written_total REAL DEFAULT 60, written_pass_pct REAL DEFAULT 80,
+    practical_passed INTEGER DEFAULT 0, overall_result TEXT,
+    assessor_statement TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
 
   // Seed default user (Bryan Wilson)
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get('bryan.wilson@wilsoncompliance.co.nz');

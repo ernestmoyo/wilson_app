@@ -88,6 +88,9 @@ export interface AssessmentItem {
   corrective_action?: string
   corrective_action_due?: string
   corrective_action_status?: 'open' | 'in_progress' | 'resolved' | 'verified'
+  action?: string
+  records?: string
+  checklist_group?: string
 }
 
 export interface Certificate {
@@ -150,6 +153,9 @@ export interface Evidence {
   captured_at?: string
   device_info?: string
   sha256_hash?: string
+  appendix_category?: string
+  appendix_number?: number
+  location_area?: string
   created_at: string
 }
 
@@ -166,6 +172,66 @@ export interface InventoryItem {
   sds_available: number
   hsno_approval?: string
   notes?: string
+  un_number?: string
+  hazard_classifications?: string
+  storage_requirements?: string
+  incompatible_items?: string
+  sds_expiry_date?: string
+  sku?: string
+  substance_state?: string
+  max_quantity?: number
+  storage_area_id?: number
+  created_at: string
+}
+
+export interface StorageArea {
+  id: number
+  client_id: number
+  area_name: string
+  area_type?: string
+  substance_classes?: string
+  max_capacity?: string
+  building_type?: string
+  notes?: string
+  created_at: string
+}
+
+export interface TrainingRecord {
+  id: number
+  client_id: number
+  worker_name: string
+  department?: string
+  course_name: string
+  training_date?: string
+  competent: number
+  expiry_date?: string
+  certificate_evidence_id?: number
+  notes?: string
+  created_at: string
+}
+
+export interface HandlerAssessment {
+  id: number
+  assessment_id: number
+  applicant_name?: string
+  applicant_address?: string
+  applicant_dob?: string
+  employer_pcbu?: string
+  employer_nzbn?: string
+  substance_lifecycle_phases?: string
+  qualifications?: string
+  education_verified: number
+  id_type?: string
+  id_number?: string
+  id_expiry?: string
+  id_sighted: number
+  knowledge_score?: number
+  written_score?: number
+  written_total: number
+  written_pass_pct: number
+  practical_passed: number
+  overall_result?: string
+  assessor_statement?: string
   created_at: string
 }
 
