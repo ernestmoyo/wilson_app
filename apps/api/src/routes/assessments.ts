@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import db from '../db/database';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { logAudit } from '../lib/auditLog';
 
 const router = Router();
 
@@ -182,44 +184,40 @@ function buildTemplate(type: string, substanceClasses?: string): TemplateItem[] 
 }
 
 // GET / — list assessments with optional filters
-router.get('/', (req: Request, res: Response) => {
-  try {
-    const { client_id, status, type } = req.query;
-    const conditions: string[] = [];
-    const params: any[] = [];
+router.get('/', asyncHandler((req: Request, res: Response) => {
+  const { client_id, status, type } = req.query;
+  const conditions: string[] = [];
+  const params: any[] = [];
 
-    if (client_id) { conditions.push('a.client_id = ?'); params.push(client_id); }
-    if (status) { conditions.push('a.status = ?'); params.push(status); }
-    if (type) { conditions.push('a.type = ?'); params.push(type); }
+  if (client_id) { conditions.push('a.client_id = ?'); params.push(client_id); }
+  if (status) { conditions.push('a.status = ?'); params.push(status); }
+  if (type) { conditions.push('a.type = ?'); params.push(type); }
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    const assessments = db.prepare(`
-      SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
-      FROM assessments a
-      LEFT JOIN clients c ON c.id = a.client_id
-      LEFT JOIN users u ON u.id = a.inspector_id
-      ${where}
-      ORDER BY a.created_at DESC
-    `).all(...params);
+  const assessments = db.prepare(`
+    SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
+    FROM assessments a
+    LEFT JOIN clients c ON c.id = a.client_id
+    LEFT JOIN users u ON u.id = a.inspector_id
+    ${where}
+    ORDER BY a.created_at DESC
+  `).all(...params);
 
-    res.json({ data: assessments });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  res.json({ data: assessments });
+}));
 
 // GET /templates/:type — return the checklist template (with optional substance_classes query)
-router.get('/templates/:type', (req: Request, res: Response) => {
+router.get('/templates/:type', asyncHandler((req: Request, res: Response) => {
   const template = buildTemplate(req.params.type, req.query.substance_classes as string);
   if (template.length === 0 && req.params.type !== 'pre_inspection' && req.params.type !== 'validation') {
     return res.status(404).json({ error: 'Template not found' });
   }
   res.json({ data: template, class_group_labels: CLASS_GROUP_LABELS });
-});
+}));
 
 // GET /class-groups — return available class groups for given substance classes
-router.get('/class-groups', (req: Request, res: Response) => {
+router.get('/class-groups', asyncHandler((req: Request, res: Response) => {
   const groups = getClassGroups(req.query.substance_classes as string || '');
   const result = groups.map(g => ({ key: g, label: CLASS_GROUP_LABELS[g] || g, item_count: (CLASS_CHECKLISTS[g] || []).length }));
   res.json({
@@ -229,50 +227,48 @@ router.get('/class-groups', (req: Request, res: Response) => {
       total_items: GENERAL_CHECKLIST.length + result.reduce((sum, g) => sum + g.item_count, 0),
     }
   });
-});
+}));
 
 // GET /:id — get assessment with all its items
-router.get('/:id', (req: Request, res: Response) => {
-  try {
-    const assessment = db.prepare(`
-      SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
-      FROM assessments a
-      LEFT JOIN clients c ON c.id = a.client_id
-      LEFT JOIN users u ON u.id = a.inspector_id
-      WHERE a.id = ?
-    `).get(req.params.id);
+router.get('/:id', asyncHandler((req: Request, res: Response) => {
+  const assessment = db.prepare(`
+    SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
+    FROM assessments a
+    LEFT JOIN clients c ON c.id = a.client_id
+    LEFT JOIN users u ON u.id = a.inspector_id
+    WHERE a.id = ?
+  `).get(req.params.id);
 
-    if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+  if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
-    const items = db.prepare(
-      'SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC'
-    ).all(req.params.id);
+  const items = db.prepare(
+    'SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC'
+  ).all(req.params.id);
 
-    res.json({ data: { ...assessment as object, items }, class_group_labels: CLASS_GROUP_LABELS });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  res.json({ data: { ...assessment as object, items }, class_group_labels: CLASS_GROUP_LABELS });
+}));
 
 // POST / — create assessment (auto-populates class-conditional checklist)
-router.post('/', (req: Request, res: Response) => {
+router.post('/', asyncHandler((req: Request, res: Response) => {
+  const { client_id, inspector_id, type, inspection_date, substance_classes, notes } = req.body;
+
+  if (!client_id || !type) return res.status(400).json({ error: 'client_id and type are required' });
+
+  const validTypes = ['pre_inspection', 'site_inspection', 'validation', 'certified_handler'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
+  }
+
+  const client = db.prepare('SELECT id FROM clients WHERE id = ?').get(client_id);
+  if (!client) return res.status(400).json({ error: 'Client not found' });
+
+  const resolvedInspectorId = inspector_id || 1;
+  const inspector = db.prepare('SELECT id FROM users WHERE id = ?').get(resolvedInspectorId);
+  if (!inspector) return res.status(400).json({ error: 'Inspector not found' });
+
+  // Wrap assessment + items in a single transaction
+  db.exec('BEGIN');
   try {
-    const { client_id, inspector_id, type, inspection_date, substance_classes, notes } = req.body;
-
-    if (!client_id || !type) return res.status(400).json({ error: 'client_id and type are required' });
-
-    const validTypes = ['pre_inspection', 'site_inspection', 'validation', 'certified_handler'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-    }
-
-    const client = db.prepare('SELECT id FROM clients WHERE id = ?').get(client_id);
-    if (!client) return res.status(400).json({ error: 'Client not found' });
-
-    const resolvedInspectorId = inspector_id || 1;
-    const inspector = db.prepare('SELECT id FROM users WHERE id = ?').get(resolvedInspectorId);
-    if (!inspector) return res.status(400).json({ error: 'Inspector not found' });
-
     const result = db.prepare(`
       INSERT INTO assessments (client_id, inspector_id, type, inspection_date, substance_classes, notes)
       VALUES (?, ?, ?, ?, ?, ?)
@@ -287,23 +283,14 @@ router.post('/', (req: Request, res: Response) => {
         INSERT INTO assessment_items (assessment_id, section, item_number, description, status, legal_ref, sort_order, risk_level, evidence_required, action, records, checklist_group)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
-      db.exec('BEGIN');
-      try {
-        for (const item of template) {
-          insertItem.run(assessmentId, item.section, item.item_number, item.description, 'pending', item.legal_ref, item.sort_order, item.risk_level, item.evidence_required, item.action, item.records, item.checklist_group);
-        }
-        db.exec('COMMIT');
-      } catch (e) {
-        db.exec('ROLLBACK');
-        throw e;
+      for (const item of template) {
+        insertItem.run(assessmentId, item.section, item.item_number, item.description, 'pending', item.legal_ref, item.sort_order, item.risk_level, item.evidence_required, item.action, item.records, item.checklist_group);
       }
     }
 
-    // Audit log
-    try {
-      db.prepare('INSERT INTO audit_log (entity_type, entity_id, action, user_id, details) VALUES (?,?,?,?,?)')
-        .run('assessment', assessmentId, 'created', resolvedInspectorId, JSON.stringify({ type, client_id, substance_classes }));
-    } catch (_) { /* audit_log may not exist yet */ }
+    db.exec('COMMIT');
+
+    logAudit('assessment', assessmentId as number, 'created', { client_id, type, substance_classes });
 
     const assessment = db.prepare(`
       SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
@@ -314,139 +301,120 @@ router.post('/', (req: Request, res: Response) => {
     const items = db.prepare('SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC').all(assessmentId);
 
     res.status(201).json({ data: { ...assessment as object, items }, class_group_labels: CLASS_GROUP_LABELS });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
   }
-});
+}));
 
 // PUT /:id — update assessment fields
-router.put('/:id', (req: Request, res: Response) => {
-  try {
-    const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id) as any;
-    if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+router.put('/:id', asyncHandler((req: Request, res: Response) => {
+  const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id) as any;
+  if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
-    const { type, status, inspection_date, substance_classes, notes, inspector_id } = req.body;
+  const { type, status, inspection_date, substance_classes, notes, inspector_id } = req.body;
 
-    db.prepare(`
-      UPDATE assessments SET
-        type = ?, status = ?, inspection_date = ?, substance_classes = ?, notes = ?, inspector_id = ?,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
-      type ?? assessment.type, status ?? assessment.status,
-      inspection_date !== undefined ? inspection_date : assessment.inspection_date,
-      substance_classes !== undefined ? substance_classes : assessment.substance_classes,
-      notes !== undefined ? notes : assessment.notes,
-      inspector_id ?? assessment.inspector_id, req.params.id
-    );
+  db.prepare(`
+    UPDATE assessments SET
+      type = ?, status = ?, inspection_date = ?, substance_classes = ?, notes = ?, inspector_id = ?,
+      updated_at = datetime('now')
+    WHERE id = ?
+  `).run(
+    type ?? assessment.type, status ?? assessment.status,
+    inspection_date !== undefined ? inspection_date : assessment.inspection_date,
+    substance_classes !== undefined ? substance_classes : assessment.substance_classes,
+    notes !== undefined ? notes : assessment.notes,
+    inspector_id ?? assessment.inspector_id, req.params.id
+  );
 
-    const updated = db.prepare(`
-      SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
-      FROM assessments a LEFT JOIN clients c ON c.id = a.client_id LEFT JOIN users u ON u.id = a.inspector_id
-      WHERE a.id = ?
-    `).get(req.params.id);
+  const updated = db.prepare(`
+    SELECT a.*, c.legal_name AS client_name, u.name AS inspector_name
+    FROM assessments a LEFT JOIN clients c ON c.id = a.client_id LEFT JOIN users u ON u.id = a.inspector_id
+    WHERE a.id = ?
+  `).get(req.params.id);
 
-    res.json({ data: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  res.json({ data: updated });
+}));
 
 // PUT /:id/items/:itemId — update a single checklist item (status, NC, corrective action)
-router.put('/:id/items/:itemId', (req: Request, res: Response) => {
-  try {
-    const item = db.prepare('SELECT * FROM assessment_items WHERE id = ? AND assessment_id = ?').get(req.params.itemId, req.params.id) as any;
-    if (!item) return res.status(404).json({ error: 'Assessment item not found' });
+router.put('/:id/items/:itemId', asyncHandler((req: Request, res: Response) => {
+  const item = db.prepare('SELECT * FROM assessment_items WHERE id = ? AND assessment_id = ?').get(req.params.itemId, req.params.id) as any;
+  if (!item) return res.status(404).json({ error: 'Assessment item not found' });
 
-    const { status, comments, nc_code, nc_severity, corrective_action, corrective_action_due, corrective_action_status } = req.body;
+  const { status, comments, nc_code, nc_severity, corrective_action, corrective_action_due, corrective_action_status } = req.body;
 
-    db.prepare(`
-      UPDATE assessment_items SET
-        status = ?, comments = ?, nc_code = ?, nc_severity = ?,
-        corrective_action = ?, corrective_action_due = ?, corrective_action_status = ?
-      WHERE id = ?
-    `).run(
-      status ?? item.status,
-      comments !== undefined ? comments : item.comments,
-      nc_code !== undefined ? nc_code : item.nc_code,
-      nc_severity !== undefined ? nc_severity : item.nc_severity,
-      corrective_action !== undefined ? corrective_action : item.corrective_action,
-      corrective_action_due !== undefined ? corrective_action_due : item.corrective_action_due,
-      corrective_action_status !== undefined ? corrective_action_status : item.corrective_action_status,
-      req.params.itemId
-    );
+  db.prepare(`
+    UPDATE assessment_items SET
+      status = ?, comments = ?, nc_code = ?, nc_severity = ?,
+      corrective_action = ?, corrective_action_due = ?, corrective_action_status = ?
+    WHERE id = ?
+  `).run(
+    status ?? item.status,
+    comments !== undefined ? comments : item.comments,
+    nc_code !== undefined ? nc_code : item.nc_code,
+    nc_severity !== undefined ? nc_severity : item.nc_severity,
+    corrective_action !== undefined ? corrective_action : item.corrective_action,
+    corrective_action_due !== undefined ? corrective_action_due : item.corrective_action_due,
+    corrective_action_status !== undefined ? corrective_action_status : item.corrective_action_status,
+    req.params.itemId
+  );
 
-    const updated = db.prepare('SELECT * FROM assessment_items WHERE id = ?').get(req.params.itemId);
-    res.json({ data: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  const updated = db.prepare('SELECT * FROM assessment_items WHERE id = ?').get(req.params.itemId);
+  res.json({ data: updated });
+}));
 
 // DELETE /:id — delete assessment and cascade items
-router.delete('/:id', (req: Request, res: Response) => {
-  try {
-    const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
-    if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+router.delete('/:id', asyncHandler((req: Request, res: Response) => {
+  const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
+  if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
-    db.prepare('DELETE FROM assessments WHERE id = ?').run(req.params.id);
-    res.json({ data: { message: 'Assessment deleted successfully' } });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  db.prepare('DELETE FROM assessments WHERE id = ?').run(req.params.id);
+  res.json({ data: { message: 'Assessment deleted successfully' } });
+}));
 
 // POST /:id/items — bulk save items for an assessment
-router.post('/:id/items', (req: Request, res: Response) => {
+router.post('/:id/items', asyncHandler((req: Request, res: Response) => {
+  const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
+  if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+
+  const { items } = req.body;
+  const itemsArray = Array.isArray(items) ? items : req.body;
+  if (!Array.isArray(itemsArray)) return res.status(400).json({ error: 'Body must be an array of items or { items: [...] }' });
+
+  db.exec('BEGIN');
   try {
-    const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
-    if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
-
-    const { items } = req.body;
-    const itemsArray = Array.isArray(items) ? items : req.body;
-    if (!Array.isArray(itemsArray)) return res.status(400).json({ error: 'Body must be an array of items or { items: [...] }' });
-
-    db.exec('BEGIN');
-    try {
-      db.prepare('DELETE FROM assessment_items WHERE assessment_id = ?').run(req.params.id);
-      const insertItem = db.prepare(`
-        INSERT INTO assessment_items (assessment_id, section, item_number, description, status, comments, sort_order, legal_ref, risk_level, evidence_required, action, records, checklist_group, nc_code, nc_severity, corrective_action, corrective_action_due, corrective_action_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      for (const item of itemsArray) {
-        insertItem.run(
-          req.params.id, item.section, item.item_number, item.description,
-          item.status || 'pending', item.comments || null, item.sort_order ?? 0,
-          item.legal_ref || null, item.risk_level || 'medium', item.evidence_required ?? 0,
-          item.action || null, item.records || null, item.checklist_group || 'general',
-          item.nc_code || null, item.nc_severity || null, item.corrective_action || null,
-          item.corrective_action_due || null, item.corrective_action_status || 'open'
-        );
-      }
-      db.exec('COMMIT');
-    } catch (e) {
-      db.exec('ROLLBACK');
-      throw e;
+    db.prepare('DELETE FROM assessment_items WHERE assessment_id = ?').run(req.params.id);
+    const insertItem = db.prepare(`
+      INSERT INTO assessment_items (assessment_id, section, item_number, description, status, comments, sort_order, legal_ref, risk_level, evidence_required, action, records, checklist_group, nc_code, nc_severity, corrective_action, corrective_action_due, corrective_action_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const item of itemsArray) {
+      insertItem.run(
+        req.params.id, item.section, item.item_number, item.description,
+        item.status || 'pending', item.comments || null, item.sort_order ?? 0,
+        item.legal_ref || null, item.risk_level || 'medium', item.evidence_required ?? 0,
+        item.action || null, item.records || null, item.checklist_group || 'general',
+        item.nc_code || null, item.nc_severity || null, item.corrective_action || null,
+        item.corrective_action_due || null, item.corrective_action_status || 'open'
+      );
     }
-
-    const saved = db.prepare('SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC').all(req.params.id);
-    res.json({ data: saved });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
   }
-});
+
+  const saved = db.prepare('SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC').all(req.params.id);
+  res.json({ data: saved });
+}));
 
 // GET /:id/items — get all items for an assessment
-router.get('/:id/items', (req: Request, res: Response) => {
-  try {
-    const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
-    if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+router.get('/:id/items', asyncHandler((req: Request, res: Response) => {
+  const assessment = db.prepare('SELECT * FROM assessments WHERE id = ?').get(req.params.id);
+  if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
-    const items = db.prepare('SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC').all(req.params.id);
-    res.json({ data: items });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  const items = db.prepare('SELECT * FROM assessment_items WHERE assessment_id = ? ORDER BY sort_order ASC, item_number ASC').all(req.params.id);
+  res.json({ data: items });
+}));
 
 export default router;

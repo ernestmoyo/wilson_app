@@ -3,9 +3,14 @@ const BASE = '/api'
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     ...options,
   })
   if (!res.ok) {
+    if (res.status === 401) {
+      window.location.reload()
+      throw new Error('Session expired')
+    }
     const err = await res.json().catch(() => ({ error: 'Request failed' }))
     throw new Error(err.error || 'Request failed')
   }

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from '@/components/Layout'
 import Dashboard from '@/pages/Dashboard'
+import LoginPage from '@/pages/LoginPage'
 import EnquiriesPage from '@/pages/enquiries/EnquiriesPage'
 import ClientsPage from '@/pages/clients/ClientsPage'
 import ClientDetail from '@/pages/clients/ClientDetail'
@@ -17,6 +19,35 @@ import AuditLogPage from '@/pages/audit-log/AuditLogPage'
 import TrainingPage from '@/pages/training/TrainingPage'
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/check', { credentials: 'include' })
+      .then(res => {
+        setAuthenticated(res.ok)
+      })
+      .catch(() => setAuthenticated(false))
+  }, [])
+
+  // Loading state while checking auth
+  if (authenticated === null) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--nz-bg, #f0f2f5)',
+      }}>
+        <div style={{ color: '#6b7280', fontSize: 16 }}>Loading...</div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return <LoginPage onLogin={() => setAuthenticated(true)} />
+  }
+
   return (
     <BrowserRouter>
       <Routes>

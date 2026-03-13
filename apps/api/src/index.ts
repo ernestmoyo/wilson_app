@@ -1,7 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
+import cookieParser from 'cookie-parser';
 import { initSchema } from './db/schema';
+import { authMiddleware, loginHandler, logoutHandler, checkAuthHandler } from './middleware/auth';
+import db from './db/database';
 
 import usersRouter from './routes/users';
 import clientsRouter from './routes/clients';
@@ -23,16 +26,52 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 
 // Middleware
 app.use(cors({
-  origin: IS_PROD ? true : 'http://localhost:3000',
+  origin: IS_PROD ? (process.env.ALLOWED_ORIGIN || false) : 'http://localhost:3000',
+  credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser() as any);
+
+// Request logging
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    console.log(`${req.method} ${req.path} ${res.statusCode} ${Date.now() - start}ms`);
+  });
+  next();
+});
 
 // Initialise DB schema and seed data
 initSchema();
 
+// Auth middleware — applied to all /api/* routes
+app.use(authMiddleware);
+
+// Public auth endpoints
+app.post('/api/login', loginHandler);
+app.post('/api/logout', logoutHandler);
+app.get('/api/auth/check', checkAuthHandler);
+
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', app: 'Wilson Suite API' });
+});
+
+// Backup download (auth-protected — middleware already applied)
+app.get('/api/backup', (_req: Request, res: Response) => {
+  try {
+    const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../../data');
+    const dbPath = path.join(DATA_DIR, 'wilson.sqlite');
+
+    // Force a WAL checkpoint so the backup file is complete
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+
+    const date = new Date().toISOString().split('T')[0];
+    res.download(dbPath, `wilson-backup-${date}.sqlite`);
+  } catch (err) {
+    console.error('[ERROR] Backup download:', err);
+    res.status(500).json({ error: 'Backup failed' });
+  }
 });
 
 // Routes
@@ -67,14 +106,17 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Global error handler
+// Global error handler — sanitized response, full server-side log
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: err.message || 'Internal server error' });
+  console.error('[UNHANDLED]', err.stack);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Wilson Suite API running on http://localhost:${PORT}`);
-});
+// Only start the server when not imported as a module (i.e., not in tests)
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Wilson Suite API running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;

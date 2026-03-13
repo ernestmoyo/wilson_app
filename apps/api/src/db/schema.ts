@@ -251,7 +251,12 @@ export function initSchema() {
     "ALTER TABLE evidence ADD COLUMN location_area TEXT",
   ];
   for (const sql of migrations) {
-    try { db.exec(sql); } catch (_) { /* column already exists */ }
+    try {
+      db.exec(sql);
+    } catch (e: any) {
+      // Only swallow "duplicate column" errors — rethrow everything else
+      if (!e.message?.includes('duplicate column')) throw e;
+    }
   }
 
   // v2.0 — Storage areas
@@ -287,6 +292,20 @@ export function initSchema() {
     practical_passed INTEGER DEFAULT 0, overall_result TEXT,
     assessor_statement TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
+
+  // Performance indexes on frequently queried foreign keys
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_inventory_client ON inventory(client_id);
+    CREATE INDEX IF NOT EXISTS idx_evidence_client ON evidence(client_id);
+    CREATE INDEX IF NOT EXISTS idx_evidence_assessment ON evidence(assessment_id);
+    CREATE INDEX IF NOT EXISTS idx_assessment_items_assessment ON assessment_items(assessment_id);
+    CREATE INDEX IF NOT EXISTS idx_assessments_client ON assessments(client_id);
+    CREATE INDEX IF NOT EXISTS idx_certificates_client ON certificates(client_id);
+    CREATE INDEX IF NOT EXISTS idx_storage_areas_client ON storage_areas(client_id);
+    CREATE INDEX IF NOT EXISTS idx_training_records_client ON training_records(client_id);
+    CREATE INDEX IF NOT EXISTS idx_handler_assessments_assessment ON handler_assessments(assessment_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id);
+  `);
 
   // Seed default user (Bryan Wilson)
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get('bryan.wilson@wilsoncompliance.co.nz');
