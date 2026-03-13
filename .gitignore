@@ -1,9 +1,22 @@
-# Private client documents — never commit
+# Private client case files — never commit
+/client-cases/
+abecca/
+Zhendi Yang/
+Location 2_ Cool 2/
+
+# Document file types (sensitive)
 *.pdf
 *.docx
 *.doc
 *.xlsx
 *.xls
+*.xlsm
+*.msg
+*.HEIC
+*.jpeg
+*.jpg
+*.zip
+*.png
 
 # Dependencies
 node_modules/
