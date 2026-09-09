@@ -1,0 +1,15 @@
+{
+  "name": "@wilson/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Postgres schema for the Assure Safety compliance platform. Migrations encode the transition guards and retention rules the regulations require.",
+  "scripts": {
+    "test": "node test/run-migrations.test.mjs && node test/e2e-g2-chiller.test.mjs",
+    "test:guards": "node test/run-migrations.test.mjs",
+    "test:e2e": "node test/e2e-g2-chiller.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
+  }
+}
