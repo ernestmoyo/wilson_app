@@ -1,0 +1,5 @@
+package nz.co.assuresafety.assure_field
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

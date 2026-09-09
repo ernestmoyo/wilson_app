@@ -1,0 +1,6 @@
+{
+  "name": "@wilson/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flutter field app (assure_field). Built with the Flutter toolchain, not npm — this manifest exists only so the apps/* npm workspace glob does not choke on a non-Node package."
+}
