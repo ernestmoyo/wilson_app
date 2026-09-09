@@ -22,18 +22,26 @@ const vendor = join(server, 'vendor');
 if (existsSync(vendor)) rmSync(vendor, { recursive: true, force: true });
 mkdirSync(join(vendor, 'lib'), { recursive: true });
 
+// [source, destination, required]
 const copies = [
-  ['packages/db/migrations', 'migrations'],
-  ['packages/checksheets/generated/seed-templates.sql', 'seed-templates.sql'],
-  ['packages/checksheets/lib/render-certificate.mjs', 'lib/render-certificate.mjs'],
-  ['packages/checksheets/data/certificates/g2-chiller/signature.png', 'signature.png'],
+  ['packages/db/migrations', 'migrations', true],
+  ['packages/checksheets/generated/seed-templates.sql', 'seed-templates.sql', true],
+  ['packages/checksheets/lib/render-certificate.mjs', 'lib/render-certificate.mjs', true],
+  // The certifier's signature is deliberately kept out of git and out of the
+  // deploy upload (.gitignore / .vercelignore). When absent the certificate
+  // renders without it and the signature comes from the user record later.
+  ['packages/checksheets/data/certificates/g2-chiller/signature.png', 'signature.png', false],
 ];
 
-for (const [from, to] of copies) {
+for (const [from, to, required] of copies) {
   const src = join(repo, from);
   if (!existsSync(src)) {
-    console.error(`vendor: missing ${from}`);
-    process.exit(1);
+    if (required) {
+      console.error(`vendor: missing required ${from}`);
+      process.exit(1);
+    }
+    console.log(`vendor: (optional) ${from} not present — skipped`);
+    continue;
   }
   cpSync(src, join(vendor, to), { recursive: true });
   console.log(`vendor: ${from} → vendor/${to}`);
