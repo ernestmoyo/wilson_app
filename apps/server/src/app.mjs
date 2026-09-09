@@ -78,20 +78,30 @@ export function buildApp(db, { allowedOrigin } = {}) {
 
   // ── health ───────────────────────────────────────────────────────────────
   app.get('/api/health', wrap(async (_req, res) => {
-    const r = await db.query('SELECT count(*)::int AS n FROM checksheet_item');
+    // Items of CURRENT template revisions only — superseded revisions keep
+    // their rows so old findings resolve, but they are not the check sheet.
+    const r = await db.query(`
+      SELECT count(i.id)::int AS n
+      FROM checksheet_item i
+      JOIN checksheet_section s ON s.id = i.section_id
+      JOIN checksheet_template t ON t.id = s.template_id
+      WHERE t.status = 'current'`);
     res.json({ ok: true, db: db.kind, templateItems: r.rows[0].n });
   }));
 
   // ── templates: the canonical check sheets, from the database ─────────────
   // The app ships these compiled in; this endpoint lets it confirm its bundle
   // matches what the server holds before an inspection begins.
-  app.get('/api/templates', wrap(async (_req, res) => {
+  app.get('/api/templates', wrap(async (req, res) => {
+    // Current revisions by default; ?all=1 includes superseded ones.
+    const all = req.query.all === '1';
     const r = await db.query(`
       SELECT t.code, t.revision, t.title, t.status, t.class_scope,
              count(i.id)::int AS item_count
       FROM checksheet_template t
       LEFT JOIN checksheet_section s ON s.template_id = t.id
       LEFT JOIN checksheet_item i ON i.section_id = s.id
+      ${all ? '' : `WHERE t.status = 'current'`}
       GROUP BY t.id ORDER BY t.code, t.revision`);
     res.json(r.rows);
   }));
@@ -99,7 +109,8 @@ export function buildApp(db, { allowedOrigin } = {}) {
   app.get('/api/templates/:code', wrap(async (req, res) => {
     const t = await db.query(
       `SELECT id, code, revision, title, status, class_scope, ps_reference, meta
-       FROM checksheet_template WHERE code = $1 ORDER BY revision DESC LIMIT 1`,
+       FROM checksheet_template WHERE code = $1 AND status = 'current'
+       ORDER BY revision DESC LIMIT 1`,
       [req.params.code]);
     if (!t.rows.length) return res.status(404).json({ error: 'template not found' });
     const sections = await db.query(

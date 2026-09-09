@@ -15,6 +15,7 @@
  * Usage:  node tools/generate.mjs
  */
 
+import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -493,17 +494,40 @@ CREATE INDEX IF NOT EXISTS idx_checksheet_item_refs
   out.push('\n-- ── seed ──────────────────────────────────────────────────────────────\n');
   out.push('BEGIN;\n');
 
+  // Revisioning by content hash.
+  //
+  // A template's sections and items are immutable once published: findings
+  // reference item ids, and an inspection must always be able to name the
+  // exact wording it was assessed against. So a changed template is NEVER
+  // merged into an existing revision — it becomes a new revision, the old one
+  // is marked superseded, and old findings keep pointing at old rows.
+  // Re-running the same seed is a no-op. (Merging under one revision once
+  // turned 98 items into 116 on the deployed database.)
   for (const t of templates) {
-    out.push(`-- ${t.code} rev ${t.revision ?? 1} — ${t.sections.length} sections, ${t.sections.reduce((n, s) => n + s.items.length, 0)} items`);
-    const meta = JSON.stringify({ sheet: sheetOf(t), sheetByClass: t.sheetByClass ?? null });
+    const body = JSON.stringify({ sheet: sheetOf(t), sheetByClass: t.sheetByClass ?? null, sections: t.sections });
+    const hash = createHash('sha256').update(body).digest('hex');
+    const meta = JSON.stringify({ contentHash: hash, sheet: sheetOf(t), sheetByClass: t.sheetByClass ?? null });
+    const items = t.sections.reduce((n, s) => n + s.items.length, 0);
+    const code = sqlStr(t.code);
+    const H = sqlStr(hash);
+
+    out.push(`-- ${t.code} — ${t.sections.length} sections, ${items} items — content ${hash.slice(0, 12)}`);
     out.push(`INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
-VALUES (${sqlStr(t.code)}, ${t.revision ?? 1}, ${sqlStr(t.title)}, ${sqlStr(t.psReference)}, ${sqlArr(t.classScope)}, ${sqlStr(t.status ?? 'draft')}, ${sqlStr(meta)}::jsonb)
-ON CONFLICT (code, revision) DO UPDATE SET meta = EXCLUDED.meta;\n`);
+SELECT ${code},
+       COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = ${code}), 0) + 1,
+       ${sqlStr(t.title)}, ${sqlStr(t.psReference)}, ${sqlArr(t.classScope)}, 'current', ${sqlStr(meta)}::jsonb
+WHERE NOT EXISTS (
+  SELECT 1 FROM checksheet_template WHERE code = ${code} AND meta->>'contentHash' = ${H}
+);`);
+    out.push(`UPDATE checksheet_template
+   SET status = 'superseded',
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = ${code} AND meta->>'contentHash' = ${H})
+ WHERE code = ${code} AND (meta->>'contentHash') IS DISTINCT FROM ${H} AND status <> 'superseded';\n`);
 
     for (const s of t.sections) {
       out.push(`INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, ${s.ordinal}, ${sqlStr(s.number)}, ${sqlStr(s.title)}
-FROM checksheet_template WHERE code = ${sqlStr(t.code)} AND revision = ${t.revision ?? 1}
+FROM checksheet_template WHERE code = ${code} AND meta->>'contentHash' = ${H}
 ON CONFLICT (template_id, ordinal) DO NOTHING;`);
 
       for (const i of s.items) {
@@ -514,7 +538,7 @@ ON CONFLICT (template_id, ordinal) DO NOTHING;`);
 SELECT sec.id, ${i.ordinal}, ${sqlStr(i.number)}, ${sqlArr(i.regulationRefs)}, ${byClass}, ${sqlStr(i.regulationRaw)}, ${sqlStr(i.guidanceUrl)}, ${sqlStr(i.action)}, ${sqlStr(i.records)}, ${!!i.evidenceRequired}
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = ${sqlStr(t.code)} AND t.revision = ${t.revision ?? 1} AND sec.ordinal = ${s.ordinal}
+WHERE t.code = ${code} AND t.meta->>'contentHash' = ${H} AND sec.ordinal = ${s.ordinal}
 ON CONFLICT (section_id, ordinal) DO NOTHING;`);
       }
       out.push('');
