@@ -1,14 +1,19 @@
 # Only the platform ships to Vercel. Everything below is either private
 # client material, the legacy Railway app, local toolchains, or build output.
 
+# Root-only directories are anchored with a leading slash. Unanchored names
+# match at any depth — and on Windows the CLI matches case-insensitively, so a
+# bare "Scripts/" (the Python venv) also swallowed apps/server/scripts/ and
+# broke the build. Keep every root-only entry anchored.
+
 # private / sensitive
-client-cases/
-correspondance/
-reference/
-assure-safety-nz/
-forms/
-packages/checksheets/data/evidence/
-packages/checksheets/data/certificates/*/signature.png
+/client-cases/
+/correspondance/
+/reference/
+/assure-safety-nz/
+/forms/
+/packages/checksheets/data/evidence/
+/packages/checksheets/data/certificates/*/signature.png
 *.pdf
 *.docx
 *.doc
@@ -17,22 +22,21 @@ packages/checksheets/data/certificates/*/signature.png
 *.msg
 
 # legacy Railway app (SQLite) — not deployed here
-apps/api/
-apps/web/
-Dockerfile
-railway.toml
-nixpacks.toml
+/apps/api/
+/apps/web/
+/Dockerfile
+/railway.toml
+/nixpacks.toml
 
 # local toolchains and caches
-Lib/
-Scripts/
-share/
+/Lib/
+/Scripts/
+/share/
 node_modules/
 .git/
 .dart_tool/
-apps/mobile/build/
-apps/mobile/android/
-apps/mobile/ios/
-apps/mobile/.dart_tool/
-apps/server/data/
-apps/server/vendor/
+/apps/mobile/build/
+/apps/mobile/android/
+/apps/mobile/ios/
+/apps/server/data/
+/apps/server/vendor/
