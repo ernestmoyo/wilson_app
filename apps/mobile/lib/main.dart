@@ -172,7 +172,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => showAboutDialog(
               context: context,
               applicationName: 'Assure Safety Field',
-              applicationVersion: 'WKS-17 templates rev 1',
+              applicationVersion:
+                  'WKS-17 templates: ${kTemplatesByCode.values.map((t) => '${t.code} r${t.revision}').join(', ')}',
               children: [
                 const Text(
                   'Check sheet content is generated from the canonical WKS-17 '
