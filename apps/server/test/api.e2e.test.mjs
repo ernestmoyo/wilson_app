@@ -342,6 +342,55 @@ await step('GET /api/evidence/:key returns the stored bytes', async () => {
   return `${r.body.length} bytes round-tripped`;
 });
 
+console.log('\nSHEET NODES — what the app needs to mirror the workbook');
+await step('template meta carries the sheet-level nodes and the class overlay', async () => {
+  const r = await api.get('/api/templates/wks17-general');
+  const m = r.body.meta;
+  expect(m?.sheet?.note === 'NB: Non compliances are in red', JSON.stringify(m?.sheet).slice(0, 200));
+  expect(m.sheet.columnHeaders.join('|') === 'Item|Regulation|Action|Records|Comments', 'column headers');
+  expect(m.sheetByClass?.class_6_8?.declaration?.includes('Regulation 13.38'), 'class 6/8 declaration');
+  expect(m.sheetByClass?.class_2_3?.declaration?.includes('Regulation 17.91'), 'class 2/3 declaration');
+  const c68 = await api.get('/api/templates/wks17-class-6-1a-6-1b-6-1c-8-2a-8');
+  expect(c68.body.meta.sheet.documentControl?.Owner === 'BW', 'document control');
+  expect(c68.body.meta.sheet.footer === 'Section 2/2', 'footer');
+  return `general: ${Object.keys(m.sheetByClass).join(', ')} overlays; class 6/8: document control + scope + footer`;
+});
+
+await step('IPS 21(5): inspection.sign records (who, when) for declaration and scope', async () => {
+  const r = await sync([
+    ev('inspection.sign', { inspectionId, which: 'declaration' }),
+    ev('inspection.sign', { inspectionId, which: 'scope' }),
+  ]);
+  expect(r.body.applied.length === 2, JSON.stringify(r.body.rejected));
+  const job = await api.get(`/api/jobs/${jobId}`);
+  const i = job.body.inspections[0];
+  expect(i.declaration_signed_by === 1 && i.declaration_signed_at, 'declaration not signed');
+  expect(i.scope_confirmed_by === 1 && i.scope_confirmed_at, 'scope not confirmed');
+  return `signed by user ${i.declaration_signed_by} at ${new Date(i.declaration_signed_at).toISOString()}`;
+});
+
+await step('a signature without an authenticated signer is rejected with IPS 21(5)', async () => {
+  const r = await api.post('/api/sync').set('x-device-id', 'anon-device')
+    .send({ deviceId: 'anon-device', events: [ev('inspection.sign', { inspectionId, which: 'declaration' })] });
+  expect(r.body.rejected.length === 1 && r.body.rejected[0].clause === 'IPS 21(5)', JSON.stringify(r.body));
+  return r.body.rejected[0].reason;
+});
+
+await step('job payload carries the site-block sources: contacts and substances', async () => {
+  await db.query(`INSERT INTO contact (client_id, name, role, phone, email, is_site_manager)
+                  SELECT client_id, 'Jesh Chandra', 'Site manager', '0226787761', 'jesh.chandra@argentaglobal.com', true
+                  FROM job WHERE id = $1`, [jobId]);
+  await db.query(`INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit)
+                  SELECT hs_location_id, s.n, s.c, s.q, 'kg' FROM job,
+                    (VALUES ('Abamectin','6.1B',190),('Eprinomectin','6.1C',2500),
+                            ('Ivermectin','6.1B',10),('Moxidectin','6.1B',120)) AS s(n,c,q)
+                  WHERE job.id = $1`, [jobId]);
+  const job = await api.get(`/api/jobs/${jobId}`);
+  expect(job.body.contacts?.[0]?.name === 'Jesh Chandra', 'manager missing');
+  expect(job.body.substances?.length === 4, `substances ${job.body.substances?.length}`);
+  return `manager ${job.body.contacts[0].name}; ${job.body.substances.map((s) => s.name).join(', ')}`;
+});
+
 await step('sync_event holds every event ever received, with outcomes', async () => {
   const r = await db.query(`SELECT outcome, count(*)::int n FROM sync_event GROUP BY outcome ORDER BY outcome`);
   const o = Object.fromEntries(r.rows.map((x) => [x.outcome, x.n]));

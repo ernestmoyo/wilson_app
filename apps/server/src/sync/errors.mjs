@@ -54,6 +54,14 @@ const BY_CONSTRAINT = {
     clause: 'IPS 8(1)(e),(h),(i)',
     reason: 'In-force date must not precede issue date, and expiry must follow in-force.',
   },
+  declaration_signature_complete: {
+    clause: 'IPS 21(5)',
+    reason: 'The declaration must be signed by a named person at a recorded time.',
+  },
+  scope_confirmation_complete: {
+    clause: 'IPS 21(5)',
+    reason: 'Scope-of-authorisation confirmation must be signed by a named person at a recorded time.',
+  },
   finding_inspection_id_item_id_key: {
     clause: null,
     reason: 'A finding already exists for this item on this inspection; use an update.',

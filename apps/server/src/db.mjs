@@ -22,11 +22,16 @@ const serverRoot = join(here, '..');
 const repoRoot = join(serverRoot, '..', '..');
 const vendorDir = join(serverRoot, 'vendor');
 
-/** Resolve an asset from ./vendor (deployed) or the monorepo (local). */
+/**
+ * Resolve an asset from the monorepo when it is present (local dev, tests),
+ * falling back to ./vendor (the Vercel bundle, where packages/ does not exist).
+ * The monorepo wins so a stale vendor/ from an earlier build can never shadow
+ * a fresh migration or template — which is exactly what happened once.
+ */
 export function assetPath(vendorRel, repoRel) {
-  const v = join(vendorDir, vendorRel);
-  if (existsSync(v)) return v;
-  return join(repoRoot, repoRel);
+  const r = join(repoRoot, repoRel);
+  if (existsSync(r)) return r;
+  return join(vendorDir, vendorRel);
 }
 
 const migrationsDir = () => assetPath('migrations', 'packages/db/migrations');
@@ -85,18 +90,40 @@ export async function connect({
   };
 }
 
-/** Apply the template seed and every migration, in order, once. */
+/**
+ * Apply the template seed and every migration, in order.
+ *
+ * The template seed is idempotent (ON CONFLICT … DO UPDATE SET meta) and its
+ * DDL is ADD COLUMN IF NOT EXISTS, so it runs on EVERY boot: a regenerated
+ * template or a new sheet-level field reaches an existing database without a
+ * hand migration. Instance migrations are numbered and tracked in
+ * schema_migration so each applies exactly once.
+ */
 export async function migrate(db) {
-  const r = await db
-    .query(`SELECT to_regclass('public.sync_event') AS t`)
-    .catch(() => ({ rows: [{ t: null }] }));
-  if (r.rows[0]?.t) return { skipped: true };
-
   await db.exec(readFileSync(templateSeed(), 'utf8'));
-  for (const f of readdirSync(migrationsDir()).filter((x) => x.endsWith('.sql')).sort()) {
-    await db.exec(readFileSync(join(migrationsDir(), f), 'utf8'));
+
+  await db.exec(`CREATE TABLE IF NOT EXISTS schema_migration (
+    name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
+
+  // Databases created before schema_migration existed already hold 002–004.
+  const legacy = await db.query(`SELECT to_regclass('public.sync_event') AS t`);
+  if (legacy.rows[0]?.t) {
+    await db.query(
+      `INSERT INTO schema_migration (name) VALUES
+         ('002_instance_layer.sql'), ('003_guards_and_events.sql'), ('004_sync.sql')
+       ON CONFLICT DO NOTHING`
+    );
   }
-  return { skipped: false };
+
+  const done = new Set((await db.query(`SELECT name FROM schema_migration`)).rows.map((r) => r.name));
+  const applied = [];
+  for (const f of readdirSync(migrationsDir()).filter((x) => x.endsWith('.sql')).sort()) {
+    if (done.has(f)) continue;
+    await db.exec(readFileSync(join(migrationsDir(), f), 'utf8'));
+    await db.query(`INSERT INTO schema_migration (name) VALUES ($1) ON CONFLICT DO NOTHING`, [f]);
+    applied.push(f);
+  }
+  return { skipped: applied.length === 0, applied };
 }
 
 /**

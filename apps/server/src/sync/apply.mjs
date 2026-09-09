@@ -144,6 +144,34 @@ const handlers = {
     return { declarationId: r.rows[0].id };
   },
 
+  /**
+   * IPS 21(5): sign the sheet's declaration, or confirm scope of authorisation.
+   * A signature is a (who, when) pair; the who is the authenticated user, never
+   * a payload field, so a device cannot sign as someone else.
+   */
+  async 'inspection.sign'(db, p, ctx) {
+    const which = p.which === 'scope' ? 'scope' : 'declaration';
+    if (!ctx.userId) {
+      const e = new Error('IPS 21(5): a signature needs an authenticated signer');
+      e.code = 'P0001';
+      throw e;
+    }
+    const col = which === 'scope' ? 'scope_confirmed' : 'declaration_signed';
+    const r = await db.query(
+      `UPDATE inspection
+         SET ${col}_at = $2, ${col}_by = $3
+       WHERE id = $1
+       RETURNING id, ${col}_at AS signed_at, ${col}_by AS signed_by`,
+      [p.inspectionId, p.signedAt ?? new Date().toISOString(), ctx.userId]
+    );
+    if (!r.rows.length) {
+      const e = new Error(`inspection ${p.inspectionId} not found`);
+      e.code = '22P02';
+      throw e;
+    }
+    return { inspectionId: r.rows[0].id, which, signedAt: r.rows[0].signed_at, signedBy: r.rows[0].signed_by };
+  },
+
   /** IPS 21(2)(a): a communication with the applicant is a statutory record. */
   async 'communication.record'(db, p, ctx) {
     const r = await db.query(

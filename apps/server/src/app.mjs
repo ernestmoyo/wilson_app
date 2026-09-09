@@ -98,7 +98,7 @@ export function buildApp(db, { allowedOrigin } = {}) {
 
   app.get('/api/templates/:code', wrap(async (req, res) => {
     const t = await db.query(
-      `SELECT id, code, revision, title, status, class_scope, ps_reference
+      `SELECT id, code, revision, title, status, class_scope, ps_reference, meta
        FROM checksheet_template WHERE code = $1 ORDER BY revision DESC LIMIT 1`,
       [req.params.code]);
     if (!t.rows.length) return res.status(404).json({ error: 'template not found' });
@@ -154,6 +154,23 @@ export function buildApp(db, { allowedOrigin } = {}) {
       const j = await tx.query(
         `INSERT INTO job (client_id, hs_location_id, class_key) VALUES ($1,$2,$3) RETURNING id, stage`,
         [c.rows[0].id, l.rows[0].id, b.classKey ?? null]);
+      // Site block rows 10, 12 and 13 come from contacts and substances; accept
+      // them at creation so a job is complete from its first render.
+      for (const ct of Array.isArray(b.contacts) ? b.contacts : []) {
+        if (!ct?.name) continue;
+        await tx.query(
+          `INSERT INTO contact (client_id, name, role, phone, email, is_site_manager)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [c.rows[0].id, ct.name, ct.role ?? null, ct.phone ?? null, ct.email ?? null, !!ct.isSiteManager]);
+      }
+      for (const sb of Array.isArray(b.substances) ? b.substances : []) {
+        if (!sb?.name || !sb?.hazardClass) continue;
+        await tx.query(
+          `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [l.rows[0].id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
+           sb.unNumber ?? null, sb.hsnoApproval ?? null]);
+      }
       return { jobId: j.rows[0].id, clientId: c.rows[0].id, siteId: s.rows[0].id,
                hsLocationId: l.rows[0].id, stage: j.rows[0].stage };
     });
@@ -167,7 +184,8 @@ export function buildApp(db, { allowedOrigin } = {}) {
       SELECT j.id, j.stage, j.class_key, j.opened_at, j.closed_at,
              json_build_object('id', c.id, 'legalName', c.legal_name, 'tradingName', c.trading_name,
                                'nzbn', c.nzbn, 'companiesNumber', c.companies_number,
-                               'postalAddress', c.postal_address) AS client,
+                               'postalAddress', c.postal_address, 'phone', c.phone,
+                               'website', c.website, 'industry', c.industry) AS client,
              json_build_object('id', l.id, 'name', l.name, 'summary', l.summary,
                                'address', s.address) AS location
       FROM job j
@@ -177,9 +195,11 @@ export function buildApp(db, { allowedOrigin } = {}) {
       WHERE j.id = $1`, [id]);
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
-    const [insp, findings, evidence, cert, retention, transitions, interests] = await Promise.all([
+    const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
+                       i.declaration_signed_at, i.declaration_signed_by,
+                       i.scope_confirmed_at, i.scope_confirmed_by,
                        array_agg(t.code ORDER BY t.code) FILTER (WHERE t.code IS NOT NULL) AS template_codes
                 FROM inspection i
                 LEFT JOIN inspection_template it ON it.inspection_id = i.id
@@ -206,6 +226,14 @@ export function buildApp(db, { allowedOrigin } = {}) {
                 FROM job_stage_transition WHERE job_id = $1 ORDER BY id`, [id]),
       db.query(`SELECT certifier_id, conflict_found, description, declared_at
                 FROM interest_declaration WHERE job_id = $1`, [id]),
+      // Site block rows 10 and 12: Manager Name, Direct Dial / Mobile.
+      db.query(`SELECT ct.id, ct.name, ct.role, ct.phone, ct.email, ct.is_site_manager
+                FROM contact ct JOIN job j ON j.client_id = ct.client_id
+                WHERE j.id = $1 ORDER BY ct.is_site_manager DESC, ct.id`, [id]),
+      // Site block row 13: Hazardous substance name(s) at this location.
+      db.query(`SELECT s.id, s.name, s.hazard_class, s.quantity, s.unit, s.un_number, s.hsno_approval
+                FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id
+                WHERE j.id = $1 ORDER BY s.name`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -219,6 +247,8 @@ export function buildApp(db, { allowedOrigin } = {}) {
       retention: retention.rows[0] ?? null,
       transitions: transitions.rows,
       interestDeclarations: interests.rows,
+      contacts: contacts.rows,
+      substances: substances.rows,
     });
   }));
 
