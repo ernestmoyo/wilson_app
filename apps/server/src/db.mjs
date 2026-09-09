@@ -33,7 +33,11 @@ const migrationsDir = () => assetPath('migrations', 'packages/db/migrations');
 const templateSeed = () =>
   assetPath('seed-templates.sql', 'packages/checksheets/generated/seed-templates.sql');
 
-export async function connect({ url = process.env.DATABASE_URL } = {}) {
+// DATABASE_URL is ours; POSTGRES_URL is what the Neon Marketplace integration
+// injects. Accept either so a fresh provision works without a config edit.
+export async function connect({
+  url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL,
+} = {}) {
   if (url) {
     const { default: pg } = await import('pg');
     const pool = new pg.Pool({
