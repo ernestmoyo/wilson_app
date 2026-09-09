@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assuresafety.co.nz/schema/certificate.schema.json",
+  "title": "Location Compliance Certificate",
+  "description": "A location compliance certificate issued under reg 6.23 and 13.38 of the HSW (Hazardous Substances) Regulations 2017. Field names carry their IPS 2019 cl. 8(1) sub-clause where the regulation mandates them; a renderer that omits a mandated field produces an invalid certificate, so those fields are required here rather than optional.",
+  "type": "object",
+  "required": [
+    "certifier",
+    "issuedTo",
+    "pcbu",
+    "location",
+    "decision",
+    "issueDate",
+    "inForceDate",
+    "substances"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "documentTitle": {
+      "type": "string",
+      "default": "COMPLIANCE CERTIFICATE Location",
+      "description": "IPS 8(1)(d) — the type of compliance certificate"
+    },
+    "issuedUnder": {
+      "type": "string",
+      "default": "Issued in accordance with regulations 6.23 and regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017"
+    },
+    "certifiesThat": {
+      "type": "string",
+      "default": "This certificate certifies that the requirements prescribed in regulation 13.39 for a location compliance certificate have been met"
+    },
+
+    "certificateNumber": {
+      "type": ["string", "null"],
+      "description": "IPS 8(1)(c)(ii) — a number assigned by the certifier, which MUST include the certifier's authorisation number as a prefix. Null if only a register number is used."
+    },
+    "registerNumber": {
+      "type": ["string", "null"],
+      "description": "IPS 8(1)(c)(i) — the unique register number. Either this or certificateNumber must be present; both is also permitted (8(1)(c)(iii))."
+    },
+
+    "certifier": {
+      "type": "object",
+      "required": ["fullName", "authorisationNumber"],
+      "additionalProperties": false,
+      "properties": {
+        "fullName": { "type": "string", "description": "IPS 8(1)(a) — exactly as on the WorkSafe document of authorisation" },
+        "postNominals": { "type": ["string", "null"], "description": "e.g. CPEng NZ" },
+        "authorisationNumber": { "type": "string", "description": "IPS 8(1)(b)" },
+        "email": { "type": ["string", "null"] },
+        "signatureImage": { "type": ["string", "null"], "description": "IPS 8(2)(a); 8(3) expressly permits an electronic signature" }
+      }
+    },
+
+    "issuedTo": {
+      "type": "object",
+      "description": "IPS 8(1)(f) — who the certificate was issued to",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] }
+      }
+    },
+
+    "pcbu": {
+      "type": "object",
+      "required": ["legalName"],
+      "additionalProperties": false,
+      "properties": {
+        "legalName": { "type": "string" },
+        "postalAddress": { "type": ["string", "null"] },
+        "nzbn": { "type": ["string", "null"] }
+      }
+    },
+
+    "location": {
+      "type": "object",
+      "description": "IPS 8(1)(g) — the location the certificate applies to",
+      "required": ["address"],
+      "additionalProperties": false,
+      "properties": {
+        "address": { "type": "string" },
+        "companyNumber": { "type": ["string", "null"], "description": "reg 6.26(2)(e)(ii)" },
+        "siteDetails": { "type": ["string", "null"] }
+      }
+    },
+
+    "substances": {
+      "type": "array",
+      "description": "The scope of the certificate. The PCBU must not exceed these quantities.",
+      "items": {
+        "type": "object",
+        "required": ["name", "hazardClass", "maxQuantity"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "hazardClass": { "type": "string" },
+          "maxQuantity": { "type": "string" }
+        }
+      }
+    },
+
+    "detailsOfCertification": { "type": ["string", "null"] },
+    "requirementsNotMet": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Empty means 'None'. Non-empty on a conditional certificate (reg 6.24)."
+    },
+    "conditions": { "type": "array", "items": { "type": "string" } },
+
+    "decision": {
+      "enum": ["granted", "conditional", "refused"],
+      "description": "reg 6.23 grant / 6.24 conditional grant / 6.23(2) refusal"
+    },
+
+    "issueDate": { "type": "string", "format": "date", "description": "IPS 8(1)(e)" },
+    "inForceDate": { "type": "string", "format": "date", "description": "IPS 8(1)(h)" },
+    "expiryDate": { "type": ["string", "null"], "format": "date", "description": "IPS 8(1)(i) — if applicable. WorkSafe guidance caps location certificates at 3 years." },
+
+    "issuerStatement": {
+      "type": "string",
+      "description": "IPS 8(4) — an individual certifier must state that the certificate is issued by an individual compliance certifier authorised by WorkSafe under reg 6.8",
+      "default": "This certificate is issued by {certifier}, being an individual compliance certifier authorised by WorkSafe New Zealand under regulation 6.8 of the Health and Safety at Work (Hazardous Substances) Regulations 2017, in accordance with regulation 6.8(2)(a) to (d) of those regulations."
+    },
+
+    "retainUntil": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "IPS 21(6) — expiry + 5 years. Drives the object-lock retention date on every piece of evidence for this job."
+    }
+  }
+}

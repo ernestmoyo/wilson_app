@@ -1,0 +1,726 @@
+{
+  "code": "wks17-class-2-and-3-1-substances",
+  "title": "Check sheet Location Class 2 and 3.1 substances substances",
+  "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
+  "classScope": [],
+  "revision": 1,
+  "effectiveFrom": null,
+  "supersededBy": null,
+  "status": "draft",
+  "source": {
+    "workbook": "Abecca Class 2 and 3 location checksheets with feedback.xlsx",
+    "sheet": "Class 2 and 3.1 substances",
+    "extractedAt": "2026-09-09T13:14:29.963Z",
+    "extractorVersion": "1.0.0"
+  },
+  "sections": [
+    {
+      "ordinal": 1,
+      "number": "Requirements specific to class 2 and 3.1 substances",
+      "title": "Requirements specific to class 2 and 3.1 substances",
+      "items": []
+    },
+    {
+      "ordinal": 2,
+      "number": "1 Class 2 and 3.1 substances to be secured",
+      "title": "Class 2 and 3.1 substances to be secured",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "10.4(1)"
+          ],
+          "regulationRaw": "10.4(1)",
+          "guidanceUrl": null,
+          "action": "Determine whether the substances must be secured Verify that the requirements relating to security are met",
+          "records": "A record of the quantities present, as compared to the threshold quantities A record of the means by which the substances are secured",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "number": "2 Class 2 and 3.1 substances to be segregated from incompatible substances",
+      "title": "Class 2 and 3.1 substances to be segregated from incompatible substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "10.5"
+          ],
+          "regulationRaw": "10.5",
+          "guidanceUrl": null,
+          "action": "Verify that incompatible substances are segregated",
+          "records": "A record identifying the incompatible substances and the means of segregation",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "number": "3 Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances",
+      "title": "Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "10.6(1)(a)"
+          ],
+          "regulationRaw": "10.6(1)(a))",
+          "guidanceUrl": null,
+          "action": "Verify whether the hazardous area is delineated in accordance with AS/NZS 60079.10.1:2009",
+          "records": "A note as to whether the hazardous area is compliant",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "10.26(4)(b)"
+          ],
+          "regulationRaw": "10.26(4)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that— (a) the hazardous substances are not in contact with incompatible substances; and (b) containers of incompatible substances are stored separately",
+          "records": "Verify that the hazardous area is delineated, classified, and depicted on a site plan Verify sample elements of the plan to ensure it is correct",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "10.26(4)(c)"
+          ],
+          "regulationRaw": "10.26(4)(c)",
+          "guidanceUrl": null,
+          "action": "Verify that the hazardous area is maintained",
+          "records": "A reference to the electrical dossier A copy (or date and identifier) of electrical certificate(s) A note or record of representative samples of procedures and/or equipment",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "number": "4 Separation of class 2.1.1 permanent gases",
+      "title": "Separation of class 2.1.1 permanent gases",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.19(2)"
+          ],
+          "regulationRaw": "11.19(2)",
+          "guidanceUrl": null,
+          "action": "Verify that the prescribed separation distance between the vehicle fill points and storage of permanent gas is met",
+          "records": "A record that confirms the minimum distance is complied with",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "11.19(3)"
+          ],
+          "regulationRaw": "11.19(3)",
+          "guidanceUrl": null,
+          "action": "Verify that the prescribed separation distances are met",
+          "records": "A record that confirms the minimum distances are complied with",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "11.19(5)"
+          ],
+          "regulationRaw": "11.19(5)",
+          "guidanceUrl": null,
+          "action": "Verify that the prescribed separation distances are met",
+          "records": "A record that confirms the minimum distances are complied with",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "number": "Separation of class 2.1.1 liquefiable gases: cylinders",
+      "title": "Separation of class 2.1.1 liquefiable gases: cylinders",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.2"
+          ],
+          "regulationRaw": "11.2",
+          "guidanceUrl": null,
+          "action": "Determine which subclause(s) (if any) of regulation 11.20 apply to the hazardous substance location",
+          "records": "A record of the determination and the quantities of class 2.1.1 liquefiable gas present",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "11.20(1)"
+          ],
+          "regulationRaw": "11.20(1)",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distances are met",
+          "records": "A record of the basis for the verification",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "11.20(2)"
+          ],
+          "regulationRaw": "11.20(2)",
+          "guidanceUrl": null,
+          "action": "Verify that if the cylinders contain up to 100 kg, the requirements relating to the proximity of buildings and openings are met",
+          "records": "A record of the basis for the verification",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "11.20(3)"
+          ],
+          "regulationRaw": "11.20(3)",
+          "guidanceUrl": null,
+          "action": "Verify that the cylinders are not located within 1 m of an opening to a drain",
+          "records": "A record of the basis for the verification",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": "5",
+          "regulationRefs": [
+            "11.20(4)"
+          ],
+          "regulationRaw": "11.20(4)",
+          "guidanceUrl": null,
+          "action": "Verify that if the cylinders contain more than 100 kg and up to 300 kg, the requirements relating to the proximity of buildings and openings are met",
+          "records": "A record of the basis of the verification, including the nature of fire-resistant materials, separation distance, and openings",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 6,
+          "number": "6",
+          "regulationRefs": [
+            "11.20(5)"
+          ],
+          "regulationRaw": "11.20(5)",
+          "guidanceUrl": null,
+          "action": "Verify that if the cylinders contain more than 300 kg and up to 1000 kg, the requirements relating to the proximity of buildings and openings are met and the wall of the building is vapour tight",
+          "records": "A record of the basis of the verification, including the nature of the FRR materials, separation distance, and openings",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "number": "Separation of class 2.1.1 liquefiable gases: cylinder filling",
+      "title": "Separation of class 2.1.1 liquefiable gases: cylinder filling",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.22(1)"
+          ],
+          "regulationRaw": "11.22(1)",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distances are met for the cylinder filling station",
+          "records": "A record of the following: (a) the quantity of liquefiable gas at the hazardous substance location: (b) confirmation that the relevant minimum prescribed distance is met: (c) the point on the cylinder filling station that the separation distance is measure from",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "number": "Separation of class 2.1.2 aerosols",
+      "title": "Separation of class 2.1.2 aerosols",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.8"
+          ],
+          "regulationRaw": "11.8",
+          "guidanceUrl": null,
+          "action": "Establish the quantity of aerosols present and",
+          "records": "A record of the quantities and separation distances",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "1",
+          "regulationRefs": [
+            "11.23"
+          ],
+          "regulationRaw": "11.23",
+          "guidanceUrl": null,
+          "action": "Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply",
+          "records": "A record of the quantities and separation distances",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 9,
+      "number": "Hazardous substance location holding not more than 10,000 L aggregate water capacity",
+      "title": "Hazardous substance location holding not more than 10,000 L aggregate water capacity",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "2",
+          "regulationRefs": [
+            "11.24(1)(a)",
+            "11.24(1)(b)"
+          ],
+          "regulationRaw": "11.24(1)(a) 11.24(1)(b)",
+          "guidanceUrl": null,
+          "action": "Verify the construction details of the room or building including details of the walls, ceiling, doors, and fittings as well as the fire protection",
+          "records": "Records of the building layout, building construction, FRR, and building elements including suppliers' tags for doors and windows",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "3",
+          "regulationRefs": [
+            "11.24(1)(c)",
+            "11.24(1)(d)"
+          ],
+          "regulationRaw": "11.24(1)(c) 11.24(1)(d)",
+          "guidanceUrl": null,
+          "action": "Verify that the general purpose warehouse used for receiving, storing, and distributing mixed goods (including flammable aerosols)— (a) is not a warehouse for the primary purpose of storing hazardous substances; and (b) is not accessible by the general public; and (c) has the flammable aerosols in the warehouse separated from the rest of the warehouse in accordance with the prescribed requirements and has prescribed fire protection",
+          "records": "Records of the building layout, building construction, FRR, and building elements including suppliers' tags for doors and windows",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "number": "Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols",
+      "title": "Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "4",
+          "regulationRefs": [
+            "11.25(1)(a)",
+            "11.25(1)(b)"
+          ],
+          "regulationRaw": "11.25(1)(a) 11.25(1)(b)",
+          "guidanceUrl": null,
+          "action": "Verify the construction details and the fire protection of the building or the room",
+          "records": "Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "5",
+          "regulationRefs": [
+            "11.25(1)(c)",
+            "11.25(1)(d)"
+          ],
+          "regulationRaw": "11.25(1)(c) 11.25(1)(d)",
+          "guidanceUrl": null,
+          "action": "Verify the location that is in a general purpose warehouse for receiving, storing, and distributing mixed goods (including flammable aerosols)— (a) is not a warehouse for the primary purpose of storing hazardous substances; and (b) is not accessible by the general public Verify the construction details and the fire protection of the building or the room",
+          "records": "A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "6",
+          "regulationRefs": [
+            "11.26(a)",
+            "11.26(b)"
+          ],
+          "regulationRaw": "11.26(a) 11.26(b)",
+          "guidanceUrl": null,
+          "action": "Verify the construction details and the fire protection of the building or the room",
+          "records": "A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR,building details, and fire protection A record of building details is to include a record of tags of the building elements",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "7",
+          "regulationRefs": [
+            "11.26(c)",
+            "11.26(d)"
+          ],
+          "regulationRaw": "11.26(c) 11.26(d)",
+          "guidanceUrl": null,
+          "action": "Verify that the location— (a) is in a general purpose warehouse used for receiving, storing, and distributing mixed goods (including flammable aerosols); and (b) is not a warehouse for the primary purpose of storing hazardous substances; and (c) is not accessible by the general public Verify the flammable aerosols in the warehouse are separated from the rest of the warehouse Verify the construction details and the fire protection of the building or the room",
+          "records": "A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 11,
+      "number": "Separation of class 3.1 substances: transfer points to protected places",
+      "title": "Separation of class 3.1 substances: transfer points to protected places",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.35"
+          ],
+          "regulationRaw": "11.35",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distance to a protected place is met",
+          "records": "A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met; and (c) the type of transfer point",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 12,
+      "number": "Class 3.1 substances to be held in buildings of a certain type",
+      "title": "Class 3.1 substances to be held in buildings of a certain type",
+      "items": []
+    },
+    {
+      "ordinal": 13,
+      "number": "Storage Cabinet",
+      "title": "Storage Cabinet",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.29(3)"
+          ],
+          "regulationRaw": "11.29(3)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) the quantity of substances and their hazard classifications; and (b) the standard to which the cabinet is constructed; and (c) where more than one cabinet is located within a building, the aggregate capacity of the cabinets and the separation of the cabinets; and (d) for AS 1940 cabinets, the exclusion of sources of ignition around the cabinet",
+          "records": "A record of— (a) the plate on the cabinet or the standard the cabinet is constructed to; and (b) the location of the cabinet; and (c) the separation distance between the cabinets (if applicable); and (d) exclusion of ignition sources",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 14,
+      "number": "Building types A, B, C, and D storage",
+      "title": "Building types A, B, C, and D storage",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "2",
+          "regulationRefs": [
+            "11.29(2)"
+          ],
+          "regulationRaw": "11.29(2)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) the building type; and (b) compliance with the building type in all aspects i.e. walls, roof, doors, and windows; and (c) the classification of the substance; and (d) the package sizes; and (e) the prescribed separation distances; and (f) the actual separation distances",
+          "records": "A record of— (a) the quantity and hazard classes of the substances stored; and (b) the building type; and (c) the details of the FRR building elements, including suppliers' tags for doors and windows; and (d) the actual separation distances",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 15,
+      "number": "Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place",
+      "title": "Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.3"
+          ],
+          "regulationRaw": "11.3",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distance to a protected place is met",
+          "records": "A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 16,
+      "number": "Storage of packages holding class 3.1 substances in stores inside buildings",
+      "title": "Storage of packages holding class 3.1 substances in stores inside buildings",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.31"
+          ],
+          "regulationRaw": "11.31",
+          "guidanceUrl": null,
+          "action": "Determine which provisions of regulation 11.31 apply",
+          "records": "A record of the determination and the quantities of class 3 substances present",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "11.31(1)(a)"
+          ],
+          "regulationRaw": "11.31(1)(a)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building, including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building",
+          "records": "A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "11.31(1)(b)"
+          ],
+          "regulationRaw": "11.31(1)(b)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building",
+          "records": "A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "11.31(1)(c)"
+          ],
+          "regulationRaw": "11.31(1)(c)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building",
+          "records": "A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 17,
+      "number": "Type D storage with more than two walls in common with another building",
+      "title": "Type D storage with more than two walls in common with another building",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "5",
+          "regulationRefs": [
+            "11.31(3)"
+          ],
+          "regulationRaw": "11.31(3)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations",
+          "records": "A record of— (a) the quantity of flammable substances and package sizes; and (b) the FRR elements, including suppliers' tags for doors and windows",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 18,
+      "number": "Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place",
+      "title": "Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.34"
+          ],
+          "regulationRaw": "11.34",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distance to a protected place is met",
+          "records": "A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 19,
+      "number": "Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type",
+      "title": "Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.36"
+          ],
+          "regulationRaw": "11.36",
+          "guidanceUrl": null,
+          "action": "Verify the building type and the construction details of the building Determine which regulations apply",
+          "records": "A record of— (a) the building FRR details including suppliers' tags for doors and windows; or (b) details of compliance with AS/NZS 4114.1:2003 e.g. a record of the plate or the supplier's verification",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 20,
+      "number": "Type 1 workroom or a paint mixing room",
+      "title": "Type 1 workroom or a paint mixing room",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "2",
+          "regulationRefs": [
+            "11.37(2)(a)"
+          ],
+          "regulationRaw": "11.37(2)(a)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) that the workroom/paint mixing room holds no more than the prescribed quantity or container size; and (b) the location of the building",
+          "records": "A record of container sizes, aggregate quantities, and the location of the building",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 21,
+      "number": "Type 2 or Type 3 workroom",
+      "title": "Type 2 or Type 3 workroom",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "3",
+          "regulationRefs": [
+            "11.37(2)(b)"
+          ],
+          "regulationRaw": "11.37(2)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that the building holds no more than the prescribed quantity",
+          "records": "A record of hazardous substance classes and aggregate quantities",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "4",
+          "regulationRefs": [
+            "11.37(4)"
+          ],
+          "regulationRaw": "11.37(4)",
+          "guidanceUrl": null,
+          "action": "Verify that the separation distances meet or exceed the prescribed separation distances",
+          "records": "A record of the actual and prescribed separation distances",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 22,
+      "number": "Other building type - regulation 11.37(5)",
+      "title": "Other building type - regulation 11.37(5)",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "5",
+          "regulationRefs": [
+            "11.37(5)"
+          ],
+          "regulationRaw": "11.37(5)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) the quantity of hazardous substances; and (b) that the quantity of class 3.1 substances is not more than the specified maximum; and (c) the occupancy of the building; and (d) the construction details of that part of the building; and (e) the controls on prohibiting ignition sources",
+          "records": "A record of— (a) the quantities; and (b) the building details in the vicinity of the flammable substances; and (c) the occupational details of the building",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 23,
+      "number": "Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores",
+      "title": "Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.32(1)",
+            "11.33(1)"
+          ],
+          "regulationRaw": "11.32(1) 11.33(1)",
+          "guidanceUrl": null,
+          "action": "Determine whether regulation 11.32 or 11.33 applies",
+          "records": "A record of the business type and container details",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "11.32(1)(b)"
+          ],
+          "regulationRaw": "11.32(1)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that the quantities of class 3.1 substances are not more than the maximum",
+          "records": "A record of the quantities",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "11.33(2)(b)"
+          ],
+          "regulationRaw": "11.33(2)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that requirements for separation are compliant",
+          "records": "A record of the separation details",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "11.33(2)(c)"
+          ],
+          "regulationRaw": "11.33(2)(c)",
+          "guidanceUrl": null,
+          "action": "Verify that the retail store complies with section 3.4 (General Requirements for Retail Storage) of AS/NZS 3833:2007",
+          "records": "A record of the building elements",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": "5",
+          "regulationRefs": [
+            "11.33(1)(d)",
+            "11.33(1)"
+          ],
+          "regulationRaw": "11.33(1)(d) 11.33(1)€",
+          "guidanceUrl": null,
+          "action": "Verify that the building is compliant",
+          "records": "A record of the separation distances Where there is an intervening wall, a record of the FRR elements of the wall",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 24,
+      "number": "Indoor storage or use of LPG, propane, butane, or isobutane",
+      "title": "Indoor storage or use of LPG, propane, butane, or isobutane",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "11.42(1)"
+          ],
+          "regulationRaw": "11.42(1)",
+          "guidanceUrl": null,
+          "action": "Verify that the quantities of LPG, propane, butane, or isobutane are not more than the maximum",
+          "records": "A record of the quantities",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 25,
+      "number": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "title": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "items": []
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "documentTitle": "COMPLIANCE CERTIFICATE Location",
+  "issuedUnder": "Issued in accordance with regulations 6.23 and regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+  "certifiesThat": "This certificate certifies that the requirements prescribed in regulation 13.39 for a location compliance certificate have been met",
+  "certificateNumber": "LC/26-250-004",
+  "registerNumber": "CER-0250-166217",
+  "certifier": {
+    "fullName": "Bryan Wilson",
+    "postNominals": "CPENg NZ",
+    "authorisationNumber": "TST100250",
+    "email": "compliancecertifier@assuresafety.co.nz",
+    "signatureImage": "signature.png"
+  },
+  "issuedTo": {
+    "name": "Jesh Chandra",
+    "phone": "+64 9 250 3100",
+    "email": "jesh.chandra@argentaglobal.com"
+  },
+  "pcbu": {
+    "legalName": "Argenta Manufacturing Limited",
+    "postalAddress": "PO Box 75340, Manurewa, Auckland, 2243 New Zealand",
+    "nzbn": "9429033971360"
+  },
+  "location": {
+    "address": "Argenta Manufacturing Limited, 2 Sterling Avenue, Manurewa East, Auckland, 2102",
+    "companyNumber": "1846134",
+    "siteDetails": "G2 Chiller is a dedicated storage area for Class 6.1B (320 kg) and Class 6.1C (2500 kg) used in veterinary medicine, primarily for cattle, sheep, goats, horses, dogs, and cats to treat and control a wide range of internal and external parasites. At this site, these hazardous substances are kept closed and are stored in a temperature-controlled cool room."
+  },
+  "substances": [
+    {
+      "name": "Abamectin",
+      "hazardClass": "6.1B",
+      "maxQuantity": "190 kg"
+    },
+    {
+      "name": "Eprinomectin",
+      "hazardClass": "6.1C",
+      "maxQuantity": "2500 kg"
+    },
+    {
+      "name": "Ivermectin",
+      "hazardClass": "6.1B",
+      "maxQuantity": "10 kg"
+    },
+    {
+      "name": "Moxidectin",
+      "hazardClass": "6.1B",
+      "maxQuantity": "120 kg"
+    }
+  ],
+  "detailsOfCertification": "The PCBU must not exceed the quantities specified in this certificate and must not store any class 6 or class 8 hazardous substances other than those covered by the group standards referenced in this certificate. The PCBU must at all times continue to comply with all other requirements of Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. If the PCBU elects to use a summarised or condensed Safety Data Sheet (SDS), the PCBU must ensure the condensed SDS accurately reflects the substance’s key information, including the correct hazard classifications and hazard pictograms",
+  "requirementsNotMet": [],
+  "conditions": [],
+  "decision": "granted",
+  "issueDate": "2026-07-04",
+  "inForceDate": "2026-07-04",
+  "expiryDate": "2029-07-04",
+  "issuerStatement": "This certificate is issued by Bryan Wilson, being an individual compliance certifier authorised by WorkSafe New Zealand under regulation 6.8 of the Health and Safety at Work (Hazardous Substances) Regulations 2017, in accordance with regulation 6.8(2)(a) to (d) of those regulations.",
+  "retainUntil": "2034-07-04"
+}

@@ -1,0 +1,558 @@
+{
+  "code": "wks17-general",
+  "title": "General location requirements",
+  "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
+  "classScope": [],
+  "revision": 1,
+  "effectiveFrom": null,
+  "supersededBy": null,
+  "status": "draft",
+  "source": {
+    "reconciledFrom": [
+      {
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v2g2/wks17-locations-general.template.json",
+        "classKey": "class_6_8",
+        "sheet": "Locations General"
+      },
+      {
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v2ab/wks17-locations-general.template.json",
+        "classKey": "class_2_3",
+        "sheet": "Locations General"
+      }
+    ],
+    "reconciledAt": "2026-09-09T13:20:34.689Z"
+  },
+  "sections": [
+    {
+      "ordinal": 1,
+      "number": "1",
+      "title": "Determining which regulations apply",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "10.34"
+          ],
+          "regulationRaw": "10.34 10.36 12.17 12.42 13.38",
+          "guidanceUrl": null,
+          "action": "Verify that the hazardous substances are present at the site— (a) in quantities exceeding the threshold quantities specified in the Regulations for the hazardous substances; and (b) for periods of time that trigger the relevant requirement to establish a hazardous substance location under the Regulations",
+          "records": "A record of— (a) the maximum quantities of the hazardous substances, identified by subclass; and (b) the thresholds that are exceeded",
+          "evidenceRequired": false,
+          "regulationRefsByClass": {
+            "class_6_8": [
+              "10.34",
+              "10.36",
+              "12.17",
+              "12.42",
+              "13.38"
+            ],
+            "class_2_3": [
+              "10.34"
+            ]
+          }
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [],
+          "regulationRaw": "All",
+          "guidanceUrl": null,
+          "action": "Ascertain— (a) whether the PCBU has been granted any exemption or approval that is relevant to the hazardous substance location; and (b) the extent of the exemption or approval including any conditions; and (c) whether any provisions of Schedule 1 (Transitional, Savings, and related provisions) of the Regulations apply",
+          "records": "A copy of the exemption or approval A note recording the provisions of Schedule 1 of the Regulations that apply (if any)",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "number": "2",
+      "title": "Notification requirements",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.34(4)"
+          ],
+          "regulationRaw": "13.34(4)",
+          "guidanceUrl": null,
+          "action": "Verify— (a) either— (i) the notification that has been made; or (ii) the most recent location compliance certificate; and (b) the details of the notification or the most recent location compliance certificate including: (i) the name of the company and the PCBU; and (ii) the street address of the workplace; and (c) either— (i) that the maximum quantity and classification of hazardous substances held are consistent with the notification or most recent location compliance certificate; or (ii) if the quantity of hazardous substances held exceeds the quantity notified or set out in the location compliance certificate, that a new notification has been made",
+          "records": "A record of— (a) either— (i) the notification; or (ii) the location compliance certificate; or (iii) a unique reference to identify the notification or certificate; and (b) the quantities notified for each relevant class of substance; and (c) the quantities present",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "number": "3",
+      "title": "Information, instruction, and training",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "4.5"
+          ],
+          "regulationRaw": "4.5",
+          "guidanceUrl": null,
+          "action": "Verify that there is a process for each worker to receive relevant information and training",
+          "records": "A record of the process",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "4.5(2)"
+          ],
+          "regulationRaw": "4.5(2)",
+          "guidanceUrl": null,
+          "action": "Verify that the requirement to provide information to workers is met",
+          "records": "A sample record of the worker’s instruction and training or a reference to the worker’s instruction and training",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "4.5(5)"
+          ],
+          "regulationRaw": "4.5(5)",
+          "guidanceUrl": null,
+          "action": "Verify that there is a record of the training and instruction referred to in regulation 4.5(3) for each worker and that this record is available for inspection",
+          "records": "A sample record of the worker’s instruction and training or a reference to the worker’s instruction and training",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "4.5(6)"
+          ],
+          "regulationRaw": "4.5(6)",
+          "guidanceUrl": null,
+          "action": "Verify that where information, instruction, and training were not required for a worker, the PCBU can demonstrate that the worker’s previous experience is equivalent",
+          "records": "A record of the process the PCBU followed, a sample of one of the records obtained from the PCBU, or a reference to the process or record",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "number": "4",
+      "title": "Signage",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "2.5(1)"
+          ],
+          "regulationRaw": "2.5(1)",
+          "guidanceUrl": null,
+          "action": "Determine whether signs are required",
+          "records": "A record of the quantities present, as compared to the threshold quantities",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "2.5(2)"
+          ],
+          "regulationRaw": "2.5(2)",
+          "guidanceUrl": null,
+          "action": "Verify that the signs are compliant",
+          "records": "Photographs of the signs",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "2.6(1)"
+          ],
+          "regulationRaw": "2.6(1)",
+          "guidanceUrl": null,
+          "action": "Verify that compliant signage is positioned at all required entrances to the building and land",
+          "records": "A record of required entrances to the building and land or marked up plan Photographs of the signs if practical. The photographs must include sufficient landscape details to confirm the location. If photographs are not practical, a note confirming compliance",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "2.6(3)"
+          ],
+          "regulationRaw": "2.6(3)",
+          "guidanceUrl": null,
+          "action": "Verify that compliant signage is displayed at each required room or compartment entrance",
+          "records": "A list of all rooms or a marked-up plan Photographs of the signs if practical If photographs are not practical, a note confirming compliance",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 5,
+          "number": "5",
+          "regulationRefs": [
+            "2.6(4)"
+          ],
+          "regulationRaw": "2.6(4)",
+          "guidanceUrl": null,
+          "action": "Verify that compliant signage is displayed immediately next to each outdoor area",
+          "records": "A list of all outdoor areas or a marked-up plan Photographs of the signs if practical If photographs are not practical, a note confirming compliance",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "number": "5",
+      "title": "Fire extinguishers",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "5.3(1)"
+          ],
+          "regulationRaw": "5.3(1)",
+          "guidanceUrl": null,
+          "action": "Determine whether fire extinguishers are required",
+          "records": "A record of the quantities present, as compared to the threshold quantities",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "5.3(1)"
+          ],
+          "regulationRaw": "5.3(1)",
+          "guidanceUrl": null,
+          "action": "Verify that the correct numbers of fire extinguishers are present",
+          "records": "A record of the following: (a) the required extinguishers: (b) confirmation that the extinguishers are in place by marking up the plan, making a note, or similar: (c) the test dates of all required extinguishers",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "5.4(1)"
+          ],
+          "regulationRaw": "5.4(1)",
+          "guidanceUrl": null,
+          "action": "Verify that the fire extinguishers are clearly visible and readily accessible in an emergency",
+          "records": "A record of proximity, visibility, and accessibility of fire extinguishers to the hazardous substance location",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "5.5"
+          ],
+          "regulationRaw": "5.5",
+          "guidanceUrl": null,
+          "action": "Verify the capability of the fire extinguishers",
+          "records": "A record of the ratings of sample extinguishers or hose diameter of a hydrant system",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "number": "6",
+      "title": "Emergency response plans (ERP)",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": null,
+          "regulationRefs": [
+            "5.6(1)"
+          ],
+          "regulationRaw": "5.6(1)",
+          "guidanceUrl": null,
+          "action": "Determine whether an ERP is required",
+          "records": "A record of the quantities present, as compared to the threshold quantities",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": null,
+          "regulationRefs": [
+            "5.7(2)"
+          ],
+          "regulationRaw": "5.7(2)",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP describes all emergencies that are reasonably foreseeable",
+          "records": "A copy of the ERP or sections of it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": null,
+          "regulationRefs": [
+            "5.7(3)(a)"
+          ],
+          "regulationRaw": "5.7(3)(a)",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP describes the actions to be taken",
+          "records": "A copy of the ERP, sections of it, or a reference to it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 4,
+          "number": null,
+          "regulationRefs": [
+            "5.7(3)(b)"
+          ],
+          "regulationRaw": "5.7(3)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP identifies each person with responsibility and gives the required information",
+          "records": "A copy of the ERP, sections of it, or a reference to it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 5,
+          "number": null,
+          "regulationRefs": [
+            "5.7(3)"
+          ],
+          "regulationRaw": "5.7(3)©",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP specifies the prescribed actions",
+          "records": "A copy of the ERP, sections of it, or a reference to it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 6,
+          "number": null,
+          "regulationRefs": [
+            "5.7(3)(d)"
+          ],
+          "regulationRaw": "5.7(3)(d)",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP provides an inventory and compliant site plan",
+          "records": "A copy of the ERP, sections of it, or a reference to it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 7,
+          "number": null,
+          "regulationRefs": [
+            "5.7(4)"
+          ],
+          "regulationRaw": "5.7(4)",
+          "guidanceUrl": null,
+          "action": "Verify that the ERP— (a) specifies the required extra information for emergencies involving a fire; and (b) provides for retention of liquid or liquid oxidising substance or organic peroxide present",
+          "records": "A copy of the ERP, sections of it, or a reference to it",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 8,
+          "number": null,
+          "regulationRefs": [
+            "5.8"
+          ],
+          "regulationRaw": "5.8",
+          "guidanceUrl": null,
+          "action": "The ERP is implemented in the event of an emergency",
+          "records": "A record of the implementation of it for events during the previous 12 months (if applicable)",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 9,
+          "number": null,
+          "regulationRefs": [
+            "5.9"
+          ],
+          "regulationRaw": "5.9",
+          "guidanceUrl": null,
+          "action": "Verify that all equipment, materials, and responsible people are available within the times specified in the ERP",
+          "records": "A note of the sampling or a record of the tests carried out",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 10,
+          "number": null,
+          "regulationRefs": [
+            "5.1"
+          ],
+          "regulationRaw": "5.1",
+          "guidanceUrl": null,
+          "action": "Verify that the PCBU is able to confirm the plan is available to every person responsible for executing any part of the plan and emergency service providers identified in the plan",
+          "records": "A note recording how the plan has been made available A reference to its location",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 11,
+          "number": null,
+          "regulationRefs": [
+            "5.11"
+          ],
+          "regulationRaw": "5.11",
+          "guidanceUrl": null,
+          "action": "Verify that if Fire and Emergency New Zealand (FENZ) has been given the opportunity to review the ERP, any recommendations have been given consideration by the PCBU",
+          "records": "A record of advice to FENZ and a note of any recommendations from FENZ",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 12,
+          "number": null,
+          "regulationRefs": [
+            "5.12"
+          ],
+          "regulationRaw": "5.12",
+          "guidanceUrl": null,
+          "action": "Verify the ERP has been tested, that new persons are competent, that new procedures are workable, and that records of the tests are held",
+          "records": "A reference to the tests and actions taken A record of the PCBU records",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "number": "7",
+      "title": "Secondary containment",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.3"
+          ],
+          "regulationRaw": "13.3",
+          "guidanceUrl": null,
+          "action": "Determine whether secondary containment is required",
+          "records": "A record of— (a) the quantities present as compared to the threshold quantities; and (b) the minimum time periods the substances are present",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "10.31",
+            "10.32",
+            "10.33"
+          ],
+          "regulationRaw": "10.31 10.32 10.33 12.14 12.15 12.16 12.39 12.40 12.41 13.31 13.32 13.33 17.100 17.101",
+          "guidanceUrl": null,
+          "action": "Verify that— (a) the capacity of the secondary containment system is at least as great as the prescribed minimum; and (b) the capacity of the secondary containment system for stationary tanks and process containers is based on the water capacity of the tank or process container; and (c) the secondary containment will contain the substance without leakage and will enable recovery of the substance; and (d) there are controls to prevent contamination by incompatible substances or material For class 6 and 8 substances, verify that there are controls to prevent people from being directly exposed to any toxic or biological corrosive substances contained in the secondary containment system",
+          "records": "A record of— (a) the maximum pooling capacity; and (b) the prescribed capacity of the secondary containment; and (c) the actual capacity of the secondary containment; and (d) the nature of the construction; and (e) the impervious nature of the secondary containment system, including tests and inspections undertaken on it; and (f) the process to recover the substances; and (g) for class 3, 4, or 5 substances, controls that prevent ignition; and (h) for toxic or biological corrosive substances, controls that prevent people from being directly exposed e.g. signage, site induction instructions; and (i) controls that prevent the substance from being contaminated with incompatible substances",
+          "evidenceRequired": false,
+          "regulationRefsByClass": {
+            "class_6_8": [
+              "10.31",
+              "10.32",
+              "10.33",
+              "12.14",
+              "12.15",
+              "12.16",
+              "12.39",
+              "12.40",
+              "12.41",
+              "13.31",
+              "13.32",
+              "13.33",
+              "17.100",
+              "17.101"
+            ],
+            "class_2_3": [
+              "10.31",
+              "10.32",
+              "10.33"
+            ]
+          }
+        },
+        {
+          "ordinal": 3,
+          "number": "3",
+          "regulationRefs": [
+            "10.30",
+            "12.13",
+            "12.38",
+            "13.30"
+          ],
+          "regulationRaw": "10.30 12.13 12.38 13.30",
+          "guidanceUrl": null,
+          "action": "If containers of different capacities are held at the place, verify that the secondary containment system has a capacity of at least the sum of each individual container category",
+          "records": "A record to confirm that either— (a) containers of different sizes are not held at one place; or (b) if they are held, the secondary containment capacity is at least the sum of each individual container capacity",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "4",
+          "regulationRefs": [
+            "10.30",
+            "12.13",
+            "12.38",
+            "13.30"
+          ],
+          "regulationRaw": "10.30 12.13 12.38 13.30",
+          "guidanceUrl": null,
+          "action": "Verify that the secondary containment is able to contain the leaked hazardous substance",
+          "records": "A record of one of the results of the verification. This can include: (a) for an above ground tank with integral secondary containment, no evidence of leakage into or from the interstitial space: (b) for a below ground tank with secondary containment, no evidence of leakage into or from the interstitial space: (c) for a below ground tank, no evidence of losses from the stock reconciliation records: (d) for a single skin above ground tank with a capacity of 250,000 L or greater, evidence of flood test: (e) for a single skin above ground tank with a capacity of up to 250,000 L, either the results of a technical inspection or a flood test: (f) the distance between the tank and the inside of the bund wall, including whether the distance is sufficient to enable leaks to fall inside the bund",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": "6",
+          "regulationRefs": [
+            "17.102(4)",
+            "17.102(5)"
+          ],
+          "regulationRaw": "17.102(4) 17.102(5)",
+          "guidanceUrl": null,
+          "action": "Verify that the aggregate capacity of any group of stationary tanks does not exceed 25,000,000 L unless a greater amount is approved by WorkSafe",
+          "records": "A record of the quantity in each group of tanks and a reference to any approval by WorkSafe",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 6,
+          "number": "7",
+          "regulationRefs": [
+            "17.102(6)",
+            "17.102(7)"
+          ],
+          "regulationRaw": "17.102(6)) 17.102(7)",
+          "guidanceUrl": null,
+          "action": "Verify that any intermediate secondary containment system is compliant",
+          "records": "A record of the details of the secondary containment system",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "number": "8",
+      "title": "Site Plan",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.34(5)(b)"
+          ],
+          "regulationRaw": "13.34(5)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that the site plan— (a) is of the relevant place and is specific to that place; and (b) is accurate and includes all prescribed information",
+          "records": "A copy of the site plan, including: (a) the dimensions in relation to the site boundary: (b) a north point accurately orientated: (c) hazardous substance locations: (d) hazardous areas: (e) separation distances from protected places and public places, if prescribed: (f) relevant controlled zone distances",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "13.34(5)(b)"
+          ],
+          "regulationRaw": "13.34(5)(b)",
+          "guidanceUrl": null,
+          "action": "Verify that the site plan has sufficient detail to determine its purpose",
+          "records": "A copy of the site plan, including: (a) the scale that enables the plan to meet its purpose: (b) where relevant, elevation drawings: (c) where relevant, a legend or key that defines colours, shaded areas, symbols, abbreviations, etc.: (d) if relevant, and the scale and complexity of the workplace so demand, separate drawings provided to meet the purpose",
+          "evidenceRequired": true
+        }
+      ]
+    }
+  ]
+}

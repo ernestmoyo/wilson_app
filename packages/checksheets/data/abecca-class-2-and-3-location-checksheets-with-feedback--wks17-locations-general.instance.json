@@ -1,0 +1,351 @@
+{
+  "siteBlock": {
+    "Legal Entity Name": "Abecca Healthcare Limited",
+    "Trading as Name": "Abecca",
+    "Site / Location Address": "82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Postal Address": "82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Business Phone Number": "6463589642",
+    "Business Website": "https://abeccadesign.com/",
+    "NZBN": "9429030042865",
+    "Description of Business Type / Industry": "Abecca Healthcare Limited designs and manufactures specialised, high-risk environment furniture for sectors such as mental health, corrections, and youth justice centers. The company focuses on a safety-first design philosophy, including features like foam-only structures and anti-ligature designs, and produces items such as anti-ligature mattresses, seating, tables, and bean bags from their factory in Pahiatua, New Zealand",
+    "Manager Name": "Joseph Beatson",
+    "Date of Inspection/Site Visit": "2026-01-15",
+    "Status of Inspection": "Mock",
+    "Direct Dial Number and/or Mobile Number": "+64 6 358 9642",
+    "Hazardous substance name": "Class 3.1B flammable liquids",
+    "Hazardous Substance Location": "Type B storage at 82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Brief location summary": "Abecca Healthcare Limited's manufacturing facility at 82 Sedcole Street, Pahiatua 4910, New Zealand, utilises various chemical agents in their manufacturing process that are classified under New Zealand's Hazardous Substances and New Organisms (HSNO) system. These substances include highly flammable liquids (3.1B), acute toxicity chemicals (6.1C/D), skin and eye irritants/corrosives (6.3A, 6.4A, 8.2B, 8.3A), sensitisers and chronic health hazards (6.5A/B, 6.7B, 6.9B), and ecotoxins harmful to aquatic life (9.1C). The site stores a quantity of 3350kg of class 3.1B substances which consists of a pigment, cross linker and primer. These substances are stored in a type B storage together with a known quantity of a class 6 hazardous substance. In assessment for certification is the 3350kg of Class 3.1B hazardous substances."
+  },
+  "findings": [
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Inventory has a quantity of 3,350 class 3.1B substances Theshold that has been exceeded: 3.1B quantity is beyond 100 L in containers more than 5 L (closed containers) (Table 4 HSW (HS) Regs of 2017)",
+      "row": 18
+    },
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 19
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Copy of notification, dated 26 November 2025, and notification acknowledgement provided",
+      "row": 21
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Evidence of regulation 4.5 training reviewed with the following: training and instruction in the following: (i) the physico-chemical and health hazards associated with the hazardous substances the worker uses at work: (ii) the procedures (if applicable) for the safe use, handling, manufacture, storage, and disposal of the hazardous substances: (iii) practice in the safe use of plant (including personal protective equipment) necessary to manage the hazardous substances: (iiia) the worker’s obligations under these regulations: (iv) the actions that the worker should take in an emergency involving the hazardous substances; PCBU to complete training records schedule",
+      "row": 23
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "A sample record of the workers instruction and training has been reviewed, safety data sheets available, evidence of training certificates provided.",
+      "row": 24
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Training records not maintained. The copy provided does not have any names, dates of training or any signatures.",
+      "row": 25
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 26
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Quantities exceeding 250 L of class 3.1B requires signage Maximum Quantity stored is 3,350 L",
+      "row": 28
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "HAZCHEM signage posted at the entrance to the property",
+      "row": 29
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Compliant Signage available at main entrance, chemical location, assembly points and hazardous area zones.",
+      "row": 30
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Compliant signage is available at all chemical locations and required rooms",
+      "row": 31
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 5,
+      "itemNumber": "5",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Chemicals are located in a Type B storage container Compliant Signage available at each chemical location (See evidence provided in item 2)",
+      "row": 32
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Threshold triggering requirement exceeded: Class 3.1B Description Liquid Quantity 250 L Number of fire extinguishers 2 Site stores 3,350L of class 3.1B hazardous substances",
+      "row": 34
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Only 1 fire extinguisher present. Regulation requires 2 fire extinguishers",
+      "row": 35
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "The fire extinguisher is located on the side of the storage container. It is not clearly visible and readily accessible in an emergency",
+      "row": 36
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Fire extinguisher is ABE powder with a rating of 4A:60B:E Suitable for flammable liquid",
+      "row": 37
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 1,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Quantities exceeding 1000 L of class 3.1B triggers requirements of an ERP Maximum Quantity stored is 3,350 L",
+      "row": 39
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 2,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP is incomplete",
+      "row": 40
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 3,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "ERP describes the actions to be taken",
+      "row": 41
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 4,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP does not identify each person with responsibility and does not give the required information",
+      "row": 42
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 5,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP does not fully specify; (i) how to obtain information about the hazardous properties of, and means of controlling, the substance or substances that may be involved; (ii) actions to be taken to contact any emergency service provider; and (iii) the purpose and location of each item of equipment or facilities to be used to manage the emergency; (iv) how to decide which actions to take; and (v) the sequence in which actions should be taken;",
+      "row": 43
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 6,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "ERP provides a compliant inventory, and a partially compliant site plan",
+      "row": 44
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 7,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "ERP— (a) specifies the required extra information for emergencies involving a fire; and (b) provides for retention of liquid or liquid oxidising substance or organic peroxide present (bund capacity is 5,000L)",
+      "row": 45
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 8,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "No emergencies were recorded in the last 12 months Evacuation drills to be conducted every 6 months",
+      "row": 46
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 9,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP does not identify the availability of responsible persons It only identifies the warden and the standby warden",
+      "row": 47
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 10,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "PCBU can confirm that the plan is available to every person responsible for executing any part of the plan and the emergency service providers identified in the plan",
+      "row": 48
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 11,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP was not reviewed by FENZ There is no evidence of communication with, or from, FENZ",
+      "row": 49
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 12,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "ERP has not been tested It can be verified that new persons are competent, that new procedures are workable, and There are no records of the tests held (new implementation).",
+      "row": 50
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Quantities exceeding 100 L of class 3.1B triggers requirements for secondary containment Maximum Quantity stored is 3,350 L The hazardous substance is likely to be held all the time on this location",
+      "row": 52
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "a. Maximum pooling potential is 17,350 L, made of 5,850 of containers less than 60L and 11,500L made of containers between 60L and 450L,including Class 6, 8 and 9 hazardous substances b. Prescribed capacity of the secondary containment is 8,250L, determined using WKS-17-secondary-containment-calculation-tool c. Actual capacity 5,000 L d. Secondary containment is part of the Type B storage container e. The (secondary containment) bund was visually inspected for its impevious nature and it was established to be of such standard to hold any hazardous substance in the event of accidental release. f. The bund is fillted with a drain valve through which hazardous substances can be recovered g. There is HAZCHEM signage with a flammable symbol to notify people that flammable substances are present in this location, with the waring words: FIRE, NAKED FLAME and SMOKING PROHIBITED. h. A door secures Bund and lock; only authorised personnel are allowed into the bund. There is adequate signage around the bund to improve awareness and prevent people from being exposed",
+      "row": 53
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Containers have different capacity and bund capacity is more than the sum of each individual container capacity",
+      "row": 54
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Confirmed no evidence of leakage into or from the interstitial space",
+      "row": 55
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 5,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable",
+      "row": 56
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 6,
+      "itemNumber": "7",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable",
+      "row": 57
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Site plan shows: (a) the dimensions in relation to the site boundary (b) a north point accurately orientated: (c) hazardous substance locations: (d) hazardous areas: (e) prescribed separation distances from protected places and public places, (f) relevant controlled zone distances",
+      "row": 59
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Site plan has the following: a. a scale that enables the plan to meet its purpose a legend or key that defines b. colours, shaded areas, symbols, abbreviations, etc.",
+      "row": 60
+    }
+  ],
+  "trailing": {
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "decision": null,
+    "note": "NB: Non compliances are in red",
+    "reference": null
+  }
+}

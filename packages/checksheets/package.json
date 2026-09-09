@@ -1,0 +1,20 @@
+{
+  "name": "@wilson/checksheets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Canonical WKS-17 location compliance check sheet templates. Single source of truth: TypeScript types, Dart models, Postgres seeds and PDF/XLSX exports are all generated from data/*.json and must never be hand-edited.",
+  "scripts": {
+    "extract": "node tools/extract-workbook.mjs",
+    "reconcile": "node tools/reconcile.mjs",
+    "gen": "node tools/generate.mjs",
+    "verify": "node tools/verify-generated.mjs",
+    "extract:cert": "node tools/extract-certificate.mjs",
+    "render:cert": "node tools/render-certificate.mjs",
+    "extract:evidence": "node tools/extract-evidence.mjs"
+  },
+  "devDependencies": {
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.1"
+  }
+}

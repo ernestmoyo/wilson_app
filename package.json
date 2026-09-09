@@ -11,7 +11,12 @@
     "build": "npm run build -w apps/web && npm run build -w apps/api",
     "start": "node apps/api/dist/index.js",
     "dev:api": "npm run dev -w apps/api",
-    "dev:web": "npm run dev -w apps/web"
+    "dev:web": "npm run dev -w apps/web",
+    "test:checksheets": "npm run verify -w packages/checksheets",
+    "test:db": "npm test -w packages/db",
+    "test:server": "npm test -w apps/server",
+    "test:mobile": "cd apps/mobile && flutter analyze && flutter test",
+    "test": "npm run test:checksheets && npm run test:db && npm run test:server && npm run test:mobile"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

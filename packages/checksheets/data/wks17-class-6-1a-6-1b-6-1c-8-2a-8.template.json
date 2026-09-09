@@ -1,0 +1,307 @@
+{
+  "code": "wks17-class-6-1a-6-1b-6-1c-8-2a-8",
+  "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+  "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
+  "classScope": [],
+  "revision": 1,
+  "effectiveFrom": null,
+  "supersededBy": null,
+  "status": "draft",
+  "source": {
+    "workbook": "G2 Chiller Class 6 and 8 location checksheets.xlsx",
+    "sheet": "Class 6.1A, 6.1B, 6.1C, 8.2A, 8",
+    "extractedAt": "2026-09-09T13:14:29.558Z",
+    "extractorVersion": "1.0.0"
+  },
+  "sections": [
+    {
+      "ordinal": 1,
+      "number": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "title": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.9(1)(a)",
+            "13.9(2)",
+            "14.3",
+            "14.4"
+          ],
+          "regulationRaw": "13.9(1)(a) 13.9(2) 14.3 14.4",
+          "guidanceUrl": null,
+          "action": "If there is a class 6.1A or 6.1B substance or any class 6.1 substance that requires a controlled substance licence, verify that— (a) the substance is under the personal control of a certified handler; or (b) if being applied by aerial application, a pilot with a chemical rating is present; or (c) if the substance is handled by another person who is not a certified handler, the certified handler— (i) is present at the place where the substance is being handled; and (ii) has provided guidance to the person in respect of the handling; and (iii) is available at all times to provide assistance to the person while the substance is being handled by the person; or (d) is secure",
+          "records": "A record of the following: (a) confirmation of the need for a controlled substance licence: (b) the names of the certified handlers and their certificate numbers: (c) the certificate expiry dates: (d) the procedure(s) and the guidance that have been provided: (e) details of the secure containment",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 2,
+      "number": "2 Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "title": "Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "2",
+          "regulationRefs": [
+            "13.4"
+          ],
+          "regulationRaw": "13.4",
+          "guidanceUrl": null,
+          "action": "For class 6.1A, 6.1B, or 6.1C substances, verify that if an intervening wall is utilised, the requirements prescribed in regulation 13.40 are complied with",
+          "records": "A record of— (a) the height of the wall in relation to the place being protected and the containers in the store; and (b) the marking indicating the maximum storage height; and (c) the wall FRR",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "3",
+          "regulationRefs": [
+            "13.41"
+          ],
+          "regulationRaw": "13.41",
+          "guidanceUrl": null,
+          "action": "For class 6.1A, 6.1B, or 6.1C substances, verify that the substances and stores meet the prescribed separation distances from protected places",
+          "records": "A record of the following: (a) the actual and prescribed separation distances: (b) in a retail store, that the containers are closed and do not include class 6.1A substances",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 3,
+          "number": "4",
+          "regulationRefs": [
+            "13.42"
+          ],
+          "regulationRaw": "13.42",
+          "guidanceUrl": null,
+          "action": "Minimum separation between public places and hazardous substance locations containing packaged class 6.1 substance. For class 6.1A, 6.1B, or 6.1C substances, verify that— (a) the substances and stores meet the prescribed separation distances from public places; and (b) in a retail store that holds class 6.1B or 6.1C substances for retail sale and the packages remain closed, the minimum separation distance from and within the building is zero",
+          "records": "",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": "5",
+          "regulationRefs": [
+            "13.43"
+          ],
+          "regulationRaw": "13.43",
+          "guidanceUrl": null,
+          "action": "Minimum separation between protected places and hazardous substance locations containing packaged class 8.2A or 8.2B substances. For class 8.2A or 8.2B substances, verify that: (a) the substances and stores meet the minimum prescribed separation distances for— (i) stores where containers are opened; and (ii) stores where the containers remain closed; and (b) in any retail store to which the public has access to class 8.2A or 8.2B substances for retail sale, the packages remain closed",
+          "records": "A record of the following: (a) the actual and prescribed separation distances: (b) in a retail store, that the containers are closed: (c) whether the protected place is on-site and integral: (d) the measures taken to control hazards and minimise risk",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": "6",
+          "regulationRefs": [
+            "17.28"
+          ],
+          "regulationRaw": "17.28",
+          "guidanceUrl": null,
+          "action": "Verify that a tank containing a class 6.1A, 6.2B, or 6.1C substance (but not a 6.1D substance for the purposes of this performance standard) that does not have a 2.1.1, 2.1.2, or 3.1 classification meets the minimum prescribed separation distances from a protected place and a public place",
+          "records": "A record of— (a) the capacity of the tank; and (b) actual and prescribed separation distances",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 6,
+          "number": "7",
+          "regulationRefs": [
+            "17.29"
+          ],
+          "regulationRaw": "17.29",
+          "guidanceUrl": null,
+          "action": "Verify that a tank containing a class 8.2A or 8.2B substance that does not have a 2.1.1, 2.1.2, 3.1, 6.1A, 6.2B, or 6.1C classification meets the prescribed separation distances from a protected place or public place",
+          "records": "A record of— (a) the capacity of the tank; and (b) actual and prescribed separation distances",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 3,
+      "number": "3 Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
+      "title": "Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.29(2)"
+          ],
+          "regulationRaw": "13.29(2)",
+          "guidanceUrl": null,
+          "action": "Verify whether any substances or materials specified in Schedule 15 of the Regulations which are incompatible with class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances are present",
+          "records": "A record of the substances",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "13.29(1)",
+            "13.29(3)"
+          ],
+          "regulationRaw": "13.29(1) 13.29(3)",
+          "guidanceUrl": null,
+          "action": "Verify that— (a) the hazardous substances are not in contact with incompatible substances; and (b) containers of incompatible substances are stored separately",
+          "records": "A record of the means of compliance",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 4,
+      "number": "4 Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "title": "Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.35(1)"
+          ],
+          "regulationRaw": "13.35(1) https://www.worksafe.govt.nz/laws-and-regulations/operational-policy-framework/operational-policies/policy-clarification-class-6-and-8/",
+          "guidanceUrl": "https://www.worksafe.govt.nz/laws-and-regulations/operational-policy-framework/operational-policies/policy-clarification-class-6-and-8/",
+          "action": "Verify that a store containing a class 6 or 8",
+          "records": "A record of— (a) the floor area of the store; and (b) the access for emergency services; and (c) the details of the store; and (d) the number of exits; and (e) any authorisation from WorkSafe; and (f) secondary containment details; and (g) ventilation details; and (h) procedures to minimise stack collapse or damage; and (i) the security; and (j) segregation details; and (k) any sources of heat",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "13.35(1)"
+          ],
+          "regulationRaw": "13.35(1)",
+          "guidanceUrl": null,
+          "action": "Verify that a store containing a class 6 or 8 substance (or both) and which is opened is also compliant with the additional prescribed requirements",
+          "records": "A record of— (a) shower and eyewash facilities, including the name plate; and (b) shower and eyewash facilities having been tested; and (c) hand-washing facilities",
+          "evidenceRequired": true
+        }
+      ]
+    },
+    {
+      "ordinal": 5,
+      "number": "5 Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
+      "title": "Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.36(1)"
+          ],
+          "regulationRaw": "13.36(1)",
+          "guidanceUrl": null,
+          "action": "For each hazardous substance location that is an indoor storage cabinet for class 6.1A, 6.1B, or 6.1C substances referred to in regulation 13.34(1), verify that the cabinet is— (a) compliant; and (b) located in accordance with the prescribed requirements; and (c) marked as prescribed",
+          "records": "A record of— (a) the location of the cabinet; and (b) the plate of the cabinet; and (c) the markings of the cabinet; and (d) the quantities in the cabinet",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "13.36(1)"
+          ],
+          "regulationRaw": "13.36(1)",
+          "guidanceUrl": null,
+          "action": "Verify that— (a) there are no incompatibles inside the cabinet; and (b) there is a nearby source of water for hand-washing",
+          "records": "A confirmatory record",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 6,
+      "number": "6 Indoor storage cabinets for class 8.2A and 8.2B substances",
+      "title": "Indoor storage cabinets for class 8.2A and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.37(1)"
+          ],
+          "regulationRaw": "13.37(1)",
+          "guidanceUrl": null,
+          "action": "For each hazardous substance location that is an indoor storage cabinet for a class 8.2A or 8.2B substance (or both) referred to in regulation 13.34(1), verify that the maximum quantity of hazardous substance is not exceeded, and the cabinet is— (a) compliant; and (b) located in accordance with the prescribed requirements; and (c) marked as prescribed",
+          "records": "A record of— (a) the location of the cabinet; and (b) the plate of the cabinet; and (c) the markings of the cabinet; and (d) the quantities in the cabinet",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 2,
+          "number": "2",
+          "regulationRefs": [
+            "13.37(1)"
+          ],
+          "regulationRaw": "13.37(1)",
+          "guidanceUrl": null,
+          "action": "Verify that— (a) there are no incompatibles inside the cabinet; and (b) there is a nearby source of water for hand-washing",
+          "records": "A confirmatory record",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 7,
+      "number": "7 Fixed structures to be compatible",
+      "title": "Fixed structures to be compatible",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.39(g)"
+          ],
+          "regulationRaw": "13.39(g)",
+          "guidanceUrl": null,
+          "action": "Verify that any fixed structure or installed equipment is constructed of compatible material and is not an ignition source",
+          "records": "A record of the general nature of the structures or installed equipment",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 8,
+      "number": "8 Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "title": "Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.7"
+          ],
+          "regulationRaw": "13.7",
+          "guidanceUrl": null,
+          "action": "Verify that when a class 6 or 8 substance is being used at a hazardous substance location— (a) the equipment used to handle the substance is compliant; and (b) the equipment is accompanied by documentation covering the use and maintenance of the equipment; and (c) the documentation is readily available and understandable; and (d) the workplace has the facilities that are specified in a safe work instrument (if applicable)",
+          "records": "A record of— (a) the equipment and the state of it; and (b) either the documentation or a note referencing the documentation; and (c) the use and maintenance of the equipment; and (d) the facilities",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 9,
+      "number": "9 Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "title": "Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": "1",
+          "regulationRefs": [
+            "13.45"
+          ],
+          "regulationRaw": "13.45",
+          "guidanceUrl": null,
+          "action": "Verify that equipment, materials, and chemicals are available",
+          "records": "Records of— (a) the nature of the equipment, materials, and chemicals; and (b) where they are located",
+          "evidenceRequired": false
+        }
+      ]
+    },
+    {
+      "ordinal": 10,
+      "number": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "title": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "items": []
+    }
+  ]
+}

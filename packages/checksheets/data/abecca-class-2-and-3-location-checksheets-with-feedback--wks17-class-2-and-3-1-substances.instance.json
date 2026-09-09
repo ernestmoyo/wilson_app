@@ -1,0 +1,423 @@
+{
+  "siteBlock": {
+    "Legal Entity Name": "Abecca Healthcare Limited",
+    "Trading as Name": "Abecca",
+    "Site / Location Address": "82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Postal Address": "82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Business Phone Number": "+64 6 358 9642",
+    "Business Website": "https://abeccadesign.com/",
+    "NZBN": "9429030042865",
+    "Description of Business Type / Industry": "Abecca Healthcare Limited designs and manufactures specialised, high-risk environment furniture for sectors such as mental health, corrections, and youth justice centers. The company focuses on a safety-first design philosophy, including features like foam-only structures and anti-ligature designs, and produces items such as anti-ligature mattresses, seating, tables, and bean bags from their factory in Pahiatua, New Zealand",
+    "Manager Name": "Joseph Beatson",
+    "Date of Inspection/Site Visit": "2026-01-15",
+    "Status of Inspection": "Mock",
+    "Direct Dial Number and/or Mobile Number": "+64 6 358 9642",
+    "Hazardous substance name": "Class 3.1B flammable liquids",
+    "Hazardous Substance Location": "Type B storage at 82 Sedcole Street, Pahiatua, Pahiatua, 4910",
+    "Brief location summary": "Abecca Healthcare Limited's manufacturing facility at 82 Sedcole Street, Pahiatua 4910, New Zealand, utilises various chemical agents in their manufacturing process that are classified under New Zealand's Hazardous Substances and New Organisms (HSNO) system. These substances include highly flammable liquids (3.1B), acute toxicity chemicals (6.1C/D), skin and eye irritants/corrosives (6.3A, 6.4A, 8.2B, 8.3A), sensitisers and chronic health hazards (6.5A/B, 6.7B, 6.9B), and ecotoxins harmful to aquatic life (9.1C)."
+  },
+  "findings": [
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The inventory register shows a maximum of 3,350 L of Class 3.1B is held on site. In accordance with Table 2 of Schedule 9, the trigger quantities are: 250 L (when in containers of more than 5 L) 500 L (when in containers of 5 L or less). Security controls in place are: Site access controlled by lock and key Site monitored 24/7 via CCTV Storage container secured with lock and key",
+      "row": 18
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The following hazardous substance classes are not present on site: All Class 1 substances (explosives) All Class 2 substances (gases) Class 3.2 substances All Class 4 substances (flammable solids) All Class 5 substances (oxidising substances/organic peroxides) Based on this inventory, there are no incompatibilities arising from these classes, as none are stored or used at the site.",
+      "row": 20
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Hazardous area not established A hazardous atmosphere zone should be established for flammable liquids in 100 L quantities in closed packages, according to the Interpretive Guide: Storing up to 2,000 L of Flammable Liquid in Closed Packages",
+      "row": 22
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "The site plan shows the separation distance but does not show the hazardous area.",
+      "row": 23
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "No evidence of hazardous area maintenance, electrical dossier, or certificate",
+      "row": 24
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 26
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 27
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 28
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 30
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 31
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 32
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 33
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 5,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 34
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 6,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 35
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 37
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 39
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 2,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 40
+    },
+    {
+      "sectionOrdinal": 9,
+      "itemOrdinal": 1,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 42
+    },
+    {
+      "sectionOrdinal": 9,
+      "itemOrdinal": 2,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 43
+    },
+    {
+      "sectionOrdinal": 10,
+      "itemOrdinal": 1,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 45
+    },
+    {
+      "sectionOrdinal": 10,
+      "itemOrdinal": 2,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 46
+    },
+    {
+      "sectionOrdinal": 10,
+      "itemOrdinal": 3,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 47
+    },
+    {
+      "sectionOrdinal": 10,
+      "itemOrdinal": 4,
+      "itemNumber": "7",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 48
+    },
+    {
+      "sectionOrdinal": 11,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 50
+    },
+    {
+      "sectionOrdinal": 13,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 53
+    },
+    {
+      "sectionOrdinal": 14,
+      "itemOrdinal": 1,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "A store that is a type B building: non-combustible (constructed of steel and with steel framing) The door to a store is: constructed of steel enable escape for persons inside the store is self-closing in the event of a fire near the doorway is kept closed except where goods are being placed in, or removed from, the store Quantity: 3,350 L Prescribed separation distance from protected place: 4.18m Package sizes 20L",
+      "row": 55
+    },
+    {
+      "sectionOrdinal": 15,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The type B strage building stores 3,350 Class 3.1 substances in 5 and 20L containers. 3,000L are in 20L containers and 350L is stored in 5L containers. The prescribed separation distance, based on the Separation distances calculation tool provided by Worksafe, is more than 4.18m The separation distance verified on site visit was XXX, which is more than the 4.35m separation idndicated on the site plan",
+      "row": 57
+    },
+    {
+      "sectionOrdinal": 16,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 59
+    },
+    {
+      "sectionOrdinal": 16,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 60
+    },
+    {
+      "sectionOrdinal": 16,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 61
+    },
+    {
+      "sectionOrdinal": 16,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 62
+    },
+    {
+      "sectionOrdinal": 17,
+      "itemOrdinal": 1,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 64
+    },
+    {
+      "sectionOrdinal": 18,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 66
+    },
+    {
+      "sectionOrdinal": 19,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 68
+    },
+    {
+      "sectionOrdinal": 20,
+      "itemOrdinal": 1,
+      "itemNumber": "2",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "No evidence provided",
+      "row": 70
+    },
+    {
+      "sectionOrdinal": 21,
+      "itemOrdinal": 1,
+      "itemNumber": "3",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Not Applicable",
+      "row": 72
+    },
+    {
+      "sectionOrdinal": 21,
+      "itemOrdinal": 2,
+      "itemNumber": "4",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Not Applicable",
+      "row": 73
+    },
+    {
+      "sectionOrdinal": 22,
+      "itemOrdinal": 1,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 75
+    },
+    {
+      "sectionOrdinal": 23,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 77
+    },
+    {
+      "sectionOrdinal": 23,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 78
+    },
+    {
+      "sectionOrdinal": 23,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 79
+    },
+    {
+      "sectionOrdinal": 23,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 80
+    },
+    {
+      "sectionOrdinal": 23,
+      "itemOrdinal": 5,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 81
+    },
+    {
+      "sectionOrdinal": 24,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 83
+    }
+  ],
+  "trailing": {
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "decision": "Decision: Conditional compliance certificate to be issued with the following conditions: 1. Site plan to be updated to meet requirements of regulation 13.34(5)(b) 2. Signage to meet requirements of regulation 2.6 (5)(ii)",
+    "note": "NB: Non compliances are in red",
+    "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017"
+  }
+}

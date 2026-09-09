@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assuresafety.co.nz/schema/checksheet.schema.json",
+  "title": "WKS-17 Location Compliance Check Sheet Template",
+  "description": "Canonical, versioned representation of a location compliance check sheet derived verbatim from the WorkSafe NZ Location Compliance Certification Performance Standard. This file is the single source of truth; TypeScript types, Dart models, Postgres seeds and PDF/XLSX exports are all generated from it and must never be hand-edited.",
+  "type": "object",
+  "required": ["code", "title", "revision", "status", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Stable identifier, e.g. wks17-general, wks17-class-6-8"
+    },
+    "title": {
+      "type": "string",
+      "description": "Verbatim sheet title as it appears in the source workbook"
+    },
+    "psReference": {
+      "type": "string",
+      "description": "The Performance Standard this content is taken from"
+    },
+    "classScope": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hazard classes this template applies to, e.g. [\"6.1A\",\"6.1B\",\"8.2A\"]. Empty for the general template, which applies to every job."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Increments when WorkSafe revises the Performance Standard. Templates are immutable once published; a revision creates a new document."
+    },
+    "effectiveFrom": { "type": "string", "format": "date" },
+    "supersededBy": { "type": ["string", "null"] },
+    "status": { "enum": ["draft", "current", "superseded"] },
+    "source": {
+      "type": "object",
+      "description": "Provenance of this extraction, so the content can be re-verified against its origin.",
+      "additionalProperties": false,
+      "properties": {
+        "workbook": { "type": "string" },
+        "sheet": { "type": "string" },
+        "extractedAt": { "type": "string", "format": "date-time" },
+        "extractorVersion": { "type": "string" }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ordinal", "title", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "ordinal": { "type": "integer", "minimum": 1 },
+          "number": { "type": ["string", "null"], "description": "Section number as printed on the sheet" },
+          "title": { "type": "string", "description": "Verbatim section heading" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ordinal", "action", "records"],
+              "additionalProperties": false,
+              "properties": {
+                "ordinal": { "type": "integer", "minimum": 1 },
+                "number": { "type": ["string", "null"], "description": "Item number within the section, as printed" },
+                "regulationRefs": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Parsed regulation references, e.g. [\"10.34\",\"13.38\"]. Parsed rather than free text so items can be linked to legislation and audited for coverage."
+                },
+                "regulationRaw": { "type": ["string", "null"], "description": "The Regulation cell exactly as written, retained because the parse is lossy" },
+                "guidanceUrl": { "type": ["string", "null"] },
+                "action": { "type": "string", "description": "Verbatim 'Action' column — what the certifier must verify" },
+                "records": { "type": "string", "description": "Verbatim 'Records' column — what must be recorded as evidence" },
+                "evidenceRequired": { "type": "boolean", "description": "Derived: the Records cell calls for photographs, copies or samples" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

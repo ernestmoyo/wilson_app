@@ -1,0 +1,186 @@
+{
+  "siteBlock": {
+    "Legal Entity Name": "Argenta Manufacturing Limited",
+    "Trading as Name": "Argenta Manufacturing Limited",
+    "Site / Location Address": "2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Postal Address": "Po Box 75340, Manurewa 2243, Auckland, 2243",
+    "Business Phone Number": "64 9 2503100",
+    "Business Website": "www.argentaglobal.com",
+    "NZBN": "9429033971360",
+    "Description of Business Type / Industry": "Argenta Manufacturing Limited is an animal health pharmaceutical manufacturer. The company produces a wide range of bespoke animal health products for both local and export markets. Argenta is the largest animal health pharmaceutical manufacturer in the Southern Hemisphere and also provides contract manufacturing services to other businesses in OECD countries. Its Manurewa facility is GMP-certified and meets the requirements of major regulatory agencies, including the European Medicines Agency (EMA) and the US Food and Drug Administration (FDA). The site is supported by highly competent health and safety practitioners and strong compliance programmes.",
+    "Manager Name": "Jesh Chandra",
+    "Status of Inspection": "Coolroom 3 Argenta Manufacturing Limited 2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Hazardous Substance Location": "Coolroom 3 Argenta Manufacturing Limited 2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Brief location summary": "G2 Chiller is a dedicated storage area for Class 6.1B (320 kg) and Class 6.1C (2500 kg) used in veterinary medicine, primarily for cattle, sheep, goats, horses, dogs, and cats to treat and control a wide range of internal and external parasites. At this site, these hazardous substances are kept closed and are stored in a temperature-controlled cool room."
+  },
+  "findings": [
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 17
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 1,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "HS store located at an infinite distance from the protected place (see site plan for evidence). Maximum storage height demacated",
+      "row": 19
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 2,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Distance from protected place is greater than 50m evidence provided in Site Plan",
+      "row": 20
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 3,
+      "itemNumber": "4",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Distance from protected place is greater than 5m evidence provided in Site Plan",
+      "row": 21
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 4,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 22
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 5,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 23
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 6,
+      "itemNumber": "7",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 24
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The store is isolated and does not contain any class 1 or class 5 substance",
+      "row": 26
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 27
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "- Less than 25 square metres, one entrance - Can be easily accessed by emergency services - Structure does not react with the materials in storage - Substance is a white powder - Ventilation is an OD fan - Accessed by authorised individuals only - Products not stacked - Product is not stored with incompatible substances - All electrical equipment is IP rated",
+      "row": 29
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "All the required facilities are available",
+      "row": 30
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 32
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 33
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 35
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "pending",
+      "statusSource": "inferred:text",
+      "comment": null,
+      "row": 36
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Material construction is compatible and cooling system is IP rated",
+      "row": 38
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Confirmed used of goggles, particulate respirators, chemical resistant gloves,full body cover",
+      "row": 40
+    },
+    {
+      "sectionOrdinal": 9,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Pictures of spill kits and locations Located 15m from the storge area",
+      "row": 42
+    }
+  ],
+  "trailing": {
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "decision": "Decision: Compliance certificate refused to be issued with the following conditions: 1. Important compliance documents are still in draft form (SOPs and ERP) 2. Signage to meet requirements of regulation 2.6 (5)(ii)",
+    "note": "NB: Non compliances are in red",
+    "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017"
+  }
+}

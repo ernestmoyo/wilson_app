@@ -82,3 +82,5 @@ packages/checksheets/data/certificates/*/signature.png
 
 # Vercel CLI link metadata
 .vercel/
+# Rendered certificate output embeds the signature as a data URL — keep out of git.
+packages/checksheets/data/certificates/*/certificate.html

@@ -1,0 +1,348 @@
+{
+  "siteBlock": {
+    "Legal Entity Name": "Argenta Manufacturing Limited",
+    "Trading as Name": "Argenta Manufacturing Limited",
+    "Site / Location Address": "2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Postal Address": "Po Box 75340, Manurewa 2243, Auckland, 2243",
+    "Business Phone Number": "64 9 2503100",
+    "Business Website": "www.argentaglobal.com",
+    "NZBN": "9429033971360",
+    "Description of Business Type / Industry": "Argenta Manufacturing Limited is an animal health pharmaceutical manufacturer. The company produces a wide range of bespoke animal health products for both local and export markets. Argenta is the largest animal health pharmaceutical manufacturer in the Southern Hemisphere and also provides contract manufacturing services to other businesses in OECD countries. Its Manurewa facility is GMP-certified and meets the requirements of major regulatory agencies, including the European Medicines Agency (EMA) and the US Food and Drug Administration (FDA). The site is supported by highly competent health and safety practitioners and strong compliance programmes.",
+    "Manager Name": "Jesh Chandra",
+    "Direct Dial Number and/or Mobile Number": "0226787761",
+    "Hazardous Substance Location": "G2 Chiller Argenta Manufacturing Limited 2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Brief location summary": "G2 Chiller is a dedicated storage area for Class 6.1B (320 kg) and Class 6.1C (2500 kg) used in veterinary medicine, primarily for cattle, sheep, goats, horses, dogs, and cats to treat and control a wide range of internal and external parasites. At this site, these hazardous substances are kept closed and are stored in a temperature-controlled cool room."
+  },
+  "findings": [
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "An assortment of Class 6.1B (310 kg) and Class 6.1C (2510 kg) Threshold: (b) 250 kg or 250 L of class 6.1B: (c) 1 000 kg or 1 000 L of class 6.1C:",
+      "row": 18
+    },
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 19
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Evidence of email provided",
+      "row": 21
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Evidence of training records and a training roadmap noted Evidence of training matrix noted",
+      "row": 23
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Evidence of training records provided for reg 4.5 and record of Certified Hadler training",
+      "row": 24
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Evidence of training records collected and available for inspection",
+      "row": 25
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable",
+      "row": 26
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Quantities trigger signage requirements: The trigger quantity is 50 kg for Class 6.1A, 250 kg for Class 6.1B and 1,000 kg for Class 6.1C, according to Schedule 3 of Health and Safety at Work (Hazardous Substances) Regulations 2017.",
+      "row": 28
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Photographic evidence shows a non-compliant sign available. (a) The signage required under regulation 2.6 is displayed; and (b) The signage’s contents (do not meet r2.6(5)(b) (correct pictograms and hazard statements for ALL substances present)), format, and placement do not meet the requirements of that regulation; and (c) The signage is clear, easy to understand, and long-lasting, meaning: (i) it is written in English; (ii) it is readily understandable; (iii) abbreviations or acronyms are only used if they are commonly used in English, and the full term is written out at least once; (iv) all required information can be clearly seen and read from at least 10 metres away in different conditions (e.g., rain or low light); and (v) it is made from durable, sunlight-resistant materials that need minimal maintenance.",
+      "row": 29
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Photos of signs provided at all entry points and compliant to reg 2.5 (2)",
+      "row": 30
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "Confirmed that the store does not have compliant signage photos provided. 1. There is no signage on the door to the G2 Chiller 2. The condensed SDS on the door is for 1 chemical, while the store has more than 1 chemical with different hazardous substance classes",
+      "row": 31
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 5,
+      "itemNumber": "5",
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "No compliant signage is displayed next to each door area",
+      "row": 32
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 34
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 35
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 36
+    },
+    {
+      "sectionOrdinal": 5,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 37
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 1,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "An assortment of Class 6.1B (310 kg) and Class 6.1C (2510 kg). The threshold is triggered at 100 kg according to Schedule 5 of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "row": 39
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 2,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The Draft ERP provided complies with regulation 5.7(2) and it describes, in Section 7, all the possible emergency events",
+      "row": 40
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 3,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Sections 9-30 of the Draft ERP describes all the necessary actions to be taken in the event of an emegency, in compliance to regulation 5.7(3)(a)",
+      "row": 41
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 4,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The Draft ERP meets the requirements of regulation 5.7(3)(b): (b) identify each person with responsibility for the actions described in paragraph (a) (or any part of any of those actions) and give information on— (i) how to contact the person; and (ii) any skills the person is required to have; and (iii) any special training needed to deal with an emergency involving the substance; and (iv) any actions the person is expected to take;",
+      "row": 42
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 5,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "The Draft ERP meest all the requirements of regulation 5.7(3)(c): (c) specify— (i) how to obtain information about the hazardous properties of, and means of controlling, the substance or substances that may be involved; and (ii) actions to be taken to contact any emergency service provider; and (iii) the purpose and location of each item of equipment or facilities to be used to manage the emergency; and (iv) how to decide which actions to take; and (v) the sequence in which actions should be taken;",
+      "row": 43
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 6,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Inventory and site plan (attached) comply with regulation 5.7(3)(d)",
+      "row": 44
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 7,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Section 11 provides the actions to be taken in the event of a fire and Section 24 of the Draft ERP provides information on the actions to take in the event of a liquid spill",
+      "row": 45
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 8,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "There is no evidence of implementation of the updated ERP (still named Draft ERP with no signatures and approvals). The old ERP, which was not compliant, was first implemented on 16 November 2016. Recent evidence of testing is an evacuation carried out on 01 October 2025",
+      "row": 46
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 9,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Recent evidence of testing is an evacuation carried out on 01 October 2025",
+      "row": 47
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 10,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "The Draft ERP has not been approved for use availability: Page 1 of ERP shows no approval signatures Fire and Emergency New Zealand from Blue Watch, Manurewa Fire Station, identified as emergency service providers.",
+      "row": 48
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 11,
+      "itemNumber": null,
+      "status": "compliant",
+      "statusSource": "font:FF00B050",
+      "comment": "Evidence of FENZ notification provided. There is no record of any feedback or recommendations from FENZ",
+      "row": 49
+    },
+    {
+      "sectionOrdinal": 6,
+      "itemOrdinal": 12,
+      "itemNumber": null,
+      "status": "non_compliant",
+      "statusSource": "font:FFFF0000",
+      "comment": "The updated ERP, which is still in draft phase, has not been tested.",
+      "row": 50
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 52
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 53
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 54
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 55
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 5,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 56
+    },
+    {
+      "sectionOrdinal": 7,
+      "itemOrdinal": 6,
+      "itemNumber": "7",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "N/A",
+      "row": 57
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "A copy of the site plan shows: (a) the dimensions in relation to the site boundary: (b) a north point accurately orientated: (c) hazardous substance locations: (d) hazardous areas: (e) separation distances from protected places and public places, if prescribed: (f) relevant controlled zone distances",
+      "row": 59
+    },
+    {
+      "sectionOrdinal": 8,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Attached site plan complies with the requirements of regulation 13.34(5)(b) (b) a site plan is available for inspection showing, in relation to the legal boundary of the site in which the hazardous substance location is situated,— (i) the physical location of all hazardous substance locations within the workplace that contain the substance; and (ii) all distances from the hazardous substance location to protected places, public places, and other hazardous substance locations within the boundary of the workplace;",
+      "row": 60
+    }
+  ],
+  "trailing": {
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "decision": null,
+    "note": "NB: Non compliances are in red",
+    "reference": null
+  }
+}
