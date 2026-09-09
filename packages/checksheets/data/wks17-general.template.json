@@ -10,17 +10,32 @@
   "source": {
     "reconciledFrom": [
       {
-        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v2g2/wks17-locations-general.template.json",
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v3g2/wks17-locations-general.template.json",
         "classKey": "class_6_8",
         "sheet": "Locations General"
       },
       {
-        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v2ab/wks17-locations-general.template.json",
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v3ab/wks17-locations-general.template.json",
         "classKey": "class_2_3",
         "sheet": "Locations General"
       }
     ],
-    "reconciledAt": "2026-09-09T13:20:34.689Z"
+    "reconciledAt": "2026-09-09T20:12:04.428Z"
+  },
+  "sheet": {
+    "evidenceColumnLabel": "Evidence Portifolio",
+    "columnHeaders": [
+      "Item",
+      "Regulation",
+      "Action",
+      "Records",
+      "Comments"
+    ],
+    "note": "NB: Non compliances are in red",
+    "documentControl": null,
+    "scopeOfAuthorisation": null,
+    "reference": null,
+    "footer": "Section 1/1"
   },
   "sections": [
     {
@@ -554,5 +569,17 @@
         }
       ]
     }
-  ]
+  ],
+  "sheetByClass": {
+    "class_6_8": {
+      "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "banner": "General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+    },
+    "class_2_3": {
+      "title": "Requirements for Class 2 and 3.1",
+      "banner": null,
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+    }
+  }
 }

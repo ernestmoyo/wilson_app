@@ -18,7 +18,7 @@
   },
   "findings": [
     {
-      "sectionOrdinal": 2,
+      "sectionOrdinal": 1,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "compliant",
@@ -27,7 +27,7 @@
       "row": 18
     },
     {
-      "sectionOrdinal": 3,
+      "sectionOrdinal": 2,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "compliant",
@@ -36,7 +36,7 @@
       "row": 20
     },
     {
-      "sectionOrdinal": 4,
+      "sectionOrdinal": 3,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "compliant",
@@ -45,7 +45,7 @@
       "row": 22
     },
     {
-      "sectionOrdinal": 4,
+      "sectionOrdinal": 3,
       "itemOrdinal": 2,
       "itemNumber": "2",
       "status": "non_compliant",
@@ -54,7 +54,7 @@
       "row": 23
     },
     {
-      "sectionOrdinal": 4,
+      "sectionOrdinal": 3,
       "itemOrdinal": 3,
       "itemNumber": "3",
       "status": "non_compliant",
@@ -63,7 +63,7 @@
       "row": 24
     },
     {
-      "sectionOrdinal": 5,
+      "sectionOrdinal": 4,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -72,7 +72,7 @@
       "row": 26
     },
     {
-      "sectionOrdinal": 5,
+      "sectionOrdinal": 4,
       "itemOrdinal": 2,
       "itemNumber": "2",
       "status": "not_applicable",
@@ -81,7 +81,7 @@
       "row": 27
     },
     {
-      "sectionOrdinal": 5,
+      "sectionOrdinal": 4,
       "itemOrdinal": 3,
       "itemNumber": "3",
       "status": "not_applicable",
@@ -90,7 +90,7 @@
       "row": 28
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -99,7 +99,7 @@
       "row": 30
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 2,
       "itemNumber": "2",
       "status": "not_applicable",
@@ -108,7 +108,7 @@
       "row": 31
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 3,
       "itemNumber": "3",
       "status": "not_applicable",
@@ -117,7 +117,7 @@
       "row": 32
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 4,
       "itemNumber": "4",
       "status": "not_applicable",
@@ -126,7 +126,7 @@
       "row": 33
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 5,
       "itemNumber": "5",
       "status": "not_applicable",
@@ -135,7 +135,7 @@
       "row": 34
     },
     {
-      "sectionOrdinal": 6,
+      "sectionOrdinal": 5,
       "itemOrdinal": 6,
       "itemNumber": "6",
       "status": "not_applicable",
@@ -144,7 +144,7 @@
       "row": 35
     },
     {
-      "sectionOrdinal": 7,
+      "sectionOrdinal": 6,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -153,7 +153,7 @@
       "row": 37
     },
     {
-      "sectionOrdinal": 8,
+      "sectionOrdinal": 7,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -162,7 +162,7 @@
       "row": 39
     },
     {
-      "sectionOrdinal": 8,
+      "sectionOrdinal": 7,
       "itemOrdinal": 2,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -171,7 +171,7 @@
       "row": 40
     },
     {
-      "sectionOrdinal": 9,
+      "sectionOrdinal": 8,
       "itemOrdinal": 1,
       "itemNumber": "2",
       "status": "not_applicable",
@@ -180,7 +180,7 @@
       "row": 42
     },
     {
-      "sectionOrdinal": 9,
+      "sectionOrdinal": 8,
       "itemOrdinal": 2,
       "itemNumber": "3",
       "status": "not_applicable",
@@ -189,7 +189,7 @@
       "row": 43
     },
     {
-      "sectionOrdinal": 10,
+      "sectionOrdinal": 9,
       "itemOrdinal": 1,
       "itemNumber": "4",
       "status": "not_applicable",
@@ -198,7 +198,7 @@
       "row": 45
     },
     {
-      "sectionOrdinal": 10,
+      "sectionOrdinal": 9,
       "itemOrdinal": 2,
       "itemNumber": "5",
       "status": "not_applicable",
@@ -207,7 +207,7 @@
       "row": 46
     },
     {
-      "sectionOrdinal": 10,
+      "sectionOrdinal": 9,
       "itemOrdinal": 3,
       "itemNumber": "6",
       "status": "not_applicable",
@@ -216,7 +216,7 @@
       "row": 47
     },
     {
-      "sectionOrdinal": 10,
+      "sectionOrdinal": 9,
       "itemOrdinal": 4,
       "itemNumber": "7",
       "status": "not_applicable",
@@ -225,7 +225,7 @@
       "row": 48
     },
     {
-      "sectionOrdinal": 11,
+      "sectionOrdinal": 10,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -234,7 +234,7 @@
       "row": 50
     },
     {
-      "sectionOrdinal": 13,
+      "sectionOrdinal": 12,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -243,7 +243,7 @@
       "row": 53
     },
     {
-      "sectionOrdinal": 14,
+      "sectionOrdinal": 13,
       "itemOrdinal": 1,
       "itemNumber": "2",
       "status": "compliant",
@@ -252,7 +252,7 @@
       "row": 55
     },
     {
-      "sectionOrdinal": 15,
+      "sectionOrdinal": 14,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "compliant",
@@ -261,7 +261,7 @@
       "row": 57
     },
     {
-      "sectionOrdinal": 16,
+      "sectionOrdinal": 15,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -270,7 +270,7 @@
       "row": 59
     },
     {
-      "sectionOrdinal": 16,
+      "sectionOrdinal": 15,
       "itemOrdinal": 2,
       "itemNumber": "2",
       "status": "not_applicable",
@@ -279,7 +279,7 @@
       "row": 60
     },
     {
-      "sectionOrdinal": 16,
+      "sectionOrdinal": 15,
       "itemOrdinal": 3,
       "itemNumber": "3",
       "status": "not_applicable",
@@ -288,7 +288,7 @@
       "row": 61
     },
     {
-      "sectionOrdinal": 16,
+      "sectionOrdinal": 15,
       "itemOrdinal": 4,
       "itemNumber": "4",
       "status": "not_applicable",
@@ -297,7 +297,7 @@
       "row": 62
     },
     {
-      "sectionOrdinal": 17,
+      "sectionOrdinal": 16,
       "itemOrdinal": 1,
       "itemNumber": "5",
       "status": "not_applicable",
@@ -306,7 +306,7 @@
       "row": 64
     },
     {
-      "sectionOrdinal": 18,
+      "sectionOrdinal": 17,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -315,7 +315,7 @@
       "row": 66
     },
     {
-      "sectionOrdinal": 19,
+      "sectionOrdinal": 18,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -324,7 +324,7 @@
       "row": 68
     },
     {
-      "sectionOrdinal": 20,
+      "sectionOrdinal": 19,
       "itemOrdinal": 1,
       "itemNumber": "2",
       "status": "non_compliant",
@@ -333,7 +333,7 @@
       "row": 70
     },
     {
-      "sectionOrdinal": 21,
+      "sectionOrdinal": 20,
       "itemOrdinal": 1,
       "itemNumber": "3",
       "status": "non_compliant",
@@ -342,7 +342,7 @@
       "row": 72
     },
     {
-      "sectionOrdinal": 21,
+      "sectionOrdinal": 20,
       "itemOrdinal": 2,
       "itemNumber": "4",
       "status": "non_compliant",
@@ -351,7 +351,7 @@
       "row": 73
     },
     {
-      "sectionOrdinal": 22,
+      "sectionOrdinal": 21,
       "itemOrdinal": 1,
       "itemNumber": "5",
       "status": "not_applicable",
@@ -360,7 +360,7 @@
       "row": 75
     },
     {
-      "sectionOrdinal": 23,
+      "sectionOrdinal": 22,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",
@@ -369,7 +369,7 @@
       "row": 77
     },
     {
-      "sectionOrdinal": 23,
+      "sectionOrdinal": 22,
       "itemOrdinal": 2,
       "itemNumber": "2",
       "status": "not_applicable",
@@ -378,7 +378,7 @@
       "row": 78
     },
     {
-      "sectionOrdinal": 23,
+      "sectionOrdinal": 22,
       "itemOrdinal": 3,
       "itemNumber": "3",
       "status": "not_applicable",
@@ -387,7 +387,7 @@
       "row": 79
     },
     {
-      "sectionOrdinal": 23,
+      "sectionOrdinal": 22,
       "itemOrdinal": 4,
       "itemNumber": "4",
       "status": "not_applicable",
@@ -396,7 +396,7 @@
       "row": 80
     },
     {
-      "sectionOrdinal": 23,
+      "sectionOrdinal": 22,
       "itemOrdinal": 5,
       "itemNumber": "5",
       "status": "not_applicable",
@@ -405,7 +405,7 @@
       "row": 81
     },
     {
-      "sectionOrdinal": 24,
+      "sectionOrdinal": 23,
       "itemOrdinal": 1,
       "itemNumber": "1",
       "status": "not_applicable",

@@ -111,6 +111,33 @@ flatten(canonical).forEach((c, i) => {
   }
 });
 
+// ── 4. Sheet-level nodes: shared where identical, per-class overlay otherwise ─
+// Title, banner and declaration genuinely differ by class family (the
+// declaration cites reg 13.38 for class 6/8 and 17.91 for class 2/3); the
+// note, column headers and footer do not.
+{
+  const sheets = loaded.map((l) => [l.classKey, l.doc.sheet ?? {}]);
+  const keys = new Set(sheets.flatMap(([, s]) => Object.keys(s)));
+  const base = {};
+  const byClass = {};
+  let overlayFields = 0;
+  for (const k of keys) {
+    const vals = sheets.map(([, s]) => JSON.stringify(s[k] ?? null));
+    if (vals.every((v) => v === vals[0])) {
+      base[k] = sheets[0][1][k] ?? null;
+    } else {
+      overlayFields++;
+      for (const [classKey, s] of sheets) {
+        (byClass[classKey] ??= {})[k] = s[k] ?? null;
+      }
+      console.log(`  class-conditional sheet field: ${k}`);
+    }
+  }
+  canonical.sheet = base;
+  if (overlayFields) canonical.sheetByClass = byClass;
+  else delete canonical.sheetByClass;
+}
+
 canonical.code = 'wks17-general';
 canonical.title = 'General location requirements';
 canonical.classScope = [];

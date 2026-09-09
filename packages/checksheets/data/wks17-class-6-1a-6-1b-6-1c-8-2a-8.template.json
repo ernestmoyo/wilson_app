@@ -10,13 +10,41 @@
   "source": {
     "workbook": "G2 Chiller Class 6 and 8 location checksheets.xlsx",
     "sheet": "Class 6.1A, 6.1B, 6.1C, 8.2A, 8",
-    "extractedAt": "2026-09-09T13:14:29.558Z",
+    "extractedAt": "2026-09-09T20:12:01.529Z",
     "extractorVersion": "1.0.0"
+  },
+  "sheet": {
+    "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+    "evidenceColumnLabel": "Evidence Portfolio",
+    "banner": null,
+    "columnHeaders": [
+      "Item",
+      "Regulation",
+      "Action",
+      "Records",
+      "Comments"
+    ],
+    "note": "NB: Non compliances are in red",
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "documentControl": {
+      "Owner": "BW",
+      "Revision": "1",
+      "Status": "Current",
+      "Date of last revision": "2025-04-25",
+      "Frequency of revision": "less than 12 months"
+    },
+    "scopeOfAuthorisation": {
+      "heading": "Scope of Authorisation",
+      "text": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+      "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+    },
+    "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+    "footer": "Section 2/2"
   },
   "sections": [
     {
       "ordinal": 1,
-      "number": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "number": null,
       "title": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
       "items": [
         {
@@ -38,7 +66,7 @@
     },
     {
       "ordinal": 2,
-      "number": "2 Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "number": "2",
       "title": "Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
       "items": [
         {
@@ -117,7 +145,7 @@
     },
     {
       "ordinal": 3,
-      "number": "3 Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
+      "number": "3",
       "title": "Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
       "items": [
         {
@@ -149,7 +177,7 @@
     },
     {
       "ordinal": 4,
-      "number": "4 Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "number": "4",
       "title": "Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
       "items": [
         {
@@ -180,7 +208,7 @@
     },
     {
       "ordinal": 5,
-      "number": "5 Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
+      "number": "5",
       "title": "Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
       "items": [
         {
@@ -211,7 +239,7 @@
     },
     {
       "ordinal": 6,
-      "number": "6 Indoor storage cabinets for class 8.2A and 8.2B substances",
+      "number": "6",
       "title": "Indoor storage cabinets for class 8.2A and 8.2B substances",
       "items": [
         {
@@ -242,7 +270,7 @@
     },
     {
       "ordinal": 7,
-      "number": "7 Fixed structures to be compatible",
+      "number": "7",
       "title": "Fixed structures to be compatible",
       "items": [
         {
@@ -261,7 +289,7 @@
     },
     {
       "ordinal": 8,
-      "number": "8 Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "number": "8",
       "title": "Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
       "items": [
         {
@@ -280,7 +308,7 @@
     },
     {
       "ordinal": 9,
-      "number": "9 Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "number": "9",
       "title": "Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
       "items": [
         {
@@ -296,12 +324,6 @@
           "evidenceRequired": false
         }
       ]
-    },
-    {
-      "ordinal": 10,
-      "number": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-      "title": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-      "items": []
     }
   ]
 }

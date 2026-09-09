@@ -66,6 +66,13 @@ const sqlArr = (a) =>
 
 const pascal = (s) => s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
 
+/** Sheet-level nodes with every field present, so consumers never see undefined. */
+const sheetOf = (t) => ({
+  title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
+  declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+  ...(t.sheet ?? {}),
+});
+
 // ── 1. TypeScript ──────────────────────────────────────────────────────────
 function emitTypeScript() {
   const out = [];
@@ -90,6 +97,20 @@ export interface ChecksheetSection {
   items: readonly ChecksheetItem[];
 }
 
+/** Everything on the sheet that is not an item; reproduced in place by the app. */
+export interface ChecksheetSheet {
+  title: string | null;
+  evidenceColumnLabel: string | null;
+  banner: string | null;
+  columnHeaders: readonly string[];
+  note: string | null;
+  declaration: string | null;
+  documentControl: Readonly<Record<string, string>> | null;
+  scopeOfAuthorisation: { heading: string | null; text: string | null; confirmation: string | null } | null;
+  reference: string | null;
+  footer: string | null;
+}
+
 export interface ChecksheetTemplate {
   code: string;
   title: string;
@@ -97,7 +118,25 @@ export interface ChecksheetTemplate {
   classScope: readonly string[];
   revision: number;
   status: 'draft' | 'current' | 'superseded';
+  sheet: ChecksheetSheet;
+  /** Sparse per-class overlay for sheet fields that differ by class family. */
+  sheetByClass?: Readonly<Record<string, Partial<ChecksheetSheet>>>;
   sections: readonly ChecksheetSection[];
+}
+
+const EMPTY_SHEET: ChecksheetSheet = {
+  title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
+  declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+};
+
+/** Sheet nodes for a class family: the overlay's non-null fields over the base. */
+export function sheetFor(t: ChecksheetTemplate, classKey?: string): ChecksheetSheet {
+  const base = { ...EMPTY_SHEET, ...t.sheet };
+  const o = classKey ? t.sheetByClass?.[classKey] : undefined;
+  if (!o) return base;
+  const out: ChecksheetSheet = { ...base };
+  for (const [k, v] of Object.entries(o)) if (v !== null && v !== undefined) (out as any)[k] = v;
+  return out;
 }
 `);
 
@@ -108,6 +147,8 @@ export interface ChecksheetTemplate {
     classScope: t.classScope ?? [],
     revision: t.revision ?? 1,
     status: t.status ?? 'draft',
+    sheet: sheetOf(t),
+    ...(t.sheetByClass ? { sheetByClass: t.sheetByClass } : {}),
     sections: t.sections.map((s) => ({
       ordinal: s.ordinal,
       number: s.number ?? null,
@@ -200,6 +241,58 @@ class ChecksheetSection {
   });
 }
 
+class ScopeOfAuthorisation {
+  final String? heading;
+  final String? text;
+  final String? confirmation;
+  const ScopeOfAuthorisation({this.heading, this.text, this.confirmation});
+}
+
+/// Everything on the sheet that is not an item — title, banner, column
+/// headers, the NB note, the declaration, document control, scope of
+/// authorisation, reference and footer. The app reproduces each in place.
+class SheetMeta {
+  final String? title;
+  final String? evidenceColumnLabel;
+  final String? banner;
+  final List<String> columnHeaders;
+  final String? note;
+  final String? declaration;
+  final Map<String, String>? documentControl;
+  final ScopeOfAuthorisation? scopeOfAuthorisation;
+  final String? reference;
+  final String? footer;
+
+  const SheetMeta({
+    this.title,
+    this.evidenceColumnLabel,
+    this.banner,
+    this.columnHeaders = const [],
+    this.note,
+    this.declaration,
+    this.documentControl,
+    this.scopeOfAuthorisation,
+    this.reference,
+    this.footer,
+  });
+
+  /// Overlay: non-null fields of [o] win over this.
+  SheetMeta merge(SheetMeta? o) => o == null
+      ? this
+      : SheetMeta(
+          title: o.title ?? title,
+          evidenceColumnLabel: o.evidenceColumnLabel ?? evidenceColumnLabel,
+          banner: o.banner ?? banner,
+          columnHeaders: o.columnHeaders.isNotEmpty ? o.columnHeaders : columnHeaders,
+          note: o.note ?? note,
+          declaration: o.declaration ?? declaration,
+          documentControl: o.documentControl ?? documentControl,
+          scopeOfAuthorisation: o.scopeOfAuthorisation ?? scopeOfAuthorisation,
+          reference: o.reference ?? reference,
+          footer: o.footer ?? footer,
+        );
+}
+
 class ChecksheetTemplate {
   final String code;
   final String title;
@@ -207,6 +300,10 @@ class ChecksheetTemplate {
   final List<String> classScope;
   final int revision;
   final String status;
+  final SheetMeta sheet;
+
+  /// Sparse per-class overlay for sheet fields that differ by class family.
+  final Map<String, SheetMeta>? sheetByClass;
   final List<ChecksheetSection> sections;
 
   const ChecksheetTemplate({
@@ -216,11 +313,17 @@ class ChecksheetTemplate {
     required this.classScope,
     required this.revision,
     required this.status,
+    this.sheet = const SheetMeta(),
+    this.sheetByClass,
     required this.sections,
   });
 
   int get itemCount =>
       sections.fold(0, (n, s) => n + s.items.length);
+
+  /// Sheet nodes for a class family: the overlay's non-null fields over base.
+  SheetMeta sheetFor(String? classKey) =>
+      sheet.merge(classKey == null ? null : sheetByClass?[classKey]);
 }
 `);
 
@@ -228,6 +331,33 @@ class ChecksheetTemplate {
   const dartMap = (m) =>
     m
       ? '{' + Object.entries(m).map(([k, v]) => `${dartStr(k)}: ${dartList(v)}`).join(', ') + '}'
+      : 'null';
+  const dartStrMap = (m) =>
+    m
+      ? '{' + Object.entries(m).map(([k, v]) => `${dartStr(k)}: ${dartStr(v)}`).join(', ') + '}'
+      : 'null';
+  const dartScope = (s) =>
+    s
+      ? `ScopeOfAuthorisation(heading: ${dartStr(s.heading)}, text: ${dartStr(s.text)}, confirmation: ${dartStr(s.confirmation)})`
+      : 'null';
+  const dartSheet = (s, indent = '    ') =>
+    !s
+      ? 'SheetMeta()'
+      : `SheetMeta(
+${indent}  title: ${dartStr(s.title)},
+${indent}  evidenceColumnLabel: ${dartStr(s.evidenceColumnLabel)},
+${indent}  banner: ${dartStr(s.banner)},
+${indent}  columnHeaders: ${dartList(s.columnHeaders)},
+${indent}  note: ${dartStr(s.note)},
+${indent}  declaration: ${dartStr(s.declaration)},
+${indent}  documentControl: ${dartStrMap(s.documentControl)},
+${indent}  scopeOfAuthorisation: ${dartScope(s.scopeOfAuthorisation)},
+${indent}  reference: ${dartStr(s.reference)},
+${indent}  footer: ${dartStr(s.footer)},
+${indent})`;
+  const dartSheetByClass = (m) =>
+    m
+      ? '{' + Object.entries(m).map(([k, v]) => `${dartStr(k)}: ${dartSheet(v, '      ')}`).join(', ') + '}'
       : 'null';
 
   const tmplSrc = templates
@@ -267,6 +397,8 @@ ${items}
   classScope: ${dartList(t.classScope)},
   revision: ${t.revision ?? 1},
   status: ${dartStr(t.status ?? 'draft')},
+  sheet: ${dartSheet(t.sheet, '  ')},
+  sheetByClass: ${dartSheetByClass(t.sheetByClass)},
   sections: [
 ${sections}
   ],
@@ -320,9 +452,14 @@ CREATE TABLE IF NOT EXISTS checksheet_template (
                     CHECK (status IN ('draft','current','superseded')),
   effective_from  date,
   superseded_by   bigint      REFERENCES checksheet_template(id),
+  -- Sheet-level nodes (title, banner, note, declaration, document control,
+  -- scope of authorisation, reference, footer) and their per-class overlay.
+  meta            jsonb,
   created_at      timestamptz NOT NULL DEFAULT now(),
   UNIQUE (code, revision)
 );
+-- Databases created before meta existed get the column added in place.
+ALTER TABLE checksheet_template ADD COLUMN IF NOT EXISTS meta jsonb;
 
 CREATE TABLE IF NOT EXISTS checksheet_section (
   id           bigserial PRIMARY KEY,
@@ -358,9 +495,10 @@ CREATE INDEX IF NOT EXISTS idx_checksheet_item_refs
 
   for (const t of templates) {
     out.push(`-- ${t.code} rev ${t.revision ?? 1} — ${t.sections.length} sections, ${t.sections.reduce((n, s) => n + s.items.length, 0)} items`);
-    out.push(`INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status)
-VALUES (${sqlStr(t.code)}, ${t.revision ?? 1}, ${sqlStr(t.title)}, ${sqlStr(t.psReference)}, ${sqlArr(t.classScope)}, ${sqlStr(t.status ?? 'draft')})
-ON CONFLICT (code, revision) DO NOTHING;\n`);
+    const meta = JSON.stringify({ sheet: sheetOf(t), sheetByClass: t.sheetByClass ?? null });
+    out.push(`INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+VALUES (${sqlStr(t.code)}, ${t.revision ?? 1}, ${sqlStr(t.title)}, ${sqlStr(t.psReference)}, ${sqlArr(t.classScope)}, ${sqlStr(t.status ?? 'draft')}, ${sqlStr(meta)}::jsonb)
+ON CONFLICT (code, revision) DO UPDATE SET meta = EXCLUDED.meta;\n`);
 
     for (const s of t.sections) {
       out.push(`INSERT INTO checksheet_section (template_id, ordinal, number, title)

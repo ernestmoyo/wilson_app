@@ -23,6 +23,20 @@ export interface ChecksheetSection {
   items: readonly ChecksheetItem[];
 }
 
+/** Everything on the sheet that is not an item; reproduced in place by the app. */
+export interface ChecksheetSheet {
+  title: string | null;
+  evidenceColumnLabel: string | null;
+  banner: string | null;
+  columnHeaders: readonly string[];
+  note: string | null;
+  declaration: string | null;
+  documentControl: Readonly<Record<string, string>> | null;
+  scopeOfAuthorisation: { heading: string | null; text: string | null; confirmation: string | null } | null;
+  reference: string | null;
+  footer: string | null;
+}
+
 export interface ChecksheetTemplate {
   code: string;
   title: string;
@@ -30,7 +44,25 @@ export interface ChecksheetTemplate {
   classScope: readonly string[];
   revision: number;
   status: 'draft' | 'current' | 'superseded';
+  sheet: ChecksheetSheet;
+  /** Sparse per-class overlay for sheet fields that differ by class family. */
+  sheetByClass?: Readonly<Record<string, Partial<ChecksheetSheet>>>;
   sections: readonly ChecksheetSection[];
+}
+
+const EMPTY_SHEET: ChecksheetSheet = {
+  title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
+  declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+};
+
+/** Sheet nodes for a class family: the overlay's non-null fields over the base. */
+export function sheetFor(t: ChecksheetTemplate, classKey?: string): ChecksheetSheet {
+  const base = { ...EMPTY_SHEET, ...t.sheet };
+  const o = classKey ? t.sheetByClass?.[classKey] : undefined;
+  if (!o) return base;
+  const out: ChecksheetSheet = { ...base };
+  for (const [k, v] of Object.entries(o)) if (v !== null && v !== undefined) (out as any)[k] = v;
+  return out;
 }
 
 export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
@@ -41,16 +73,38 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "classScope": [],
     "revision": 1,
     "status": "draft",
+    "sheet": {
+      "title": "Check sheet Location Class 2 and 3.1 substances substances",
+      "evidenceColumnLabel": "Evidence Portfolio",
+      "banner": "Requirements specific to class 2 and 3.1 substances",
+      "columnHeaders": [
+        "Item",
+        "Regulation",
+        "Action",
+        "Records",
+        "Comments"
+      ],
+      "note": "NB: Non compliances are in red",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+      "documentControl": {
+        "Owner": "BW",
+        "Revision": "1",
+        "Status": "Current",
+        "Date of last revision": "2024-04-25",
+        "Frequency of revision": "less than 12 months"
+      },
+      "scopeOfAuthorisation": {
+        "heading": "Scope of Authorisation",
+        "text": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "footer": null
+    },
     "sections": [
       {
         "ordinal": 1,
-        "number": "Requirements specific to class 2 and 3.1 substances",
-        "title": "Requirements specific to class 2 and 3.1 substances",
-        "items": []
-      },
-      {
-        "ordinal": 2,
-        "number": "1 Class 2 and 3.1 substances to be secured",
+        "number": "1",
         "title": "Class 2 and 3.1 substances to be secured",
         "items": [
           {
@@ -68,8 +122,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 3,
-        "number": "2 Class 2 and 3.1 substances to be segregated from incompatible substances",
+        "ordinal": 2,
+        "number": "2",
         "title": "Class 2 and 3.1 substances to be segregated from incompatible substances",
         "items": [
           {
@@ -87,8 +141,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 4,
-        "number": "3 Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances",
+        "ordinal": 3,
+        "number": "3",
         "title": "Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances",
         "items": [
           {
@@ -130,8 +184,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 5,
-        "number": "4 Separation of class 2.1.1 permanent gases",
+        "ordinal": 4,
+        "number": "4",
         "title": "Separation of class 2.1.1 permanent gases",
         "items": [
           {
@@ -173,8 +227,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 6,
-        "number": "Separation of class 2.1.1 liquefiable gases: cylinders",
+        "ordinal": 5,
+        "number": null,
         "title": "Separation of class 2.1.1 liquefiable gases: cylinders",
         "items": [
           {
@@ -252,8 +306,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 7,
-        "number": "Separation of class 2.1.1 liquefiable gases: cylinder filling",
+        "ordinal": 6,
+        "number": null,
         "title": "Separation of class 2.1.1 liquefiable gases: cylinder filling",
         "items": [
           {
@@ -271,8 +325,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 8,
-        "number": "Separation of class 2.1.2 aerosols",
+        "ordinal": 7,
+        "number": null,
         "title": "Separation of class 2.1.2 aerosols",
         "items": [
           {
@@ -302,8 +356,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 9,
-        "number": "Hazardous substance location holding not more than 10,000 L aggregate water capacity",
+        "ordinal": 8,
+        "number": null,
         "title": "Hazardous substance location holding not more than 10,000 L aggregate water capacity",
         "items": [
           {
@@ -335,8 +389,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 10,
-        "number": "Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols",
+        "ordinal": 9,
+        "number": null,
         "title": "Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols",
         "items": [
           {
@@ -394,8 +448,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 11,
-        "number": "Separation of class 3.1 substances: transfer points to protected places",
+        "ordinal": 10,
+        "number": null,
         "title": "Separation of class 3.1 substances: transfer points to protected places",
         "items": [
           {
@@ -413,14 +467,14 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 12,
-        "number": "Class 3.1 substances to be held in buildings of a certain type",
+        "ordinal": 11,
+        "number": null,
         "title": "Class 3.1 substances to be held in buildings of a certain type",
         "items": []
       },
       {
-        "ordinal": 13,
-        "number": "Storage Cabinet",
+        "ordinal": 12,
+        "number": null,
         "title": "Storage Cabinet",
         "items": [
           {
@@ -438,8 +492,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 14,
-        "number": "Building types A, B, C, and D storage",
+        "ordinal": 13,
+        "number": null,
         "title": "Building types A, B, C, and D storage",
         "items": [
           {
@@ -457,8 +511,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 15,
-        "number": "Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place",
+        "ordinal": 14,
+        "number": null,
         "title": "Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place",
         "items": [
           {
@@ -476,8 +530,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 16,
-        "number": "Storage of packages holding class 3.1 substances in stores inside buildings",
+        "ordinal": 15,
+        "number": null,
         "title": "Storage of packages holding class 3.1 substances in stores inside buildings",
         "items": [
           {
@@ -531,8 +585,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 17,
-        "number": "Type D storage with more than two walls in common with another building",
+        "ordinal": 16,
+        "number": null,
         "title": "Type D storage with more than two walls in common with another building",
         "items": [
           {
@@ -550,8 +604,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 18,
-        "number": "Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place",
+        "ordinal": 17,
+        "number": null,
         "title": "Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place",
         "items": [
           {
@@ -569,8 +623,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 19,
-        "number": "Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type",
+        "ordinal": 18,
+        "number": null,
         "title": "Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type",
         "items": [
           {
@@ -588,8 +642,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 20,
-        "number": "Type 1 workroom or a paint mixing room",
+        "ordinal": 19,
+        "number": null,
         "title": "Type 1 workroom or a paint mixing room",
         "items": [
           {
@@ -607,8 +661,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 21,
-        "number": "Type 2 or Type 3 workroom",
+        "ordinal": 20,
+        "number": null,
         "title": "Type 2 or Type 3 workroom",
         "items": [
           {
@@ -638,8 +692,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 22,
-        "number": "Other building type - regulation 11.37(5)",
+        "ordinal": 21,
+        "number": null,
         "title": "Other building type - regulation 11.37(5)",
         "items": [
           {
@@ -657,8 +711,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 23,
-        "number": "Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores",
+        "ordinal": 22,
+        "number": null,
         "title": "Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores",
         "items": [
           {
@@ -726,8 +780,8 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         ]
       },
       {
-        "ordinal": 24,
-        "number": "Indoor storage or use of LPG, propane, butane, or isobutane",
+        "ordinal": 23,
+        "number": null,
         "title": "Indoor storage or use of LPG, propane, butane, or isobutane",
         "items": [
           {
@@ -743,12 +797,6 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "evidenceRequired": false
           }
         ]
-      },
-      {
-        "ordinal": 25,
-        "number": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-        "title": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-        "items": []
       }
     ]
   },
@@ -759,10 +807,38 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "classScope": [],
     "revision": 1,
     "status": "draft",
+    "sheet": {
+      "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+      "evidenceColumnLabel": "Evidence Portfolio",
+      "banner": null,
+      "columnHeaders": [
+        "Item",
+        "Regulation",
+        "Action",
+        "Records",
+        "Comments"
+      ],
+      "note": "NB: Non compliances are in red",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+      "documentControl": {
+        "Owner": "BW",
+        "Revision": "1",
+        "Status": "Current",
+        "Date of last revision": "2025-04-25",
+        "Frequency of revision": "less than 12 months"
+      },
+      "scopeOfAuthorisation": {
+        "heading": "Scope of Authorisation",
+        "text": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "footer": "Section 2/2"
+    },
     "sections": [
       {
         "ordinal": 1,
-        "number": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "number": null,
         "title": "Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
         "items": [
           {
@@ -784,7 +860,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 2,
-        "number": "2 Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "number": "2",
         "title": "Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
         "items": [
           {
@@ -863,7 +939,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 3,
-        "number": "3 Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
+        "number": "3",
         "title": "Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material",
         "items": [
           {
@@ -895,7 +971,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 4,
-        "number": "4 Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "number": "4",
         "title": "Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
         "items": [
           {
@@ -926,7 +1002,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 5,
-        "number": "5 Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
+        "number": "5",
         "title": "Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances",
         "items": [
           {
@@ -957,7 +1033,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 6,
-        "number": "6 Indoor storage cabinets for class 8.2A and 8.2B substances",
+        "number": "6",
         "title": "Indoor storage cabinets for class 8.2A and 8.2B substances",
         "items": [
           {
@@ -988,7 +1064,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 7,
-        "number": "7 Fixed structures to be compatible",
+        "number": "7",
         "title": "Fixed structures to be compatible",
         "items": [
           {
@@ -1007,7 +1083,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 8,
-        "number": "8 Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "number": "8",
         "title": "Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
         "items": [
           {
@@ -1026,7 +1102,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       {
         "ordinal": 9,
-        "number": "9 Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "number": "9",
         "title": "Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
         "items": [
           {
@@ -1042,12 +1118,6 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "evidenceRequired": false
           }
         ]
-      },
-      {
-        "ordinal": 10,
-        "number": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-        "title": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-        "items": []
       }
     ]
   },
@@ -1058,6 +1128,36 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "classScope": [],
     "revision": 1,
     "status": "draft",
+    "sheet": {
+      "title": null,
+      "evidenceColumnLabel": "Evidence Portifolio",
+      "banner": null,
+      "columnHeaders": [
+        "Item",
+        "Regulation",
+        "Action",
+        "Records",
+        "Comments"
+      ],
+      "note": "NB: Non compliances are in red",
+      "declaration": null,
+      "documentControl": null,
+      "scopeOfAuthorisation": null,
+      "reference": null,
+      "footer": "Section 1/1"
+    },
+    "sheetByClass": {
+      "class_6_8": {
+        "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "banner": "General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",
+        "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "class_2_3": {
+        "title": "Requirements for Class 2 and 3.1",
+        "banner": null,
+        "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      }
+    },
     "sections": [
       {
         "ordinal": 1,

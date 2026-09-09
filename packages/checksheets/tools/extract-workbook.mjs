@@ -134,32 +134,105 @@ function extractSheet(ws, workbookName) {
   const findings = [];
   const trailing = { declaration: null, decision: null, note: null, reference: null };
 
+  // Sheet-level nodes: everything on the sheet that is not an item. They say
+  // the same thing on every client's copy, so they are template content, and
+  // the app must reproduce each one in place.
+  const meta = {
+    title: clean(ws.getCell('A1').value) || ws.name,
+    evidenceColumnLabel: clean(ws.getCell('F1').value) || null,
+    banner: null,
+    columnHeaders: ['A', 'B', 'C', 'D', 'E']
+      .map((col) => clean(ws.getCell(`${col}${headerRow}`).value))
+      .filter(Boolean),
+    note: null,
+    declaration: null,
+    documentControl: null,
+    scopeOfAuthorisation: null,
+    reference: null,
+    footer: null,
+  };
+
+  // A banner ABOVE the header row: a full-width merged row (A = B = C) between
+  // the site block and the column headers.
+  for (let r = headerRow - 1; r >= 1; r--) {
+    const a = clean(ws.getCell(`A${r}`).value);
+    const b = clean(ws.getCell(`B${r}`).value);
+    const c = clean(ws.getCell(`C${r}`).value);
+    if (a && a === b && b === c) { meta.banner = a; break; }
+    if (a) break;
+  }
+
   let section = null;
   let sectionOrdinal = 0;
   let itemOrdinal = 0;
+  let skipRow = -1;
+  let inDocControl = false;
 
   for (let r = headerRow + 1; r <= ws.rowCount; r++) {
+    if (r === skipRow) continue;
     const a = clean(ws.getCell(`A${r}`).value);
     const b = clean(ws.getCell(`B${r}`).value);
     const c = clean(ws.getCell(`C${r}`).value);
     const d = clean(ws.getCell(`D${r}`).value);
     const e = clean(ws.getCell(`E${r}`).value);
 
-    if (!a && !b && !c) continue;
+    if (!a && !b && !c) { inDocControl = false; continue; }
 
     // Trailing blocks close the table.
-    if (/^NB:/i.test(a)) { trailing.note = a; continue; }
-    if (/^Declaration:/i.test(a)) { trailing.declaration = a; continue; }
+    if (/^NB:/i.test(a)) { meta.note = a; trailing.note = a; continue; }
+    if (/^Declaration:/i.test(a)) { meta.declaration = a; trailing.declaration = a; continue; }
     if (/^Decision:/i.test(a)) { trailing.decision = a; continue; }
-    if (/^Reference:/i.test(a)) { trailing.reference = clean(ws.getCell(`A${r + 1}`).value); continue; }
-    if (/^Document Control$/i.test(a) || /^Section \d+\/\d+$/i.test(a)) continue;
+    if (/^Reference:/i.test(a)) {
+      const ref = clean(ws.getCell(`A${r + 1}`).value) || null;
+      meta.reference = ref;
+      trailing.reference = ref;
+      skipRow = r + 1; // the reference text is a full-width row; not a section
+      continue;
+    }
+    if (/^Section\s+\d+\s*\/\s*\d+$/i.test(a)) { meta.footer = a; continue; }
+
+    // Document Control (label/value pairs in A/B) sits beside the Scope of
+    // Authorisation (text in D, confirmation in E) on the same rows.
+    if (/^Document Control$/i.test(a)) {
+      inDocControl = true;
+      meta.documentControl = {};
+      if (/^Scope of Authorisation$/i.test(d)) {
+        meta.scopeOfAuthorisation = { heading: d, text: null, confirmation: null };
+      }
+      continue;
+    }
+    if (inDocControl) {
+      if (a && b && !c) meta.documentControl[a] = b.replace(/T00:00:00\.000Z$/, '');
+      if (meta.scopeOfAuthorisation) {
+        if (d && !meta.scopeOfAuthorisation.text) meta.scopeOfAuthorisation.text = d;
+        if (/^I can confirm/i.test(e)) meta.scopeOfAuthorisation.confirmation = e;
+      }
+      continue;
+    }
 
     if (isSectionRow(b, c)) {
+      // A full-width row BELOW the header with no section before it, followed
+      // immediately by another full-width row, is the sheet's banner
+      // ("Requirements specific to class …"), not a section.
+      if (!section && !meta.banner) {
+        let nextIsSection = false;
+        for (let rr = r + 1; rr <= Math.min(r + 3, ws.rowCount); rr++) {
+          const nb = clean(ws.getCell(`B${rr}`).value);
+          const nc = clean(ws.getCell(`C${rr}`).value);
+          if (!nb && !nc) continue;
+          nextIsSection = isSectionRow(nb, nc);
+          break;
+        }
+        if (nextIsSection) { meta.banner = b; continue; }
+      }
       sectionOrdinal += 1;
+      // Two layouts: the general sheet keeps the number in A and the title in
+      // B..E; the class sheets merge A..E and fold the number into the text
+      // ("2 Separation of ..."). Never let a merged title leak into `number`.
+      const folded = a === b ? b.match(/^(\d+)\s+/) : null;
       section = {
         ordinal: sectionOrdinal,
-        number: a || null,
-        // Some class sheets fold the number into the title ("2 Separation of ...").
+        number: folded ? folded[1] : a === b ? null : a || null,
         title: b.replace(/^\d+\s+/, '').trim() || b,
         items: [],
       };
@@ -208,7 +281,8 @@ function extractSheet(ws, workbookName) {
 
   return {
     sheet: ws.name,
-    title: clean(ws.getCell('A1').value) || ws.name,
+    title: meta.title,
+    meta,
     siteBlock,
     sections,
     findings,
@@ -234,6 +308,8 @@ function buildTemplate(extract, code, opts = {}) {
       extractedAt: new Date().toISOString(),
       extractorVersion: EXTRACTOR_VERSION,
     },
+    // Everything on the sheet that is not an item, reproduced in place by the app.
+    sheet: extract.meta,
     sections: extract.sections,
   };
 }

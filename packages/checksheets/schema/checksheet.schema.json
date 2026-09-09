@@ -44,6 +44,35 @@
         "extractorVersion": { "type": "string" }
       }
     },
+    "sheet": {
+      "type": "object",
+      "description": "Everything on the sheet that is not an item — title, banner, column headers, the NB note, the declaration, document control, scope of authorisation, reference and footer. Template content: it says the same thing on every client's copy, and the app reproduces each node in place.",
+      "additionalProperties": true,
+      "properties": {
+        "title": { "type": ["string", "null"] },
+        "evidenceColumnLabel": { "type": ["string", "null"] },
+        "banner": { "type": ["string", "null"] },
+        "columnHeaders": { "type": "array", "items": { "type": "string" } },
+        "note": { "type": ["string", "null"] },
+        "declaration": { "type": ["string", "null"], "description": "IPS 21(1)(d),(e), 21(4), 23(1); signed under 21(5)" },
+        "documentControl": { "type": ["object", "null"], "additionalProperties": { "type": "string" } },
+        "scopeOfAuthorisation": {
+          "type": ["object", "null"],
+          "properties": {
+            "heading": { "type": ["string", "null"] },
+            "text": { "type": ["string", "null"] },
+            "confirmation": { "type": ["string", "null"] }
+          }
+        },
+        "reference": { "type": ["string", "null"] },
+        "footer": { "type": ["string", "null"] }
+      }
+    },
+    "sheetByClass": {
+      "type": ["object", "null"],
+      "description": "Sparse per-class overlay for sheet fields that differ by class family (e.g. the declaration cites reg 13.38 for class 6/8 and 17.91 for class 2/3.1).",
+      "additionalProperties": { "type": "object", "additionalProperties": true }
+    },
     "sections": {
       "type": "array",
       "items": {

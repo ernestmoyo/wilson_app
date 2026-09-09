@@ -55,6 +55,58 @@ class ChecksheetSection {
   });
 }
 
+class ScopeOfAuthorisation {
+  final String? heading;
+  final String? text;
+  final String? confirmation;
+  const ScopeOfAuthorisation({this.heading, this.text, this.confirmation});
+}
+
+/// Everything on the sheet that is not an item — title, banner, column
+/// headers, the NB note, the declaration, document control, scope of
+/// authorisation, reference and footer. The app reproduces each in place.
+class SheetMeta {
+  final String? title;
+  final String? evidenceColumnLabel;
+  final String? banner;
+  final List<String> columnHeaders;
+  final String? note;
+  final String? declaration;
+  final Map<String, String>? documentControl;
+  final ScopeOfAuthorisation? scopeOfAuthorisation;
+  final String? reference;
+  final String? footer;
+
+  const SheetMeta({
+    this.title,
+    this.evidenceColumnLabel,
+    this.banner,
+    this.columnHeaders = const [],
+    this.note,
+    this.declaration,
+    this.documentControl,
+    this.scopeOfAuthorisation,
+    this.reference,
+    this.footer,
+  });
+
+  /// Overlay: non-null fields of [o] win over this.
+  SheetMeta merge(SheetMeta? o) => o == null
+      ? this
+      : SheetMeta(
+          title: o.title ?? title,
+          evidenceColumnLabel: o.evidenceColumnLabel ?? evidenceColumnLabel,
+          banner: o.banner ?? banner,
+          columnHeaders: o.columnHeaders.isNotEmpty ? o.columnHeaders : columnHeaders,
+          note: o.note ?? note,
+          declaration: o.declaration ?? declaration,
+          documentControl: o.documentControl ?? documentControl,
+          scopeOfAuthorisation: o.scopeOfAuthorisation ?? scopeOfAuthorisation,
+          reference: o.reference ?? reference,
+          footer: o.footer ?? footer,
+        );
+}
+
 class ChecksheetTemplate {
   final String code;
   final String title;
@@ -62,6 +114,10 @@ class ChecksheetTemplate {
   final List<String> classScope;
   final int revision;
   final String status;
+  final SheetMeta sheet;
+
+  /// Sparse per-class overlay for sheet fields that differ by class family.
+  final Map<String, SheetMeta>? sheetByClass;
   final List<ChecksheetSection> sections;
 
   const ChecksheetTemplate({
@@ -71,11 +127,17 @@ class ChecksheetTemplate {
     required this.classScope,
     required this.revision,
     required this.status,
+    this.sheet = const SheetMeta(),
+    this.sheetByClass,
     required this.sections,
   });
 
   int get itemCount =>
       sections.fold(0, (n, s) => n + s.items.length);
+
+  /// Sheet nodes for a class family: the overlay's non-null fields over base.
+  SheetMeta sheetFor(String? classKey) =>
+      sheet.merge(classKey == null ? null : sheetByClass?[classKey]);
 }
 
 const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
@@ -85,18 +147,23 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
   classScope: [],
   revision: 1,
   status: 'draft',
+  sheet: SheetMeta(
+    title: 'Check sheet Location Class 2 and 3.1 substances substances',
+    evidenceColumnLabel: 'Evidence Portfolio',
+    banner: 'Requirements specific to class 2 and 3.1 substances',
+    columnHeaders: ['Item', 'Regulation', 'Action', 'Records', 'Comments'],
+    note: 'NB: Non compliances are in red',
+    declaration: 'Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)',
+    documentControl: {'Owner': 'BW', 'Revision': '1', 'Status': 'Current', 'Date of last revision': '2024-04-25', 'Frequency of revision': 'less than 12 months'},
+    scopeOfAuthorisation: ScopeOfAuthorisation(heading: 'Scope of Authorisation', text: 'Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:', confirmation: 'I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)'),
+    reference: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
+    footer: null,
+  ),
+  sheetByClass: null,
   sections: [
     ChecksheetSection(
       ordinal: 1,
-      number: 'Requirements specific to class 2 and 3.1 substances',
-      title: 'Requirements specific to class 2 and 3.1 substances',
-      items: [
-
-      ],
-    ),
-    ChecksheetSection(
-      ordinal: 2,
-      number: '1 Class 2 and 3.1 substances to be secured',
+      number: '1',
       title: 'Class 2 and 3.1 substances to be secured',
       items: [
         ChecksheetItem(
@@ -113,8 +180,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 3,
-      number: '2 Class 2 and 3.1 substances to be segregated from incompatible substances',
+      ordinal: 2,
+      number: '2',
       title: 'Class 2 and 3.1 substances to be segregated from incompatible substances',
       items: [
         ChecksheetItem(
@@ -131,8 +198,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 4,
-      number: '3 Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances',
+      ordinal: 3,
+      number: '3',
       title: 'Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances',
       items: [
         ChecksheetItem(
@@ -171,8 +238,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 5,
-      number: '4 Separation of class 2.1.1 permanent gases',
+      ordinal: 4,
+      number: '4',
       title: 'Separation of class 2.1.1 permanent gases',
       items: [
         ChecksheetItem(
@@ -211,8 +278,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 6,
-      number: 'Separation of class 2.1.1 liquefiable gases: cylinders',
+      ordinal: 5,
+      number: null,
       title: 'Separation of class 2.1.1 liquefiable gases: cylinders',
       items: [
         ChecksheetItem(
@@ -284,8 +351,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 7,
-      number: 'Separation of class 2.1.1 liquefiable gases: cylinder filling',
+      ordinal: 6,
+      number: null,
       title: 'Separation of class 2.1.1 liquefiable gases: cylinder filling',
       items: [
         ChecksheetItem(
@@ -302,8 +369,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 8,
-      number: 'Separation of class 2.1.2 aerosols',
+      ordinal: 7,
+      number: null,
       title: 'Separation of class 2.1.2 aerosols',
       items: [
         ChecksheetItem(
@@ -331,8 +398,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 9,
-      number: 'Hazardous substance location holding not more than 10,000 L aggregate water capacity',
+      ordinal: 8,
+      number: null,
       title: 'Hazardous substance location holding not more than 10,000 L aggregate water capacity',
       items: [
         ChecksheetItem(
@@ -360,8 +427,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 10,
-      number: 'Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols',
+      ordinal: 9,
+      number: null,
       title: 'Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols',
       items: [
         ChecksheetItem(
@@ -411,8 +478,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 11,
-      number: 'Separation of class 3.1 substances: transfer points to protected places',
+      ordinal: 10,
+      number: null,
       title: 'Separation of class 3.1 substances: transfer points to protected places',
       items: [
         ChecksheetItem(
@@ -429,16 +496,16 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 12,
-      number: 'Class 3.1 substances to be held in buildings of a certain type',
+      ordinal: 11,
+      number: null,
       title: 'Class 3.1 substances to be held in buildings of a certain type',
       items: [
 
       ],
     ),
     ChecksheetSection(
-      ordinal: 13,
-      number: 'Storage Cabinet',
+      ordinal: 12,
+      number: null,
       title: 'Storage Cabinet',
       items: [
         ChecksheetItem(
@@ -455,8 +522,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 14,
-      number: 'Building types A, B, C, and D storage',
+      ordinal: 13,
+      number: null,
       title: 'Building types A, B, C, and D storage',
       items: [
         ChecksheetItem(
@@ -473,8 +540,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 15,
-      number: 'Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place',
+      ordinal: 14,
+      number: null,
       title: 'Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place',
       items: [
         ChecksheetItem(
@@ -491,8 +558,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 16,
-      number: 'Storage of packages holding class 3.1 substances in stores inside buildings',
+      ordinal: 15,
+      number: null,
       title: 'Storage of packages holding class 3.1 substances in stores inside buildings',
       items: [
         ChecksheetItem(
@@ -542,8 +609,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 17,
-      number: 'Type D storage with more than two walls in common with another building',
+      ordinal: 16,
+      number: null,
       title: 'Type D storage with more than two walls in common with another building',
       items: [
         ChecksheetItem(
@@ -560,8 +627,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 18,
-      number: 'Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place',
+      ordinal: 17,
+      number: null,
       title: 'Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place',
       items: [
         ChecksheetItem(
@@ -578,8 +645,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 19,
-      number: 'Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type',
+      ordinal: 18,
+      number: null,
       title: 'Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type',
       items: [
         ChecksheetItem(
@@ -596,8 +663,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 20,
-      number: 'Type 1 workroom or a paint mixing room',
+      ordinal: 19,
+      number: null,
       title: 'Type 1 workroom or a paint mixing room',
       items: [
         ChecksheetItem(
@@ -614,8 +681,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 21,
-      number: 'Type 2 or Type 3 workroom',
+      ordinal: 20,
+      number: null,
       title: 'Type 2 or Type 3 workroom',
       items: [
         ChecksheetItem(
@@ -643,8 +710,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 22,
-      number: 'Other building type - regulation 11.37(5)',
+      ordinal: 21,
+      number: null,
       title: 'Other building type - regulation 11.37(5)',
       items: [
         ChecksheetItem(
@@ -661,8 +728,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 23,
-      number: 'Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores',
+      ordinal: 22,
+      number: null,
       title: 'Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores',
       items: [
         ChecksheetItem(
@@ -723,8 +790,8 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
       ],
     ),
     ChecksheetSection(
-      ordinal: 24,
-      number: 'Indoor storage or use of LPG, propane, butane, or isobutane',
+      ordinal: 23,
+      number: null,
       title: 'Indoor storage or use of LPG, propane, butane, or isobutane',
       items: [
         ChecksheetItem(
@@ -740,14 +807,6 @@ const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
         ),
       ],
     ),
-    ChecksheetSection(
-      ordinal: 25,
-      number: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
-      title: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
-      items: [
-
-      ],
-    ),
   ],
 );
 
@@ -758,10 +817,23 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
   classScope: [],
   revision: 1,
   status: 'draft',
+  sheet: SheetMeta(
+    title: 'Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+    evidenceColumnLabel: 'Evidence Portfolio',
+    banner: null,
+    columnHeaders: ['Item', 'Regulation', 'Action', 'Records', 'Comments'],
+    note: 'NB: Non compliances are in red',
+    declaration: 'Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)',
+    documentControl: {'Owner': 'BW', 'Revision': '1', 'Status': 'Current', 'Date of last revision': '2025-04-25', 'Frequency of revision': 'less than 12 months'},
+    scopeOfAuthorisation: ScopeOfAuthorisation(heading: 'Scope of Authorisation', text: 'Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:', confirmation: 'I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)'),
+    reference: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
+    footer: 'Section 2/2',
+  ),
+  sheetByClass: null,
   sections: [
     ChecksheetSection(
       ordinal: 1,
-      number: 'Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+      number: null,
       title: 'Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -779,7 +851,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 2,
-      number: '2 Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+      number: '2',
       title: 'Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -852,7 +924,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 3,
-      number: '3 Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material',
+      number: '3',
       title: 'Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material',
       items: [
         ChecksheetItem(
@@ -881,7 +953,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 4,
-      number: '4 Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+      number: '4',
       title: 'Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -910,7 +982,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 5,
-      number: '5 Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances',
+      number: '5',
       title: 'Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances',
       items: [
         ChecksheetItem(
@@ -939,7 +1011,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 6,
-      number: '6 Indoor storage cabinets for class 8.2A and 8.2B substances',
+      number: '6',
       title: 'Indoor storage cabinets for class 8.2A and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -968,7 +1040,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 7,
-      number: '7 Fixed structures to be compatible',
+      number: '7',
       title: 'Fixed structures to be compatible',
       items: [
         ChecksheetItem(
@@ -986,7 +1058,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 8,
-      number: '8 Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+      number: '8',
       title: 'Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -1004,7 +1076,7 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
     ),
     ChecksheetSection(
       ordinal: 9,
-      number: '9 Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+      number: '9',
       title: 'Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
       items: [
         ChecksheetItem(
@@ -1020,14 +1092,6 @@ const ChecksheetTemplate kWks17Class61a61b61c82a8 = ChecksheetTemplate(
         ),
       ],
     ),
-    ChecksheetSection(
-      ordinal: 10,
-      number: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
-      title: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
-      items: [
-
-      ],
-    ),
   ],
 );
 
@@ -1038,6 +1102,41 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
   classScope: [],
   revision: 1,
   status: 'draft',
+  sheet: SheetMeta(
+    title: null,
+    evidenceColumnLabel: 'Evidence Portifolio',
+    banner: null,
+    columnHeaders: ['Item', 'Regulation', 'Action', 'Records', 'Comments'],
+    note: 'NB: Non compliances are in red',
+    declaration: null,
+    documentControl: null,
+    scopeOfAuthorisation: null,
+    reference: null,
+    footer: 'Section 1/1',
+  ),
+  sheetByClass: {'class_6_8': SheetMeta(
+        title: 'Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+        evidenceColumnLabel: null,
+        banner: 'General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
+        columnHeaders: [],
+        note: null,
+        declaration: 'Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)',
+        documentControl: null,
+        scopeOfAuthorisation: null,
+        reference: null,
+        footer: null,
+      ), 'class_2_3': SheetMeta(
+        title: 'Requirements for Class 2 and 3.1',
+        evidenceColumnLabel: null,
+        banner: null,
+        columnHeaders: [],
+        note: null,
+        declaration: 'Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)',
+        documentControl: null,
+        scopeOfAuthorisation: null,
+        reference: null,
+        footer: null,
+      )},
   sections: [
     ChecksheetSection(
       ordinal: 1,

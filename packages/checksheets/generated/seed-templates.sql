@@ -19,9 +19,14 @@ CREATE TABLE IF NOT EXISTS checksheet_template (
                     CHECK (status IN ('draft','current','superseded')),
   effective_from  date,
   superseded_by   bigint      REFERENCES checksheet_template(id),
+  -- Sheet-level nodes (title, banner, note, declaration, document control,
+  -- scope of authorisation, reference, footer) and their per-class overlay.
+  meta            jsonb,
   created_at      timestamptz NOT NULL DEFAULT now(),
   UNIQUE (code, revision)
 );
+-- Databases created before meta existed get the column added in place.
+ALTER TABLE checksheet_template ADD COLUMN IF NOT EXISTS meta jsonb;
 
 CREATE TABLE IF NOT EXISTS checksheet_section (
   id           bigserial PRIMARY KEY,
@@ -56,407 +61,397 @@ CREATE INDEX IF NOT EXISTS idx_checksheet_item_refs
 
 BEGIN;
 
--- wks17-class-2-and-3-1-substances rev 1 — 25 sections, 44 items
-INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status)
-VALUES ('wks17-class-2-and-3-1-substances', 1, 'Check sheet Location Class 2 and 3.1 substances substances', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft')
-ON CONFLICT (code, revision) DO NOTHING;
+-- wks17-class-2-and-3-1-substances rev 1 — 23 sections, 44 items
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+VALUES ('wks17-class-2-and-3-1-substances', 1, 'Check sheet Location Class 2 and 3.1 substances substances', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft', '{"sheet":{"title":"Check sheet Location Class 2 and 3.1 substances substances","evidenceColumnLabel":"Evidence Portfolio","banner":"Requirements specific to class 2 and 3.1 substances","columnHeaders":["Item","Regulation","Action","Records","Comments"],"note":"NB: Non compliances are in red","declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)","documentControl":{"Owner":"BW","Revision":"1","Status":"Current","Date of last revision":"2024-04-25","Frequency of revision":"less than 12 months"},"scopeOfAuthorisation":{"heading":"Scope of Authorisation","text":"Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:","confirmation":"I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"reference":"Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017","footer":null},"sheetByClass":null}'::jsonb)
+ON CONFLICT (code, revision) DO UPDATE SET meta = EXCLUDED.meta;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 1, 'Requirements specific to class 2 and 3.1 substances', 'Requirements specific to class 2 and 3.1 substances'
-FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
-ON CONFLICT (template_id, ordinal) DO NOTHING;
-
-INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 2, '1 Class 2 and 3.1 substances to be secured', 'Class 2 and 3.1 substances to be secured'
+SELECT id, 1, '1', 'Class 2 and 3.1 substances to be secured'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['10.4(1)']::text[], NULL, '10.4(1)', NULL, 'Determine whether the substances must be secured Verify that the requirements relating to security are met', 'A record of the quantities present, as compared to the threshold quantities A record of the means by which the substances are secured', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 2
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 3, '2 Class 2 and 3.1 substances to be segregated from incompatible substances', 'Class 2 and 3.1 substances to be segregated from incompatible substances'
+SELECT id, 2, '2', 'Class 2 and 3.1 substances to be segregated from incompatible substances'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['10.5']::text[], NULL, '10.5', NULL, 'Verify that incompatible substances are segregated', 'A record identifying the incompatible substances and the means of segregation', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 3
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 2
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 4, '3 Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances', 'Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances'
+SELECT id, 3, '3', 'Hazardous areas for class 2.1.1, 2.1.2, 3.1A, 3.1B, or 3.1.C substances'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['10.6(1)(a)']::text[], NULL, '10.6(1)(a))', NULL, 'Verify whether the hazardous area is delineated in accordance with AS/NZS 60079.10.1:2009', 'A note as to whether the hazardous area is compliant', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['10.26(4)(b)']::text[], NULL, '10.26(4)(b)', NULL, 'Verify that— (a) the hazardous substances are not in contact with incompatible substances; and (b) containers of incompatible substances are stored separately', 'Verify that the hazardous area is delineated, classified, and depicted on a site plan Verify sample elements of the plan to ensure it is correct', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['10.26(4)(c)']::text[], NULL, '10.26(4)(c)', NULL, 'Verify that the hazardous area is maintained', 'A reference to the electrical dossier A copy (or date and identifier) of electrical certificate(s) A note or record of representative samples of procedures and/or equipment', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 5, '4 Separation of class 2.1.1 permanent gases', 'Separation of class 2.1.1 permanent gases'
+SELECT id, 4, '4', 'Separation of class 2.1.1 permanent gases'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.19(2)']::text[], NULL, '11.19(2)', NULL, 'Verify that the prescribed separation distance between the vehicle fill points and storage of permanent gas is met', 'A record that confirms the minimum distance is complied with', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['11.19(3)']::text[], NULL, '11.19(3)', NULL, 'Verify that the prescribed separation distances are met', 'A record that confirms the minimum distances are complied with', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['11.19(5)']::text[], NULL, '11.19(5)', NULL, 'Verify that the prescribed separation distances are met', 'A record that confirms the minimum distances are complied with', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 6, 'Separation of class 2.1.1 liquefiable gases: cylinders', 'Separation of class 2.1.1 liquefiable gases: cylinders'
+SELECT id, 5, NULL, 'Separation of class 2.1.1 liquefiable gases: cylinders'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.2']::text[], NULL, '11.2', NULL, 'Determine which subclause(s) (if any) of regulation 11.20 apply to the hazardous substance location', 'A record of the determination and the quantities of class 2.1.1 liquefiable gas present', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['11.20(1)']::text[], NULL, '11.20(1)', NULL, 'Verify that the separation distances are met', 'A record of the basis for the verification', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['11.20(2)']::text[], NULL, '11.20(2)', NULL, 'Verify that if the cylinders contain up to 100 kg, the requirements relating to the proximity of buildings and openings are met', 'A record of the basis for the verification', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['11.20(3)']::text[], NULL, '11.20(3)', NULL, 'Verify that the cylinders are not located within 1 m of an opening to a drain', 'A record of the basis for the verification', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, '5', ARRAY['11.20(4)']::text[], NULL, '11.20(4)', NULL, 'Verify that if the cylinders contain more than 100 kg and up to 300 kg, the requirements relating to the proximity of buildings and openings are met', 'A record of the basis of the verification, including the nature of fire-resistant materials, separation distance, and openings', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 6, '6', ARRAY['11.20(5)']::text[], NULL, '11.20(5)', NULL, 'Verify that if the cylinders contain more than 300 kg and up to 1000 kg, the requirements relating to the proximity of buildings and openings are met and the wall of the building is vapour tight', 'A record of the basis of the verification, including the nature of the FRR materials, separation distance, and openings', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 7, 'Separation of class 2.1.1 liquefiable gases: cylinder filling', 'Separation of class 2.1.1 liquefiable gases: cylinder filling'
+SELECT id, 6, NULL, 'Separation of class 2.1.1 liquefiable gases: cylinder filling'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.22(1)']::text[], NULL, '11.22(1)', NULL, 'Verify that the separation distances are met for the cylinder filling station', 'A record of the following: (a) the quantity of liquefiable gas at the hazardous substance location: (b) confirmation that the relevant minimum prescribed distance is met: (c) the point on the cylinder filling station that the separation distance is measure from', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 7
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 8, 'Separation of class 2.1.2 aerosols', 'Separation of class 2.1.2 aerosols'
+SELECT id, 7, NULL, 'Separation of class 2.1.2 aerosols'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.8']::text[], NULL, '11.8', NULL, 'Establish the quantity of aerosols present and', 'A record of the quantities and separation distances', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 8
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '1', ARRAY['11.23']::text[], NULL, '11.23', NULL, 'Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply', 'A record of the quantities and separation distances', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 8
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 9, 'Hazardous substance location holding not more than 10,000 L aggregate water capacity', 'Hazardous substance location holding not more than 10,000 L aggregate water capacity'
+SELECT id, 8, NULL, 'Hazardous substance location holding not more than 10,000 L aggregate water capacity'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '2', ARRAY['11.24(1)(a)', '11.24(1)(b)']::text[], NULL, '11.24(1)(a) 11.24(1)(b)', NULL, 'Verify the construction details of the room or building including details of the walls, ceiling, doors, and fittings as well as the fire protection', 'Records of the building layout, building construction, FRR, and building elements including suppliers'' tags for doors and windows', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 8
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '3', ARRAY['11.24(1)(c)', '11.24(1)(d)']::text[], NULL, '11.24(1)(c) 11.24(1)(d)', NULL, 'Verify that the general purpose warehouse used for receiving, storing, and distributing mixed goods (including flammable aerosols)— (a) is not a warehouse for the primary purpose of storing hazardous substances; and (b) is not accessible by the general public; and (c) has the flammable aerosols in the warehouse separated from the rest of the warehouse in accordance with the prescribed requirements and has prescribed fire protection', 'Records of the building layout, building construction, FRR, and building elements including suppliers'' tags for doors and windows', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 8
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 10, 'Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols', 'Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols'
+SELECT id, 9, NULL, 'Hazardous substance location holding more than 10,000 L but not more than 100,000 L aggregate water capacity of flammable aerosols'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '4', ARRAY['11.25(1)(a)', '11.25(1)(b)']::text[], NULL, '11.25(1)(a) 11.25(1)(b)', NULL, 'Verify the construction details and the fire protection of the building or the room', 'Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 10
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '5', ARRAY['11.25(1)(c)', '11.25(1)(d)']::text[], NULL, '11.25(1)(c) 11.25(1)(d)', NULL, 'Verify the location that is in a general purpose warehouse for receiving, storing, and distributing mixed goods (including flammable aerosols)— (a) is not a warehouse for the primary purpose of storing hazardous substances; and (b) is not accessible by the general public Verify the construction details and the fire protection of the building or the room', 'A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 10
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '6', ARRAY['11.26(a)', '11.26(b)']::text[], NULL, '11.26(a) 11.26(b)', NULL, 'Verify the construction details and the fire protection of the building or the room', 'A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR,building details, and fire protection A record of building details is to include a record of tags of the building elements', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 10
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '7', ARRAY['11.26(c)', '11.26(d)']::text[], NULL, '11.26(c) 11.26(d)', NULL, 'Verify that the location— (a) is in a general purpose warehouse used for receiving, storing, and distributing mixed goods (including flammable aerosols); and (b) is not a warehouse for the primary purpose of storing hazardous substances; and (c) is not accessible by the general public Verify the flammable aerosols in the warehouse are separated from the rest of the warehouse Verify the construction details and the fire protection of the building or the room', 'A record confirming that the warehouse is a general purpose warehouse and is not accessible by the public Records of the building layout, building construction, FRR, building details, and fire protection A record of building details is to include a record of tags of the building elements', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 10
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 11, 'Separation of class 3.1 substances: transfer points to protected places', 'Separation of class 3.1 substances: transfer points to protected places'
+SELECT id, 10, NULL, 'Separation of class 3.1 substances: transfer points to protected places'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.35']::text[], NULL, '11.35', NULL, 'Verify that the separation distance to a protected place is met', 'A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met; and (c) the type of transfer point', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 11
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 10
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 12, 'Class 3.1 substances to be held in buildings of a certain type', 'Class 3.1 substances to be held in buildings of a certain type'
+SELECT id, 11, NULL, 'Class 3.1 substances to be held in buildings of a certain type'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 13, 'Storage Cabinet', 'Storage Cabinet'
+SELECT id, 12, NULL, 'Storage Cabinet'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.29(3)']::text[], NULL, '11.29(3)', NULL, 'Verify— (a) the quantity of substances and their hazard classifications; and (b) the standard to which the cabinet is constructed; and (c) where more than one cabinet is located within a building, the aggregate capacity of the cabinets and the separation of the cabinets; and (d) for AS 1940 cabinets, the exclusion of sources of ignition around the cabinet', 'A record of— (a) the plate on the cabinet or the standard the cabinet is constructed to; and (b) the location of the cabinet; and (c) the separation distance between the cabinets (if applicable); and (d) exclusion of ignition sources', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 13
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 12
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 14, 'Building types A, B, C, and D storage', 'Building types A, B, C, and D storage'
+SELECT id, 13, NULL, 'Building types A, B, C, and D storage'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '2', ARRAY['11.29(2)']::text[], NULL, '11.29(2)', NULL, 'Verify— (a) the building type; and (b) compliance with the building type in all aspects i.e. walls, roof, doors, and windows; and (c) the classification of the substance; and (d) the package sizes; and (e) the prescribed separation distances; and (f) the actual separation distances', 'A record of— (a) the quantity and hazard classes of the substances stored; and (b) the building type; and (c) the details of the FRR building elements, including suppliers'' tags for doors and windows; and (d) the actual separation distances', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 14
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 13
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 15, 'Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place', 'Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place'
+SELECT id, 14, NULL, 'Storage of packages holding up to 60 litres of class 3.1 substances: separation from protected place'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.3']::text[], NULL, '11.3', NULL, 'Verify that the separation distance to a protected place is met', 'A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 15
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 14
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 16, 'Storage of packages holding class 3.1 substances in stores inside buildings', 'Storage of packages holding class 3.1 substances in stores inside buildings'
+SELECT id, 15, NULL, 'Storage of packages holding class 3.1 substances in stores inside buildings'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.31']::text[], NULL, '11.31', NULL, 'Determine which provisions of regulation 11.31 apply', 'A record of the determination and the quantities of class 3 substances present', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 16
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 15
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['11.31(1)(a)']::text[], NULL, '11.31(1)(a)', NULL, 'Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building, including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building', 'A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers'' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 16
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 15
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['11.31(1)(b)']::text[], NULL, '11.31(1)(b)', NULL, 'Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building', 'A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers'' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 16
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 15
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['11.31(1)(c)']::text[], NULL, '11.31(1)(c)', NULL, 'Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations; and (d) if applicable, the requirements for when a door is opening into a building', 'A record of— (a) the quantity of flammable substances; and (b) the FRR elements, including suppliers'' tags for doors and windows; and (c) details of compliance with prescribed requirements for a door opening into a building', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 16
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 15
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 17, 'Type D storage with more than two walls in common with another building', 'Type D storage with more than two walls in common with another building'
+SELECT id, 16, NULL, 'Type D storage with more than two walls in common with another building'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '5', ARRAY['11.31(3)']::text[], NULL, '11.31(3)', NULL, 'Verify— (a) that the stored substances are within the prescribed maximum; and (b) the construction details of the building including details of the walls, ceiling, and doors; and (c) the prescribed quantity and package size limitations', 'A record of— (a) the quantity of flammable substances and package sizes; and (b) the FRR elements, including suppliers'' tags for doors and windows', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 17
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 16
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 18, 'Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place', 'Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place'
+SELECT id, 17, NULL, 'Storage of packages holding more than 60 litres of class 3.1 substances: separation from protected place'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.34']::text[], NULL, '11.34', NULL, 'Verify that the separation distance to a protected place is met', 'A record that includes— (a) the substances contained; and (b) confirmation that the prescribed separation distance is met', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 18
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 17
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 19, 'Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type', 'Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type'
+SELECT id, 18, NULL, 'Class 3.1 substances used or in open packages or containers to be held in buildings of a certain type'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.36']::text[], NULL, '11.36', NULL, 'Verify the building type and the construction details of the building Determine which regulations apply', 'A record of— (a) the building FRR details including suppliers'' tags for doors and windows; or (b) details of compliance with AS/NZS 4114.1:2003 e.g. a record of the plate or the supplier''s verification', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 19
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 18
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 20, 'Type 1 workroom or a paint mixing room', 'Type 1 workroom or a paint mixing room'
+SELECT id, 19, NULL, 'Type 1 workroom or a paint mixing room'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '2', ARRAY['11.37(2)(a)']::text[], NULL, '11.37(2)(a)', NULL, 'Verify— (a) that the workroom/paint mixing room holds no more than the prescribed quantity or container size; and (b) the location of the building', 'A record of container sizes, aggregate quantities, and the location of the building', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 20
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 19
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 21, 'Type 2 or Type 3 workroom', 'Type 2 or Type 3 workroom'
+SELECT id, 20, NULL, 'Type 2 or Type 3 workroom'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '3', ARRAY['11.37(2)(b)']::text[], NULL, '11.37(2)(b)', NULL, 'Verify that the building holds no more than the prescribed quantity', 'A record of hazardous substance classes and aggregate quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 21
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 20
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '4', ARRAY['11.37(4)']::text[], NULL, '11.37(4)', NULL, 'Verify that the separation distances meet or exceed the prescribed separation distances', 'A record of the actual and prescribed separation distances', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 21
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 20
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 22, 'Other building type - regulation 11.37(5)', 'Other building type - regulation 11.37(5)'
+SELECT id, 21, NULL, 'Other building type - regulation 11.37(5)'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '5', ARRAY['11.37(5)']::text[], NULL, '11.37(5)', NULL, 'Verify— (a) the quantity of hazardous substances; and (b) that the quantity of class 3.1 substances is not more than the specified maximum; and (c) the occupancy of the building; and (d) the construction details of that part of the building; and (e) the controls on prohibiting ignition sources', 'A record of— (a) the quantities; and (b) the building details in the vicinity of the flammable substances; and (c) the occupational details of the building', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 21
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 23, 'Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores', 'Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores'
+SELECT id, 22, NULL, 'Storage of packages holding class 3.1A, 3.1B, or 3.1C substances in retail stores'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.32(1)', '11.33(1)']::text[], NULL, '11.32(1) 11.33(1)', NULL, 'Determine whether regulation 11.32 or 11.33 applies', 'A record of the business type and container details', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['11.32(1)(b)']::text[], NULL, '11.32(1)(b)', NULL, 'Verify that the quantities of class 3.1 substances are not more than the maximum', 'A record of the quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['11.33(2)(b)']::text[], NULL, '11.33(2)(b)', NULL, 'Verify that requirements for separation are compliant', 'A record of the separation details', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['11.33(2)(c)']::text[], NULL, '11.33(2)(c)', NULL, 'Verify that the retail store complies with section 3.4 (General Requirements for Retail Storage) of AS/NZS 3833:2007', 'A record of the building elements', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, '5', ARRAY['11.33(1)(d)', '11.33(1)']::text[], NULL, '11.33(1)(d) 11.33(1)€', NULL, 'Verify that the building is compliant', 'A record of the separation distances Where there is an intervening wall, a record of the FRR elements of the wall', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 22
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 24, 'Indoor storage or use of LPG, propane, butane, or isobutane', 'Indoor storage or use of LPG, propane, butane, or isobutane'
+SELECT id, 23, NULL, 'Indoor storage or use of LPG, propane, butane, or isobutane'
 FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['11.42(1)']::text[], NULL, '11.42(1)', NULL, 'Verify that the quantities of LPG, propane, butane, or isobutane are not more than the maximum', 'A record of the quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 24
+WHERE t.code = 'wks17-class-2-and-3-1-substances' AND t.revision = 1 AND sec.ordinal = 23
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
-INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 25, 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017'
-FROM checksheet_template WHERE code = 'wks17-class-2-and-3-1-substances' AND revision = 1
-ON CONFLICT (template_id, ordinal) DO NOTHING;
-
--- wks17-class-6-1a-6-1b-6-1c-8-2a-8 rev 1 — 10 sections, 18 items
-INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status)
-VALUES ('wks17-class-6-1a-6-1b-6-1c-8-2a-8', 1, 'Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft')
-ON CONFLICT (code, revision) DO NOTHING;
+-- wks17-class-6-1a-6-1b-6-1c-8-2a-8 rev 1 — 9 sections, 18 items
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+VALUES ('wks17-class-6-1a-6-1b-6-1c-8-2a-8', 1, 'Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft', '{"sheet":{"title":"Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","evidenceColumnLabel":"Evidence Portfolio","banner":null,"columnHeaders":["Item","Regulation","Action","Records","Comments"],"note":"NB: Non compliances are in red","declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)","documentControl":{"Owner":"BW","Revision":"1","Status":"Current","Date of last revision":"2025-04-25","Frequency of revision":"less than 12 months"},"scopeOfAuthorisation":{"heading":"Scope of Authorisation","text":"Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:","confirmation":"I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"reference":"Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017","footer":"Section 2/2"},"sheetByClass":null}'::jsonb)
+ON CONFLICT (code, revision) DO UPDATE SET meta = EXCLUDED.meta;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 1, 'Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
+SELECT id, 1, NULL, 'Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -467,7 +462,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 2, '2 Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
+SELECT id, 2, '2', 'Separation of class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -508,7 +503,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 3, '3 Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material', 'Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material'
+SELECT id, 3, '3', 'Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances to be segregated from incompatible substances or material'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -525,7 +520,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 4, '4 Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
+SELECT id, 4, '4', 'Stores for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -542,7 +537,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 5, '5 Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances', 'Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances'
+SELECT id, 5, '5', 'Indoor storage cabinets for class 6.1A, 6.1B, and 6.1C substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -559,7 +554,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 6, '6 Indoor storage cabinets for class 8.2A and 8.2B substances', 'Indoor storage cabinets for class 8.2A and 8.2B substances'
+SELECT id, 6, '6', 'Indoor storage cabinets for class 8.2A and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -576,7 +571,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 7, '7 Fixed structures to be compatible', 'Fixed structures to be compatible'
+SELECT id, 7, '7', 'Fixed structures to be compatible'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -587,7 +582,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 8, '8 Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
+SELECT id, 8, '8', 'Equipment and PPE for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -598,7 +593,7 @@ WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.or
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 9, '9 Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances', 'Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
+SELECT id, 9, '9', 'Clean-up materials and equipment for class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'
 FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
@@ -608,15 +603,10 @@ JOIN checksheet_template t ON t.id = sec.template_id
 WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.revision = 1 AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
-INSERT INTO checksheet_section (template_id, ordinal, number, title)
-SELECT id, 10, 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017'
-FROM checksheet_template WHERE code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND revision = 1
-ON CONFLICT (template_id, ordinal) DO NOTHING;
-
 -- wks17-general rev 1 — 8 sections, 36 items
-INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status)
-VALUES ('wks17-general', 1, 'General location requirements', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft')
-ON CONFLICT (code, revision) DO NOTHING;
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+VALUES ('wks17-general', 1, 'General location requirements', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'draft', '{"sheet":{"title":null,"evidenceColumnLabel":"Evidence Portifolio","banner":null,"columnHeaders":["Item","Regulation","Action","Records","Comments"],"note":"NB: Non compliances are in red","declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":"Section 1/1"},"sheetByClass":{"class_6_8":{"title":"Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","banner":"General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"class_2_3":{"title":"Requirements for Class 2 and 3.1","banner":null,"declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"}}}'::jsonb)
+ON CONFLICT (code, revision) DO UPDATE SET meta = EXCLUDED.meta;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 1, '1', 'Determining which regulations apply'
