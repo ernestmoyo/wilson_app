@@ -1,0 +1,22 @@
+{
+  "name": "@wilson/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Postgres-backed API for the Assure Safety compliance platform. Supersedes apps/api (SQLite). Same code runs against PGlite in tests and real Postgres in production.",
+  "main": "src/index.mjs",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node test/api.e2e.test.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "supertest": "^7.2.2"
+  }
+}
