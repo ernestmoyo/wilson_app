@@ -7,6 +7,13 @@ abecca/
 Zhendi Yang/
 Location 2_ Cool 2/
 
+# Correspondence and reference docs (local only)
+/correspondance/
+/reference/
+
+# Assure Safety NZ business documents (local only)
+/assure-safety-nz/
+
 # Document file types (sensitive)
 *.pdf
 *.docx
@@ -61,3 +68,17 @@ Wilson_Suite_SOP.docx
 generate-sop.mjs
 *.sqlite-shm
 *.sqlite-wal
+
+# ── platform (feat/graph-model) ──────────────────────────────────────────
+# Flutter web build copied here for Vercel; must be committed whole, icons included.
+!apps/server/public/
+!apps/server/public/**
+# Build-time vendored assets and local evidence store — never committed.
+apps/server/vendor/
+apps/server/data/
+# Extracted workbook evidence (real client site photos) and signature stay local.
+packages/checksheets/data/evidence/
+packages/checksheets/data/certificates/*/signature.png
+
+# Vercel CLI link metadata
+.vercel/

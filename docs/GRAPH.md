@@ -1,0 +1,311 @@
+# Domain Graph — Assure Safety Compliance Platform
+
+**Status:** design, revision 1
+**Derives from:** HSW (Hazardous Substances) Regulations 2017 · WKS-17 Location Compliance Certification PS (classes 2–6, 8) · Information & Process Requirements for Compliance Certifiers PS 2019 ("IPS") · Assure Safety Compliance Certification Process Flow
+
+Every node and field below traces to a clause. Where a field exists only because a regulation demands it, the clause is named. Nothing here is decorative.
+
+---
+
+## 0. The three layers the spreadsheet conflates
+
+The existing workbook mixes three different kinds of data in one grid. Separating them is the whole point of this model.
+
+| Layer | What it is | Changes when | Lives in |
+|---|---|---|---|
+| **Template** | Item / Regulation / Action / Records — copied verbatim from the Performance Standard | WorkSafe revises the PS | `packages/checksheets`, versioned, immutable once published |
+| **Instance** | Site details, findings, comments, evidence | Every job | Postgres |
+| **Presentation** | Merged cells, red = non-compliant | Never (it's styling) | Discarded — replaced by an explicit field |
+
+**The critical defect this fixes:** in the workbook, compliance status is encoded as *font colour* in column E (`FFFF0000` red = non-compliant, `FF00B050` green = resolved). IPS cl. 21(1)(c) requires the *result* of each inspection to be recorded. A font colour is unqueryable, uncountable, unvalidatable, and destroyed by a copy-paste. `Finding.status` replaces it.
+
+---
+
+## 1. Node types
+
+### Template layer — versioned, client-independent
+
+```
+ChecksheetTemplate
+  id, code                 e.g. "wks17-class-6-8"
+  title                    verbatim sheet title
+  ps_reference             the Performance Standard clause this derives from
+  class_scope[]            ["6.1A","6.1B","6.1C","8.2A","8.2B"]
+  revision, effective_from, superseded_by
+  status                   draft | current | superseded
+
+TemplateSection
+  template_id, ordinal, number, title
+                           e.g. 4 "Signage"
+
+TemplateItem
+  section_id, ordinal, number
+  regulation_refs[]        ["2.6(3)"] — parsed, not free text, so it can be linked & audited
+  action_text              verbatim "Action" column
+  records_text             verbatim "Records" column
+  guidance_url             WorkSafe operational policy link where the sheet carries one
+```
+
+Templates are **immutable once `status = current`.** A PS revision creates a new revision row; existing inspections keep pointing at the revision they were conducted under. This is non-negotiable — at year nine an auditor asks "which version of the standard did you assess against?", and the answer must be in the data.
+
+**Measured, not assumed:** extracting the general sheet independently from two unrelated client workbooks (class 6 & 8, and class 2 & 3.1) produced 8 identical sections and **36/36 items with byte-identical action and records text**. Only two items differ, and only in their regulation references — item 1 and item 30, where the extra citations are the class-specific regulations.
+
+So there is **one general template**, not one per class family, and `TemplateItem.regulationRefs` needs to be class-conditional for those two items:
+
+```
+TemplateItem.regulationRefs        base refs, applying to every class
+TemplateItem.regulationRefsByClass { "class_6_8": [...], "class_2_3": [...] }  // sparse; only 2 of 36 items use it
+```
+
+Re-extracting any workbook and diffing against `packages/checksheets/data/` is the regression test for a PS revision.
+
+### Instance layer — per engagement
+
+```
+Client (PCBU)              legal_name, trading_name, nzbn,
+                           companies_number        ← reg 6.26(2)(e)(ii)
+                           postal_address, phone, website, industry
+
+Contact                    client_id, name, role, phone, email, is_site_manager
+
+Site                       client_id, address
+
+HSLocation                 site_id, name, summary
+                           ← "G2 Chiller". The unit of certification.
+                             IPS 21(1)(a): "unique identification or description
+                             of any item or location inquired into"
+
+Job                        client_id, hs_location_id, type, stage, opened_at
+                           ← one certification engagement; walks the 8-stage flow
+
+Inspection                 job_id, hs_location_id, template_revision_ids[],
+                           certifier_id,
+                           conducted_by_id         ← IPS 21(1)(g)
+                           supervised              ← IPS 21(1)(g)
+                           inspected_at            ← IPS 21(1)(b)
+                           equipment_used          ← IPS 21(1)(d) "iPad and tape measure"
+                           status
+
+Finding                    inspection_id, template_item_id
+                           status                  ← IPS 21(1)(c). REPLACES FONT COLOUR.
+                                                     compliant | non_compliant |
+                                                     not_applicable | pending | conditional
+                           comment                 ← verbatim column E
+                           verification_method     ← IPS 21(1)(e) "the manner in which
+                                                     each requirement has been verified"
+                           failure_reason          ← IPS 21(1)(f)
+                           decided_by, decided_at, signature   ← IPS 21(5)
+
+Evidence                   finding_id?, inspection_id, kind (photo|video|document)
+                           storage_key             content-addressed: sha256 → object key
+                           sha256                  computed AT CAPTURE, not at upload
+                           c2pa_manifest           signed provenance, travels with the file
+                           captured_by_name        ← IPS 21(4)(a)
+                           captured_by_occupation  ← IPS 21(4)(a) — currently missing everywhere
+                           captured_at             ← IPS 21(4)(b)
+                           captured_where          ← IPS 21(4)(c) human-readable place
+                           gps_lat, gps_lon        supporting, not a substitute for the above
+                           device_info, mime, bytes
+                           appendix_category       Appendix 1–11 filing taxonomy
+                           retain_until            ← IPS 21(6), enforced by object lock
+
+Substance                  client_id, hs_location_id, name, un_number, hsno_approval,
+                           hazard_class, quantity, unit, sds_expiry
+                           threshold_triggered     computed vs Schedule 3/5/9
+
+Certificate                job_id, decision (granted|conditional|refused)
+                           certificate_number      ← IPS 8(1)(c)(ii): MUST be prefixed with
+                                                     the certifier's authorisation number
+                           register_number         ← IPS 8(1)(c)(i)
+                           certifier_name          ← IPS 8(1)(a) as on the WorkSafe authorisation
+                           authorisation_number    ← IPS 8(1)(b)
+                           type, issued_to, applies_to        ← IPS 8(1)(d)(f)(g)
+                           issue_date, in_force_date, expiry_date ← IPS 8(1)(e)(h)(i)
+                           conditions[], requirements_not_met[]
+                           signature               ← IPS 8(2)(a); 8(3) permits electronic
+                           worksafe_register_due   ← reg 6.22(5), 15 working days
+
+CorrectiveAction           finding_id, severity, description, due_date,
+                           status, evidence_ids[], reverified_by, reverified_at
+
+CommunicationRecord        job_id, direction, party, medium, occurred_at,
+                           summary, attachment_ids[]
+                           ← IPS 21(2)(a) "every communication with the applicant".
+                             A statutory record, same retention as everything else.
+
+InterestDeclaration        job_id, certifier_id, conflict_found, description, mitigation
+                           ← IPS 23(1)-(3): a register of interests is MANDATORY
+
+RetentionClock             job_id, certificate_id, trigger, retain_until
+                           ← IPS 21(6): expiry + 5 years (or issue + 10 for cylinder /
+                             tank-wagon types). Drives object-lock retention dates.
+
+Event                      seq, actor_id, entity_type, entity_id, action, payload,
+                           occurred_at, prev_hash, hash
+                           ← append-only, hash-chained. The audit trail IS the database.
+```
+
+---
+
+## 2. Edges
+
+```
+Client ─1:n─ Site ─1:n─ HSLocation ─1:n─ Job
+Client ─1:n─ Contact
+Client ─1:n─ Substance ─n:1─ HSLocation
+
+Job ─1:n─ Inspection ─1:n─ Finding ─n:1─ TemplateItem ─n:1─ TemplateSection ─n:1─ ChecksheetTemplate
+Job ─1:n─ CommunicationRecord
+Job ─1:1─ InterestDeclaration
+Job ─0:1─ Certificate ─1:1─ RetentionClock
+
+Finding ─1:n─ Evidence
+Finding ─0:1─ CorrectiveAction ─1:n─ Evidence
+
+Inspection ─n:1─ User (certifier)
+Inspection ─n:1─ User (conducted_by)          ← IPS 21(1)(g)
+
+* ─1:n─ Event                                  every mutation, no exceptions
+```
+
+**Why `Finding` is the join and not a column on `TemplateItem`:** the template is shared across every client and must stay immutable. The finding is the per-inspection fact. One template item accumulates thousands of findings across the business — which is what makes "show me every site where signage failed 2.6(3)" a query rather than an archaeology project.
+
+---
+
+## 3. Job state machine
+
+From `Assure Safety Compliance certification Process Flow.docx`, stages 1–8:
+
+```
+        ┌──────────── renewal (T-6 months, from RetentionClock) ────────────┐
+        ▼                                                                    │
+ 1 enquiry ──triage──► 2 application ──accepted──► 3 document_review          │
+     │  out of scope        │ declined                  │                     │
+     ▼                      ▼                           │◄── rfi_loop ────┐   │
+   referred              closed                         ▼                 │   │
+                                              4 site_inspection ──────────┘   │
+                                                        │                     │
+                                                        ▼                     │
+                                          5 compliance_evaluation             │
+                                                        │                     │
+                                              ┌─────────┴─────────┐           │
+                                     gaps open│                   │no gaps    │
+                                              ▼                   │           │
+                                       gap_closure ───────────────┤           │
+                                                                  ▼           │
+                                                        6 final_validation     │
+                                                                  │           │
+                                    ┌──────────────┬──────────────┤           │
+                                    ▼              ▼              ▼           │
+                              7a granted    7b conditional   7c refused       │
+                                    │              │              │           │
+                                    │         conditions      reg 6.23(2)     │
+                                    │         reg 6.24        notify applicant│
+                                    │              │          + WorkSafe      │
+                                    └──────┬───────┘              │           │
+                                           ▼                      ▼           │
+                                    8 monitoring ─────────────► closed        │
+                                           └──────────────────────────────────┘
+```
+
+**Transition guards that are legal, not cosmetic:**
+
+| Transition | Guard | Source |
+|---|---|---|
+| → `site_inspection` | document review complete or RFI answered | Process flow §3 |
+| → `final_validation` | every `Finding.status = non_compliant` has a `CorrectiveAction` that is resolved or accepted as a condition | Process flow §5–6 |
+| → `granted` | zero unresolved non-compliances; every `evidence_required` item has ≥1 Evidence | reg 13.39 |
+| → `conditional` | conditions recorded with deadlines | reg 6.24 |
+| → `refused` | applicant **and** WorkSafe notification tasks created | reg 6.23(2)(b)(c) |
+| any → issued | `InterestDeclaration` exists for the job | IPS 23(1) |
+| any → issued | certificate number is prefixed with the authorisation number | IPS 8(1)(c)(ii) |
+| on issue | `RetentionClock` created: `expiry + 5 years` | IPS 21(6) |
+
+The last four are the ones a spreadsheet cannot enforce and a database can. That is most of the value of this project.
+
+---
+
+## 4. Integrity model
+
+```
+capture (Flutter, on device)
+   │  photo/video taken through a controlled camera
+   ├─ sha256 computed AT CAPTURE
+   ├─ C2PA manifest signed: who, occupation, when, where, device
+   └─ queued locally (offline-safe; the chiller has no signal)
+         │
+         ▼  sync when connectivity returns
+   API (DigitalOcean)
+   ├─ verify sha256 and C2PA signature
+   ├─ store content-addressed by hash → object storage
+   ├─ set object-lock retain_until = certificate expiry + 5 years   ← IPS 21(6)
+   └─ append Event{action:"evidence.captured", hash-chained}
+```
+
+**Why hash at capture, not at upload.** IPS 21(4) is a provenance attestation — Bryan personally signs that *he* took *this* photo, at *that* site, on *that* date. A hash computed when the file reaches the server proves only that it didn't corrupt in transit. It says nothing about where the photo came from, which is the thing being attested. Hashing and signing at the shutter is what makes the attestation technically true rather than merely asserted.
+
+**Retention as a physical property.** Setting object-lock retention to the certificate's expiry + 5 years makes IPS 21(6) enforced by the storage layer rather than by anyone remembering. Note: DigitalOcean Spaces does **not** support Object Lock — it supports versioning only (and that only via the API). The evidence tier therefore needs an Object-Lock-capable store (Backblaze B2 or Wasabi) alongside DO, or the retention guarantee downgrades from enforced to promised.
+
+---
+
+## 4b. Sync contract — the app ⇄ server edge
+
+The field app captures where there is no signal and syncs later. The contract that makes that safe is small, and it is verified end to end in `apps/server/test` and `apps/mobile/test/sync_test.dart`:
+
+```
+device                                  server
+──────                                  ──────
+mutation happens
+  │  SyncEvent{ id: uuidV4(),  ← generated HERE, never regenerated on retry
+  │             type, payload, occurredAt }
+  ▼
+Outbox (persisted)  ──── flush ────►  POST /api/sync
+  │                                     │ for each event, in a savepoint:
+  │                                     │   seen id?  → duplicate (+ original clause if rejected)
+  │                                     │   handler   → applied | rejected{clause, reason}
+  │                                     │ sync_event row written either way
+  ◄────────────────────────────────────┘
+settle: drop applied/duplicate, keep rejected with clause until corrected
+```
+
+Properties that hold, and why each matters:
+
+| Property | Why |
+|---|---|
+| Idempotent by client id | a batch retried after a dropped connection applies nothing twice |
+| Per-event savepoints | one bad finding does not sink the other 53 |
+| Rejections name the clause | "IPS 21(1)(f)" tells the inspector what to type; "422" does not |
+| Clause survives replay | a rejected event retried unchanged is still explained |
+| Findings queue only after `inspection.open` succeeds | they reference its server id |
+| Item identity is `(templateCode, section, item)` | stable across template revisions; meaningful offline; resolved to `item_id` server-side once |
+| `issuance-check` is a rolled-back dry run of the real guard | the app's *Can grant* pill is server-authoritative |
+
+## 5. Code generation — one source of truth
+
+Flutter means the check sheet would otherwise be defined twice: once in TypeScript for the web app, once in Dart for mobile. Against a standard whose own document control block reads *"Frequency of revision: less than 12 months"*, that drift is a certainty, not a risk.
+
+```
+                  packages/checksheets/data/*.json          ← canonical, versioned, reviewed
+                              │
+              ┌───────────────┼───────────────┬────────────────────┐
+              ▼               ▼               ▼                    ▼
+      TypeScript types    Dart models    Postgres seed       PDF/A + XLSX
+        (web + api)       (Flutter)       (templates)      (export, cl. 22(2))
+```
+
+The JSON is the artifact under version control and review. Every consumer is generated and never hand-edited. A PS revision is a data change plus a regenerate — not four parallel edits in four languages.
+
+---
+
+## 6. Modules the regulation requires that nothing currently implements
+
+| Gap | Clause |
+|---|---|
+| Register of interests | IPS 23(2)–(3) |
+| Communications log as a retained record | IPS 21(2)(a) |
+| Retention/disposal clock keyed to certificate expiry | IPS 21(6) |
+| Photographer **occupation** on every photo | IPS 21(4)(a) |
+| Dual signature — certifier **and** the person who inspected | IPS 21(5) |
+| Equipment used, recorded per inspection | IPS 21(1)(d) |
+| Verification method recorded per item | IPS 21(1)(e) |
+| Certificate number prefixed with authorisation number | IPS 8(1)(c)(ii) |
