@@ -177,6 +177,47 @@ export function buildApp(db, { allowedOrigin } = {}) {
     res.status(201).json(out);
   }));
 
+  /**
+   * Backfill the site-block sources (contacts, substances) on an existing job.
+   * Idempotent by name: a contact or substance already present is left alone,
+   * so a client can call this on every open without duplicating rows. Exists
+   * because jobs created before these were captured have blank rows 10–13.
+   */
+  app.post('/api/jobs/:id/site-block', wrap(async (req, res) => {
+    const id = Number(req.params.id);
+    const b = req.body ?? {};
+    const out = await db.withTx(async (tx) => {
+      const j = await tx.query(`SELECT client_id, hs_location_id FROM job WHERE id = $1`, [id]);
+      if (!j.rows.length) return null;
+      const { client_id, hs_location_id } = j.rows[0];
+      let contacts = 0, substances = 0;
+      for (const ct of Array.isArray(b.contacts) ? b.contacts : []) {
+        if (!ct?.name) continue;
+        const r = await tx.query(
+          `INSERT INTO contact (client_id, name, role, phone, email, is_site_manager)
+           SELECT $1,$2,$3,$4,$5,$6
+           WHERE NOT EXISTS (SELECT 1 FROM contact WHERE client_id = $1 AND lower(name) = lower($2))`,
+          [client_id, ct.name, ct.role ?? null, ct.phone ?? null, ct.email ?? null, !!ct.isSiteManager]);
+        contacts += r.rowCount ?? 0;
+      }
+      if (hs_location_id) {
+        for (const sb of Array.isArray(b.substances) ? b.substances : []) {
+          if (!sb?.name || !sb?.hazardClass) continue;
+          const r = await tx.query(
+            `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval)
+             SELECT $1,$2,$3,$4,$5,$6,$7
+             WHERE NOT EXISTS (SELECT 1 FROM substance WHERE hs_location_id = $1 AND lower(name) = lower($2))`,
+            [hs_location_id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
+             sb.unNumber ?? null, sb.hsnoApproval ?? null]);
+          substances += r.rowCount ?? 0;
+        }
+      }
+      return { jobId: id, contactsAdded: contacts, substancesAdded: substances };
+    });
+    if (!out) return res.status(404).json({ error: 'job not found' });
+    res.json(out);
+  }));
+
   /** Everything the app needs to render a job, in one round trip. */
   app.get('/api/jobs/:id', wrap(async (req, res) => {
     const id = Number(req.params.id);

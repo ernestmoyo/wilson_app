@@ -14,6 +14,25 @@ class CurrentUser {
   static const String occupation = 'Compliance certifier';
 }
 
+/// Site block rows 10, 12 and 13 for the G2 Chiller job, from the workbook.
+/// Used both when the job is first created and to backfill an older job.
+const List<Map<String, dynamic>> g2Contacts = [
+  {
+    'name': 'Jesh Chandra',
+    'role': 'Site manager',
+    'phone': '0226787761',
+    'email': 'jesh.chandra@argentaglobal.com',
+    'isSiteManager': true,
+  },
+];
+
+const List<Map<String, dynamic>> g2Substances = [
+  {'name': 'Abamectin', 'hazardClass': '6.1B', 'quantity': 190, 'unit': 'kg'},
+  {'name': 'Eprinomectin', 'hazardClass': '6.1C', 'quantity': 2500, 'unit': 'kg'},
+  {'name': 'Ivermectin', 'hazardClass': '6.1B', 'quantity': 10, 'unit': 'kg'},
+  {'name': 'Moxidectin', 'hazardClass': '6.1B', 'quantity': 120, 'unit': 'kg'},
+];
+
 /// Ids may arrive as numbers (PGlite) or strings (node-postgres int8). The
 /// server now normalises them, but the app must not fall over if it meets an
 /// older server or a different driver.
@@ -114,23 +133,9 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
             'Argenta Manufacturing Limited is an animal health pharmaceutical manufacturer. The company '
             'produces a wide range of bespoke animal health products for both local and export markets.',
       },
-      // Site block rows 10 and 12 (Manager Name, Direct Dial) and row 13
-      // (Hazardous substance name), from the G2 Chiller workbook.
-      'contacts': [
-        {
-          'name': 'Jesh Chandra',
-          'role': 'Site manager',
-          'phone': '0226787761',
-          'email': 'jesh.chandra@argentaglobal.com',
-          'isSiteManager': true,
-        },
-      ],
-      'substances': [
-        {'name': 'Abamectin', 'hazardClass': '6.1B', 'quantity': 190, 'unit': 'kg'},
-        {'name': 'Eprinomectin', 'hazardClass': '6.1C', 'quantity': 2500, 'unit': 'kg'},
-        {'name': 'Ivermectin', 'hazardClass': '6.1B', 'quantity': 10, 'unit': 'kg'},
-        {'name': 'Moxidectin', 'hazardClass': '6.1B', 'quantity': 120, 'unit': 'kg'},
-      ],
+      // Site block rows 10, 12 and 13, from the G2 Chiller workbook.
+      'contacts': g2Contacts,
+      'substances': g2Substances,
       'site': {'address': '2 Sterling Avenue, Manurewa East, Auckland 2102'},
       'location': {
         'name': 'G2 Chiller',
@@ -144,7 +149,21 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
     jobId = toInt(created['jobId']);
   }
 
-  final full = await api.getJson('/api/jobs/$jobId') as Map<String, dynamic>;
+  var full = await api.getJson('/api/jobs/$jobId') as Map<String, dynamic>;
+
+  // Jobs created before contacts and substances were captured render rows
+  // 10–13 blank. Backfill is idempotent by name on the server, so this is
+  // safe to attempt on every open.
+  final noContacts = ((full['contacts'] as List?) ?? const []).isEmpty;
+  final noSubstances = ((full['substances'] as List?) ?? const []).isEmpty;
+  if (noContacts || noSubstances) {
+    await api.postJson('/api/jobs/$jobId/site-block', {
+      'contacts': g2Contacts,
+      'substances': g2Substances,
+    });
+    full = await api.getJson('/api/jobs/$jobId') as Map<String, dynamic>;
+  }
+
   final inspections = (full['inspections'] as List?) ?? const [];
   final loc = full['location'] as Map<String, dynamic>;
   return ServerJob(
