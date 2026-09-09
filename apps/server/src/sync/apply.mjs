@@ -14,17 +14,26 @@
 
 import { explain, isClientError } from './errors.mjs';
 
-async function resolveItemId(db, templateCode, sectionOrdinal, itemOrdinal) {
+/**
+ * An inspection is pinned to the template revisions it was opened against
+ * (inspection_template). Items are resolved inside that pin, so a re-seed
+ * that supersedes a revision never splits one inspection's findings across
+ * two item rows — which is exactly what happened to the G2 job when rev 2
+ * landed. An inspection with no pin for the code falls back to the current
+ * revision.
+ */
+async function resolveItemId(db, inspectionId, templateCode, sectionOrdinal, itemOrdinal) {
   const r = await db.query(
     `SELECT i.id
      FROM checksheet_item i
      JOIN checksheet_section s ON s.id = i.section_id
      JOIN checksheet_template t ON t.id = s.template_id
-     WHERE t.code = $1 AND s.ordinal = $2 AND i.ordinal = $3
-       AND t.status IN ('current', 'draft')
-     ORDER BY t.revision DESC
+     LEFT JOIN inspection_template p ON p.template_id = t.id AND p.inspection_id = $1
+     WHERE t.code = $2 AND s.ordinal = $3 AND i.ordinal = $4
+       AND (p.inspection_id IS NOT NULL OR t.status IN ('current', 'draft'))
+     ORDER BY (p.inspection_id IS NOT NULL) DESC, t.revision DESC
      LIMIT 1`,
-    [templateCode, sectionOrdinal, itemOrdinal]
+    [inspectionId ?? null, templateCode, sectionOrdinal, itemOrdinal]
   );
   return r.rows[0]?.id ?? null;
 }
@@ -58,7 +67,7 @@ const handlers = {
 
   /** Record or update the result against one item. IPS 21(1)(c),(e),(f). */
   async 'finding.upsert'(db, p, ctx) {
-    const itemId = p.itemId ?? (await resolveItemId(db, p.templateCode, p.sectionOrdinal, p.itemOrdinal));
+    const itemId = p.itemId ?? (await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal));
     if (!itemId) {
       const e = new Error(`no check sheet item for ${p.templateCode} s${p.sectionOrdinal}/i${p.itemOrdinal}`);
       e.code = '22P02';
@@ -89,7 +98,7 @@ const handlers = {
   async 'evidence.attach'(db, p, ctx) {
     let findingId = p.findingId ?? null;
     if (!findingId && p.templateCode && p.inspectionId) {
-      const itemId = await resolveItemId(db, p.templateCode, p.sectionOrdinal, p.itemOrdinal);
+      const itemId = await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal);
       if (itemId) {
         const f = await db.query(
           `SELECT id FROM finding WHERE inspection_id = $1 AND item_id = $2`,

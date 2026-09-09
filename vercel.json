@@ -5,7 +5,6 @@
   "outputDirectory": "apps/server/public",
   "functions": {
     "api/index.mjs": {
-      "memory": 1024,
       "maxDuration": 30,
       "includeFiles": "apps/server/vendor/**"
     }

@@ -86,13 +86,23 @@ void main() {
     // Read back through a fresh client: what the server holds, not what the
     // app remembers.
     final job = await api.getJson('/api/jobs/${insp.jobId}') as Map<String, dynamic>;
+    // The G2 job is one persistent record on a live server, so assert on
+    // the findings this test wrote, not on job-wide counts that other
+    // sessions (the iPad, the web demo, earlier runs) also move.
     final findings = (job['findings'] as List).cast<Map<String, dynamic>>();
-    final nc = findings.where((f) => f['status'] == 'non_compliant').toList();
-    expect(nc.length, 1);
-    expect(nc.single['section_ordinal'], signage.ordinal);
-    expect(nc.single['item_ordinal'], 4);
-    expect(nc.single['failure_reason'], contains('reg 2.6(3)'));
-    expect(job['findingCounts']['compliant'], 1);
+    // Section/item ordinals repeat across the two sheets and across
+    // inspections of the same job, so key on this inspection and sheet too.
+    Map<String, dynamic> at(int section, int item) => findings.singleWhere((f) =>
+        f['inspection_id'] == insp.inspectionId &&
+        f['template_code'] == general.code &&
+        f['section_ordinal'] == section &&
+        f['item_ordinal'] == item);
+    final nc = at(signage.ordinal, signage.items[3].ordinal);
+    expect(nc['status'], 'non_compliant');
+    expect(nc['failure_reason'], contains('reg 2.6(3)'));
+    final ok = at(first.ordinal, first.items.first.ordinal);
+    expect(ok['status'], 'compliant');
+    expect(ok['verification_method'], 'Inventory register reviewed');
   });
 
   test('a rejected finding comes back with its clause, and a fix clears it', () async {
@@ -118,7 +128,14 @@ void main() {
     expect(sync.rejectedCount, 0);
 
     final job = await api.getJson('/api/jobs/${insp.jobId}') as Map<String, dynamic>;
-    expect(job['findingCounts']['non_compliant'], 2);
+    final findings = (job['findings'] as List).cast<Map<String, dynamic>>();
+    final fixed = findings.singleWhere((x) =>
+        x['inspection_id'] == insp.inspectionId &&
+        x['template_code'] == general.code &&
+        x['section_ordinal'] == signage.ordinal &&
+        x['item_ordinal'] == signage.items[4].ordinal);
+    expect(fixed['status'], 'non_compliant');
+    expect(fixed['failure_reason'], 'No signage next to the outdoor area');
   });
 
   test('issuance-check is server-authoritative and names the blockers', () async {
@@ -127,13 +144,19 @@ void main() {
     expect(chk.canGrant, isFalse);
     expect(chk.blockers, isNotEmpty);
     expect(chk.blockers.first.clause, 'IPS 23(1)');
-    expect(chk.unresolvedNonCompliances, 2);
+    // At least the two this run recorded; a live job may carry more.
+    expect(chk.unresolvedNonCompliances, greaterThanOrEqualTo(2));
   });
 
   test('hydration: a fresh app instance sees what the server holds', () async {
     final insp = await openG2Inspection(api, sync);
-    expect(insp.countWhere(FindingStatus.nonCompliant), 2);
-    expect(insp.countWhere(FindingStatus.compliant), 1);
-    expect(insp.assessedCount, 3);
+    final general = insp.templates.first;
+    final signage = general.sections.firstWhere((s) => s.title == 'Signage');
+    final first = general.sections.first;
+    expect(insp.findingFor(general, signage, signage.items[3]).status, FindingStatus.nonCompliant);
+    expect(insp.findingFor(general, signage, signage.items[4]).status, FindingStatus.nonCompliant);
+    expect(insp.findingFor(general, first, first.items.first).status, FindingStatus.compliant);
+    expect(insp.countWhere(FindingStatus.nonCompliant), greaterThanOrEqualTo(2));
+    expect(insp.assessedCount, greaterThanOrEqualTo(3));
   });
 }
