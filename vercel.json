@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node apps/server/scripts/vendor.mjs",
+  "installCommand": "npm install --no-audit --no-fund",
+  "outputDirectory": "apps/server/public",
+  "functions": {
+    "api/index.mjs": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "apps/server/vendor/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

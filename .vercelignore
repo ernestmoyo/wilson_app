@@ -1,0 +1,38 @@
+# Only the platform ships to Vercel. Everything below is either private
+# client material, the legacy Railway app, local toolchains, or build output.
+
+# private / sensitive
+client-cases/
+correspondance/
+reference/
+assure-safety-nz/
+forms/
+packages/checksheets/data/evidence/
+packages/checksheets/data/certificates/*/signature.png
+*.pdf
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.msg
+
+# legacy Railway app (SQLite) — not deployed here
+apps/api/
+apps/web/
+Dockerfile
+railway.toml
+nixpacks.toml
+
+# local toolchains and caches
+Lib/
+Scripts/
+share/
+node_modules/
+.git/
+.dart_tool/
+apps/mobile/build/
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.dart_tool/
+apps/server/data/
+apps/server/vendor/
