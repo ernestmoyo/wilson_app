@@ -59,6 +59,8 @@ TemplateItem.regulationRefsByClass { "class_6_8": [...], "class_2_3": [...] }  /
 
 Re-extracting any workbook and diffing against `packages/checksheets/data/` is the regression test for a PS revision.
 
+**Revisions are keyed by content hash.** The generated seed inserts a template only when no row with the same `meta.contentHash` exists; a changed template therefore becomes `revision + 1`, the previous revision is marked `superseded` (rows kept, so old findings still resolve), and re-running the seed is a no-op. Merging a changed template into an existing revision once turned 98 items into 116 on the deployed database; `packages/db/test/reseed.test.mjs` reproduces that case and asserts it cannot recur.
+
 ### Instance layer — per engagement
 
 ```
