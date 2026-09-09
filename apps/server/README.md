@@ -83,3 +83,29 @@ Guarantees, all verified by `npm test`:
 ## Identity
 
 Until real auth lands, `x-device-id` and `x-user-id` headers carry identity. `app.mjs` reads them in exactly one middleware; that is the one place to replace.
+
+## Deployment
+
+**Live:** https://assure-safety-platform.vercel.app — Vercel project `assure-safety-platform` (team `ernests-projects-8625303b`), separate from the marketing site at `assure-safety-nz.vercel.app`.
+
+| Piece | Where | Status |
+|---|---|---|
+| API | Vercel function `api/index.mjs` (repo root shim → `apps/server/api/index.mjs`) | live |
+| Flutter web | `apps/server/public`, same origin as the API | live |
+| Postgres | **Neon** via the Vercel Marketplace (`vercel integration add neon`); `DATABASE_URL` injected | live — migrations run on first request |
+| Evidence bytes | Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set; otherwise `/tmp` on Vercel (ephemeral) | **Blob store not yet created** — dashboard → Storage → Blob → connect to project |
+| Object-lock retention | Backblaze B2 / Wasabi | not started |
+
+```bash
+# from the repo root (the build needs packages/); project is already linked
+npx vercel deploy            # preview (gated by Deployment Protection on this team)
+npx vercel deploy --prod     # production
+```
+
+The deploy is from the **repo root**, not `apps/server`: Vercel only discovers functions under a top-level `api/`, and the vendor step (`apps/server/scripts/vendor.mjs`) copies migrations, the template seed and the certificate renderer from `packages/` into `apps/server/vendor/` at build time. Railway (`master`, Dockerfile) is untouched.
+
+### Two things the first live deploy taught
+
+**Anchor root-only ignore patterns.** `.vercelignore` had a bare `Scripts/` for the Python venv; on Windows the CLI matches case-insensitively and unanchored, so it also swallowed `apps/server/scripts/` and the build failed with `Cannot find module …/vendor.mjs`. Every root-only entry now starts with `/`.
+
+**`int8` comes back as a string from node-postgres.** `bigserial` ids were numbers under PGlite and strings under Neon, and every `(id as num)` in the app threw. The pg connection now parses int8 (`pg.types.setTypeParser(20, …)`) so the API is identical on both backends, and the app tolerates either. Found by `flutter test --dart-define=LIVE_API=https://assure-safety-platform.vercel.app test/live_server_test.dart`, which is the check to run after any deploy.
