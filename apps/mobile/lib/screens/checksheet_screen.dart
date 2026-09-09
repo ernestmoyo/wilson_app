@@ -6,6 +6,7 @@ import '../models/inspection.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import 'item_screen.dart';
+import 'sheet_view.dart';
 
 /// The inspection screen: every section and item of the applicable check
 /// sheets, with the recorded result against each.
@@ -42,11 +43,22 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
               child: _header(),
             ),
           ),
-          body: ListView(
-            padding: const EdgeInsets.only(bottom: 32),
-            children: [
-              for (final section in template.sections) ..._section(section),
-            ],
+          // Wide (normal web, iPad landscape): the sheet as the workbook lays
+          // it out. Narrow: cards. Both edit the same Inspection.
+          body: LayoutBuilder(
+            builder: (context, c) => c.maxWidth >= 900
+                ? SheetView(
+                    key: ValueKey('sheet-${template.code}'),
+                    inspection: insp,
+                    template: template,
+                    sync: widget.sync,
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: 32),
+                    children: [
+                      for (final section in template.sections) ..._section(section),
+                    ],
+                  ),
           ),
         );
       },

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../generated/checksheets.g.dart';
 import 'finding.dart';
+import 'site_block.dart';
 
 /// One inspection of one hazardous substance location, against one or more
 /// check sheet templates.
@@ -45,6 +46,61 @@ class Inspection extends ChangeNotifier {
   /// Called after every finding change. The sync layer attaches here to queue
   /// a `finding.upsert`; the model itself stays ignorant of the network.
   void Function(Finding)? onFindingChanged;
+
+  /// Rows 2–14 of the sheet. Null until hydrated from the server.
+  SiteBlock? siteBlock;
+
+  /// IPS 21(5) — the two signatures the sheet carries. A signature is a
+  /// (who, when) pair, never a bare checkbox.
+  DateTime? declarationSignedAt;
+  String? declarationSignedBy;
+  DateTime? scopeConfirmedAt;
+  String? scopeConfirmedBy;
+
+  /// The class sheet's "Decision:" row. Derived from the certificate when one
+  /// exists; otherwise from the grant gate. Never typed.
+  String? certificateDecision;
+  List<String> requirementsNotMet = [];
+  List<String> conditions = [];
+
+  /// Called after a signature is recorded. The sync layer queues `inspection.sign`.
+  void Function(String which)? onSign;
+
+  void sign(String which, {required String by}) {
+    final now = DateTime.now().toUtc();
+    if (which == 'scope') {
+      scopeConfirmedAt = now;
+      scopeConfirmedBy = by;
+    } else {
+      declarationSignedAt = now;
+      declarationSignedBy = by;
+    }
+    notifyListeners();
+    onSign?.call(which);
+  }
+
+  /// Text for the class sheet's Decision row, in the workbook's own phrasing.
+  String get decisionText {
+    if (certificateDecision == 'granted') return 'Decision: Compliance certificate issued';
+    if (certificateDecision == 'conditional') {
+      return 'Decision: Compliance certificate issued subject to the following conditions: '
+          '${_numbered(conditions)}';
+    }
+    if (certificateDecision == 'refused') {
+      return 'Decision: Compliance certificate refused to be issued with the following conditions: '
+          '${_numbered(requirementsNotMet)}';
+    }
+    final nc = countWhere(FindingStatus.nonCompliant);
+    final pending = countWhere(FindingStatus.pending);
+    if (nc == 0 && pending == 0) return 'Decision: Compliance certificate can be issued';
+    final parts = <String>[];
+    if (nc > 0) parts.add('$nc non-compliance${nc == 1 ? '' : 's'} unresolved');
+    if (pending > 0) parts.add('$pending item${pending == 1 ? '' : 's'} not yet assessed');
+    return 'Decision: Compliance certificate cannot be issued — ${parts.join('; ')}';
+  }
+
+  static String _numbered(List<String> xs) =>
+      xs.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join(' ');
 
   Inspection({
     required this.locationName,

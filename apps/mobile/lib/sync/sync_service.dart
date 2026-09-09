@@ -27,9 +27,23 @@ class SyncService extends ChangeNotifier {
   int get rejectedCount => outbox.rejectedCount;
   List<SyncEvent> get rejected => outbox.rejected;
 
-  /// Attach to an inspection so its finding changes are queued.
+  /// Attach to an inspection so its finding changes and signatures are queued.
   void track(Inspection insp) {
     insp.onFindingChanged = (f) => _enqueueFinding(insp, f);
+    insp.onSign = (which) => _enqueueSignature(insp, which);
+  }
+
+  /// IPS 21(5): the signer is the authenticated user on the server side; the
+  /// event carries only which signature and when it happened on the device.
+  Future<void> _enqueueSignature(Inspection insp, String which) async {
+    if (insp.inspectionId == null) return;
+    await outbox.enqueue('inspection.sign', {
+      'inspectionId': insp.inspectionId,
+      'which': which,
+      'signedAt': DateTime.now().toUtc().toIso8601String(),
+    });
+    notifyListeners();
+    await flush();
   }
 
   Future<void> _enqueueFinding(Inspection insp, Finding f) async {

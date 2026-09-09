@@ -1,6 +1,7 @@
 import 'generated/checksheets.g.dart';
 import 'models/finding.dart';
 import 'models/inspection.dart';
+import 'models/site_block.dart';
 import 'sync/api_client.dart';
 import 'sync/sync_service.dart';
 
@@ -30,6 +31,11 @@ class ServerJob {
   final String stage;
   final String? classKey;
   final List<dynamic> findings;
+
+  /// The full GET /api/jobs/:id payload — the site block, signatures and
+  /// certificate are read from here.
+  final Map<String, dynamic> raw;
+
   const ServerJob({
     required this.jobId,
     required this.hsLocationId,
@@ -37,7 +43,43 @@ class ServerJob {
     required this.stage,
     required this.classKey,
     required this.findings,
+    required this.raw,
   });
+
+  Map<String, dynamic>? get inspection =>
+      (raw['inspections'] as List?)?.isEmpty ?? true
+          ? null
+          : Map<String, dynamic>.from((raw['inspections'] as List).first as Map);
+
+  /// Rows 2–14 of the sheet, from the job's client, site, location, contacts,
+  /// substances and inspection.
+  SiteBlock siteBlock() {
+    final client = Map<String, dynamic>.from(raw['client'] as Map);
+    final loc = Map<String, dynamic>.from(raw['location'] as Map);
+    final contacts = ((raw['contacts'] as List?) ?? const []).cast<Map>();
+    final manager = contacts.isEmpty ? null : Map<String, dynamic>.from(contacts.first);
+    final subs = ((raw['substances'] as List?) ?? const []).cast<Map>();
+    final insp = inspection;
+    return SiteBlock(
+      legalEntityName: client['legalName'] as String?,
+      tradingAsName: client['tradingName'] as String?,
+      siteAddress: loc['address'] as String?,
+      postalAddress: client['postalAddress'] as String?,
+      businessPhone: client['phone'] as String?,
+      website: client['website'] as String?,
+      nzbn: client['nzbn'] as String?,
+      industry: client['industry'] as String?,
+      managerName: manager?['name'] as String?,
+      inspectionDate: insp?['inspected_at'] == null ? null : DateTime.tryParse('${insp!['inspected_at']}'),
+      inspectionStatus: insp?['status'] as String?,
+      directDial: manager?['phone'] as String?,
+      substanceNames: subs.map((s) => '${s['name']}').toList(),
+      hsLocation: [loc['name'], client['legalName'], loc['address']]
+          .where((x) => x != null && '$x'.isNotEmpty)
+          .join(' '),
+      summary: loc['summary'] as String?,
+    );
+  }
 }
 
 /// Find the G2 Chiller job on the server, creating it on first run.
@@ -68,7 +110,27 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
         'postalAddress': 'PO Box 75340, Manurewa, Auckland, 2243 New Zealand',
         'phone': '64 9 2503100',
         'website': 'www.argentaglobal.com',
+        'industry':
+            'Argenta Manufacturing Limited is an animal health pharmaceutical manufacturer. The company '
+            'produces a wide range of bespoke animal health products for both local and export markets.',
       },
+      // Site block rows 10 and 12 (Manager Name, Direct Dial) and row 13
+      // (Hazardous substance name), from the G2 Chiller workbook.
+      'contacts': [
+        {
+          'name': 'Jesh Chandra',
+          'role': 'Site manager',
+          'phone': '0226787761',
+          'email': 'jesh.chandra@argentaglobal.com',
+          'isSiteManager': true,
+        },
+      ],
+      'substances': [
+        {'name': 'Abamectin', 'hazardClass': '6.1B', 'quantity': 190, 'unit': 'kg'},
+        {'name': 'Eprinomectin', 'hazardClass': '6.1C', 'quantity': 2500, 'unit': 'kg'},
+        {'name': 'Ivermectin', 'hazardClass': '6.1B', 'quantity': 10, 'unit': 'kg'},
+        {'name': 'Moxidectin', 'hazardClass': '6.1B', 'quantity': 120, 'unit': 'kg'},
+      ],
       'site': {'address': '2 Sterling Avenue, Manurewa East, Auckland 2102'},
       'location': {
         'name': 'G2 Chiller',
@@ -92,6 +154,7 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
     stage: full['stage'] as String,
     classKey: full['class_key'] as String?,
     findings: (full['findings'] as List?) ?? const [],
+    raw: full,
   );
 }
 
@@ -142,6 +205,45 @@ Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
         failureReason: f['failure_reason'] as String? ?? '',
         evidenceCount: f['evidence_count'] == null ? 0 : toInt(f['evidence_count']),
       )));
+
+  // Rows 2–14 and the trailing blocks come from the same payload. On a job's
+  // first open the inspection did not exist when the payload was fetched, so
+  // row 11 falls back to what was just recorded locally.
+  final sb = job.siteBlock();
+  insp.siteBlock = sb.inspectionDate != null
+      ? sb
+      : SiteBlock(
+          legalEntityName: sb.legalEntityName,
+          tradingAsName: sb.tradingAsName,
+          siteAddress: sb.siteAddress,
+          postalAddress: sb.postalAddress,
+          businessPhone: sb.businessPhone,
+          website: sb.website,
+          nzbn: sb.nzbn,
+          industry: sb.industry,
+          managerName: sb.managerName,
+          inspectionDate: insp.inspectedAt,
+          inspectionStatus: 'in_progress',
+          directDial: sb.directDial,
+          substanceNames: sb.substanceNames,
+          hsLocation: sb.hsLocation,
+          summary: sb.summary,
+        );
+  final si = job.inspection;
+  if (si != null) {
+    insp.declarationSignedAt =
+        si['declaration_signed_at'] == null ? null : DateTime.tryParse('${si['declaration_signed_at']}');
+    insp.declarationSignedBy = si['declaration_signed_by'] == null ? null : CurrentUser.name;
+    insp.scopeConfirmedAt =
+        si['scope_confirmed_at'] == null ? null : DateTime.tryParse('${si['scope_confirmed_at']}');
+    insp.scopeConfirmedBy = si['scope_confirmed_by'] == null ? null : CurrentUser.name;
+  }
+  final cert = job.raw['certificate'];
+  if (cert is Map) {
+    insp.certificateDecision = cert['decision'] as String?;
+    insp.requirementsNotMet = ((cert['requirements_not_met'] as List?) ?? const []).map((x) => '$x').toList();
+    insp.conditions = ((cert['conditions'] as List?) ?? const []).map((x) => '$x').toList();
+  }
 
   return insp;
 }
