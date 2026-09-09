@@ -94,18 +94,25 @@ class _SheetViewState extends State<SheetView> {
 
   // ── letterhead: the same three images the certificate carries ────────────
 
+  // company-details.png is three lines of small type (address, email, web,
+  // phone) at 1605x456; below ~90px tall it collapses into an unreadable
+  // grey strip, which is why the earlier 52px render looked blank.
   Widget _letterhead() => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset('assets/brand/logo-white.png', height: 44, fit: BoxFit.contain,
+            Image.asset('assets/brand/logo-white.png', height: 56, fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => const SizedBox.shrink()),
             const Spacer(),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Image.asset('assets/brand/company-details.png', height: 52, fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink()),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 380, maxHeight: 96),
+                child: Image.asset('assets/brand/company-details.png',
+                    fit: BoxFit.contain,
+                    alignment: Alignment.centerRight,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink()),
+              ),
             ),
           ],
         ),

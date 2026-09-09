@@ -50,6 +50,13 @@ class SiteBlock {
     return '${l.day.toString().padLeft(2, '0')}/${l.month.toString().padLeft(2, '0')}/${l.year}';
   }
 
+  /// "in_progress" → "In progress": the sheet is read by people, not by code.
+  static String _status(String? s) {
+    if (s == null || s.isEmpty) return '';
+    final words = s.replaceAll('_', ' ');
+    return words[0].toUpperCase() + words.substring(1);
+  }
+
   /// Rows 2–14, verbatim labels, in sheet order.
   List<SiteRow> rows() => [
         SiteRow('Legal Entity Name', legalEntityName ?? ''),
@@ -62,7 +69,7 @@ class SiteBlock {
         SiteRow('Description of Business Type / Industry', industry ?? ''),
         SiteRow('Manager Name', managerName ?? ''),
         SiteRow('Date of Inspection/Site Visit', _d(inspectionDate),
-            label2: 'Status of Inspection', value2: inspectionStatus ?? ''),
+            label2: 'Status of Inspection', value2: _status(inspectionStatus)),
         SiteRow('Direct Dial Number and/or Mobile Number', directDial ?? ''),
         SiteRow('Hazardous substance name', substanceNames.join(', '),
             label2: 'Hazardous Substance Location', value2: hsLocation ?? ''),
