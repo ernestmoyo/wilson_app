@@ -28,7 +28,12 @@ async function storeEvidence(sha256, ext, buf, mime) {
     const b = await put(key, buf, { access: 'public', addRandomSuffix: false, contentType: mime });
     return { storageKey: key, url: b.url, backend: 'vercel-blob' };
   }
-  const dir = process.env.EVIDENCE_DIR ?? join(process.cwd(), 'data', 'evidence');
+  // On Vercel the bundle is read-only; /tmp is the only writable path and is
+  // per-instance and ephemeral. That is a smoke-test fallback only — real
+  // evidence goes to Blob (BLOB_READ_WRITE_TOKEN) or object storage.
+  const dir =
+    process.env.EVIDENCE_DIR ??
+    (process.env.VERCEL ? '/tmp/evidence' : join(process.cwd(), 'data', 'evidence'));
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `${sha256}.${ext}`);
   if (!existsSync(file)) writeFileSync(file, buf);
@@ -43,7 +48,12 @@ async function readEvidence(storageKey) {
     const r = await fetch(meta.url);
     return { buf: Buffer.from(await r.arrayBuffer()), mime: meta.contentType };
   }
-  const dir = process.env.EVIDENCE_DIR ?? join(process.cwd(), 'data', 'evidence');
+  // On Vercel the bundle is read-only; /tmp is the only writable path and is
+  // per-instance and ephemeral. That is a smoke-test fallback only — real
+  // evidence goes to Blob (BLOB_READ_WRITE_TOKEN) or object storage.
+  const dir =
+    process.env.EVIDENCE_DIR ??
+    (process.env.VERCEL ? '/tmp/evidence' : join(process.cwd(), 'data', 'evidence'));
   const file = join(dir, storageKey);
   if (!existsSync(file)) return null;
   return { buf: readFileSync(file), mime: null };
