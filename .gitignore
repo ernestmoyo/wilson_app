@@ -84,3 +84,10 @@ packages/checksheets/data/certificates/*/signature.png
 .vercel/
 # Rendered certificate output embeds the signature as a data URL — keep out of git.
 packages/checksheets/data/certificates/*/certificate.html
+
+.vercel
+.env*
+
+# Brand assets (Assure Safety letterhead + logo) — committed on purpose.
+!packages/checksheets/brand/**
+!apps/mobile/assets/**

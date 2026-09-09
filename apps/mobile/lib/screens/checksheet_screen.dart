@@ -5,6 +5,7 @@ import '../models/finding.dart';
 import '../models/inspection.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
+import '../widgets/brand_bar.dart';
 import 'item_screen.dart';
 import 'sheet_view.dart';
 
@@ -36,10 +37,12 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
       animation: Listenable.merge([insp, if (widget.sync != null) widget.sync!]),
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: Text(insp.locationName, overflow: TextOverflow.ellipsis),
+          appBar: BrandBar(
+            title: insp.locationName,
+            subtitle: insp.pcbuName,
             bottom: PreferredSize(
-              preferredSize: Size.fromHeight(widget.sync == null ? 96 : 132),
+              // Measured: chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
+              preferredSize: Size.fromHeight(widget.sync == null ? 112 : 150),
               child: _header(),
             ),
           ),

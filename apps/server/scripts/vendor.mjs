@@ -31,6 +31,8 @@ const copies = [
   // deploy upload (.gitignore / .vercelignore). When absent the certificate
   // renders without it and the signature comes from the user record later.
   ['packages/checksheets/data/certificates/g2-chiller/signature.png', 'signature.png', false],
+  // Assure Safety letterhead for the rendered certificate.
+  ['packages/checksheets/brand', 'brand', false],
 ];
 
 for (const [from, to, required] of copies) {

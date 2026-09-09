@@ -31,10 +31,23 @@ export const nzDate = (iso) => {
 
 /**
  * @param cert  certificate object per the schema
- * @param opts  { signatureDataUrl?: string }
+ * @param opts  { signatureDataUrl?: string,
+ *                letterhead?: { logo?: string, details?: string, ribbon?: string } }  data URLs
  * @returns HTML string
  */
-export function renderCertificateHtml(cert, { signatureDataUrl = null } = {}) {
+export function renderCertificateHtml(cert, { signatureDataUrl = null, letterhead = null } = {}) {
+  // The workbook's Certificate sheet carries the Assure Safety letterhead as
+  // three images: the logo and the company-details band at the top, the
+  // ribbon at the bottom. Rendered here the same way when supplied.
+  const head = letterhead && (letterhead.logo || letterhead.details)
+    ? `<div class="letterhead">
+      ${letterhead.logo ? `<img class="lh-logo" src="${letterhead.logo}" alt="Assure Safety">` : '<span></span>'}
+      ${letterhead.details ? `<img class="lh-details" src="${letterhead.details}" alt="Assure Safety contact details">` : ''}
+    </div>`
+    : '';
+  const foot = letterhead?.ribbon
+    ? `<img class="lh-ribbon" src="${letterhead.ribbon}" alt="">`
+    : '';
   const substanceRows = (cert.substances ?? [])
     .map(
       (s) => `
@@ -81,11 +94,17 @@ export function renderCertificateHtml(cert, { signatureDataUrl = null } = {}) {
   .sig-block{min-height:30mm;position:relative}
   .sig-block img{max-width:52mm;height:auto;display:block;margin:2mm 0 0 2mm}
   .footer{font-size:10pt;text-align:center;min-height:22mm;justify-content:center}
+  /* Letterhead, as carried on the workbook's Certificate sheet. */
+  .letterhead{display:flex;align-items:center;justify-content:space-between;gap:8mm;padding:2mm 0 4mm}
+  .lh-logo{height:22mm;width:auto}
+  .lh-details{height:18mm;width:auto;max-width:62%}
+  .lh-ribbon{display:block;width:100%;height:auto;margin-top:5mm}
   @media print { html,body{background:#fff} .page{width:auto;margin:0} }
 </style>
 </head>
 <body>
 <div class="page">
+  ${head}
   <div class="sheet">
     <div class="cell span-4 bl br bt bb middle title-band">
       <span class="doc-title">${esc(cert.documentTitle)}</span>
@@ -166,6 +185,7 @@ ${conditionsBlock}
 
     <div class="cell span-4 bl br bb middle footer">${esc(issuerStatement)}</div>
   </div>
+  ${foot}
 </div>
 </body>
 </html>

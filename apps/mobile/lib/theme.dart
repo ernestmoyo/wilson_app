@@ -9,6 +9,10 @@ import 'models/finding.dart';
 class Brand {
   static const teal = Color(0xFF006666);
   static const tealDark = Color(0xFF004D4D);
+
+  /// The certificate's bottom ribbon — a slightly bluer, deeper teal than the
+  /// label colour. Used for the rule under the letterhead and for emphasis.
+  static const ribbon = Color(0xFF0A5566);
   static const band = Color(0xFFDDDDDD);
 
   /// Status colours. Red and green are the workbook's own

@@ -70,6 +70,7 @@ class _SheetViewState extends State<SheetView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _letterhead(),
             _titleRow(),
             if (insp.siteBlock != null) ..._siteBlock(insp.siteBlock!),
             if (sheet.banner != null) _bandRow(sheet.banner!, bold: true),
@@ -84,11 +85,35 @@ class _SheetViewState extends State<SheetView> {
             if (sheet.documentControl != null || sheet.scopeOfAuthorisation != null) _controlAndScope(),
             if (sheet.reference != null) _referenceRow(sheet.reference!),
             if (sheet.footer != null) _footer(sheet.footer!),
+            _ribbon(),
           ],
         ),
       ),
     );
   }
+
+  // ── letterhead: the same three images the certificate carries ────────────
+
+  Widget _letterhead() => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset('assets/brand/logo-white.png', height: 44, fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const SizedBox.shrink()),
+            const Spacer(),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Image.asset('assets/brand/company-details.png', height: 52, fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink()),
+            ),
+          ],
+        ),
+      );
+
+  Widget _ribbon() => Image.asset('assets/brand/bottom-ribbon.png',
+      width: double.infinity, fit: BoxFit.fitWidth,
+      errorBuilder: (_, _, _) => Container(height: 6, color: Brand.ribbon));
 
   // ── rows 1 and 2–14 ──────────────────────────────────────────────────────
 

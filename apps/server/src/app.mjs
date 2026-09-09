@@ -410,7 +410,17 @@ export function buildApp(db, { allowedOrigin } = {}) {
     const sigPath = assetPath('signature.png', 'packages/checksheets/data/certificates/g2-chiller/signature.png');
     if (existsSync(sigPath))
       signatureDataUrl = `data:image/png;base64,${readFileSync(sigPath).toString('base64')}`;
-    res.type('html').send(renderCertificateHtml(cert, { signatureDataUrl }));
+    // Letterhead: the three images the workbook's Certificate sheet carries.
+    const brand = (name) => {
+      const p = assetPath(`brand/${name}`, `packages/checksheets/brand/${name}`);
+      return existsSync(p) ? `data:image/png;base64,${readFileSync(p).toString('base64')}` : null;
+    };
+    const letterhead = {
+      logo: brand('logo-white.png'),
+      details: brand('company-details.png'),
+      ribbon: brand('bottom-ribbon.png'),
+    };
+    res.type('html').send(renderCertificateHtml(cert, { signatureDataUrl, letterhead }));
   }));
 
   // ── evidence bytes ───────────────────────────────────────────────────────

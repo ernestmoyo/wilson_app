@@ -9,6 +9,7 @@ import 'sync/api_client.dart';
 import 'sync/outbox.dart';
 import 'sync/sync_service.dart';
 import 'theme.dart';
+import 'widgets/brand_bar.dart';
 
 /// Where the server is. Built in with --dart-define=API_BASE=…; when absent
 /// on web, the app assumes it is served from the same origin as the API
@@ -134,8 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
             : Brand.conditional;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Assure Safety — Field'),
+      appBar: BrandBar(
+        title: 'Field inspections',
+        subtitle: 'WKS-17 location compliance certification',
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
