@@ -40,6 +40,12 @@ export async function connect({
 } = {}) {
   if (url) {
     const { default: pg } = await import('pg');
+    // node-postgres returns int8 (bigserial ids, bigint counts) as strings to
+    // avoid precision loss. Our ids never approach 2^53, and PGlite returns
+    // numbers, so parse them: the API must look the same on both backends.
+    // (Found by the live test against Neon — every `(id as num)` in the app
+    // threw on strings.)
+    pg.types.setTypeParser(20, (v) => (v === null ? null : Number.parseInt(v, 10)));
     const pool = new pg.Pool({
       connectionString: url,
       max: 4,

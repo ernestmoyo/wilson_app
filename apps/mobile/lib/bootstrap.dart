@@ -13,6 +13,16 @@ class CurrentUser {
   static const String occupation = 'Compliance certifier';
 }
 
+/// Ids may arrive as numbers (PGlite) or strings (node-postgres int8). The
+/// server now normalises them, but the app must not fall over if it meets an
+/// older server or a different driver.
+int toInt(Object? v) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.parse(v);
+  throw FormatException('expected an integer id, got ${v.runtimeType}: $v');
+}
+
 class ServerJob {
   final int jobId;
   final int hsLocationId;
@@ -47,7 +57,7 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
 
   int jobId;
   if (found != null) {
-    jobId = (found['id'] as num).toInt();
+    jobId = toInt(found['id']);
   } else {
     final created = await api.postJson('/api/jobs', {
       'client': {
@@ -69,7 +79,7 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
       },
       'classKey': 'class_6_8',
     }) as Map<String, dynamic>;
-    jobId = (created['jobId'] as num).toInt();
+    jobId = toInt(created['jobId']);
   }
 
   final full = await api.getJson('/api/jobs/$jobId') as Map<String, dynamic>;
@@ -77,8 +87,8 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
   final loc = full['location'] as Map<String, dynamic>;
   return ServerJob(
     jobId: jobId,
-    hsLocationId: (loc['id'] as num).toInt(),
-    inspectionId: inspections.isEmpty ? null : ((inspections.first as Map)['id'] as num).toInt(),
+    hsLocationId: toInt(loc['id']),
+    inspectionId: inspections.isEmpty ? null : toInt((inspections.first as Map)['id']),
     stage: full['stage'] as String,
     classKey: full['class_key'] as String?,
     findings: (full['findings'] as List?) ?? const [],
@@ -124,13 +134,13 @@ Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
   // Hydrate what the server already knows without re-enqueueing it.
   insp.hydrate(job.findings.cast<Map<String, dynamic>>().map((f) => HydratedFinding(
         templateCode: f['template_code'] as String,
-        sectionOrdinal: (f['section_ordinal'] as num).toInt(),
-        itemOrdinal: (f['item_ordinal'] as num).toInt(),
+        sectionOrdinal: toInt(f['section_ordinal']),
+        itemOrdinal: toInt(f['item_ordinal']),
         status: FindingStatus.fromWire(f['status'] as String),
         comment: f['comment'] as String? ?? '',
         verificationMethod: f['verification_method'] as String? ?? '',
         failureReason: f['failure_reason'] as String? ?? '',
-        evidenceCount: (f['evidence_count'] as num?)?.toInt() ?? 0,
+        evidenceCount: f['evidence_count'] == null ? 0 : toInt(f['evidence_count']),
       )));
 
   return insp;

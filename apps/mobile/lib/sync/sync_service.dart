@@ -65,7 +65,9 @@ class SyncService extends ChangeNotifier {
     if (o == null || o.isRejected) {
       throw ApiException(422, '${o?.clause ?? ''}: ${o?.reason ?? 'inspection.open failed'}');
     }
-    final id = (o.result?['inspectionId'] as num).toInt();
+    // Ids may be numbers (PGlite) or strings (node-postgres int8).
+    final raw = o.result?['inspectionId'];
+    final id = raw is num ? raw.toInt() : int.parse('$raw');
     insp.inspectionId = id;
     insp.jobId = jobId;
     notifyListeners();
