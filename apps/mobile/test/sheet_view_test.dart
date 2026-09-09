@@ -51,7 +51,7 @@ void main() {
 
       // Row 1 — class-conditional title and the Evidence Portfolio column label.
       expect(find.text('Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'), findsOneWidget);
-      expect(find.text('Evidence Portifolio'), findsWidgets); // verbatim, typo and all
+      expect(find.text('Evidence Portfolio'), findsWidgets); // source spelt it "Portifolio"; corrected + logged
 
       // Rows 2–14 — every label, in the sheet's words.
       for (final label in [
@@ -92,7 +92,7 @@ void main() {
       expect(find.textContaining('Declaration: I verify that I have examined the evidence'), findsOneWidget);
       expect(find.textContaining('Regulation 13.38'), findsWidgets); // class 6/8 wording, not 17.91
       expect(find.textContaining('Regulation 17.91'), findsNothing);
-      expect(find.text('Section 1/1'), findsOneWidget); // reproduced as-is from the source
+      expect(find.text('Section 1/2'), findsOneWidget); // source said 1/1 on sheet 1 of 2; corrected + logged
       expect(find.textContaining('Decision:'), findsNothing);
     });
   });

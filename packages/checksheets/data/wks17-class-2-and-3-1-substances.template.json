@@ -1,6 +1,6 @@
 {
   "code": "wks17-class-2-and-3-1-substances",
-  "title": "Check sheet Location Class 2 and 3.1 substances substances",
+  "title": "Check sheet Location Class 2 and 3.1 substances",
   "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
   "classScope": [],
   "revision": 1,
@@ -10,11 +10,31 @@
   "source": {
     "workbook": "Abecca Class 2 and 3 location checksheets with feedback.xlsx",
     "sheet": "Class 2 and 3.1 substances",
-    "extractedAt": "2026-09-09T20:12:04.236Z",
-    "extractorVersion": "1.0.0"
+    "extractedAt": "2026-09-09T21:38:02.039Z",
+    "extractorVersion": "1.0.0",
+    "corrections": [
+      {
+        "where": "A1",
+        "from": "Check sheet Location Class 2 and 3.1 substances substances",
+        "to": "Check sheet Location Class 2 and 3.1 substances",
+        "reason": "duplicated word"
+      },
+      {
+        "where": "Scope of Authorisation",
+        "from": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "to": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "reason": "scope text copied from the class 6/8 sheet; class and regulation aligned to this sheet’s own declaration"
+      },
+      {
+        "where": "footer",
+        "from": null,
+        "to": "Section 2/2",
+        "reason": "sheet 2 of 2 in this workbook"
+      }
+    ]
   },
   "sheet": {
-    "title": "Check sheet Location Class 2 and 3.1 substances substances",
+    "title": "Check sheet Location Class 2 and 3.1 substances",
     "evidenceColumnLabel": "Evidence Portfolio",
     "banner": "Requirements specific to class 2 and 3.1 substances",
     "columnHeaders": [
@@ -35,11 +55,11 @@
     },
     "scopeOfAuthorisation": {
       "heading": "Scope of Authorisation",
-      "text": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+      "text": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
       "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
     },
     "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-    "footer": null
+    "footer": "Section 2/2"
   },
   "sections": [
     {

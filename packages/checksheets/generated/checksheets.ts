@@ -68,13 +68,13 @@ export function sheetFor(t: ChecksheetTemplate, classKey?: string): ChecksheetSh
 export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
   {
     "code": "wks17-class-2-and-3-1-substances",
-    "title": "Check sheet Location Class 2 and 3.1 substances substances",
+    "title": "Check sheet Location Class 2 and 3.1 substances",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
     "classScope": [],
     "revision": 1,
     "status": "draft",
     "sheet": {
-      "title": "Check sheet Location Class 2 and 3.1 substances substances",
+      "title": "Check sheet Location Class 2 and 3.1 substances",
       "evidenceColumnLabel": "Evidence Portfolio",
       "banner": "Requirements specific to class 2 and 3.1 substances",
       "columnHeaders": [
@@ -95,11 +95,11 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       },
       "scopeOfAuthorisation": {
         "heading": "Scope of Authorisation",
-        "text": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "text": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
         "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
       },
       "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-      "footer": null
+      "footer": "Section 2/2"
     },
     "sections": [
       {
@@ -1130,7 +1130,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "status": "draft",
     "sheet": {
       "title": null,
-      "evidenceColumnLabel": "Evidence Portifolio",
+      "evidenceColumnLabel": "Evidence Portfolio",
       "banner": null,
       "columnHeaders": [
         "Item",
@@ -1144,7 +1144,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       "documentControl": null,
       "scopeOfAuthorisation": null,
       "reference": null,
-      "footer": "Section 1/1"
+      "footer": "Section 1/2"
     },
     "sheetByClass": {
       "class_6_8": {
@@ -1403,7 +1403,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         "items": [
           {
             "ordinal": 1,
-            "number": null,
+            "number": "1",
             "regulationRefs": [
               "5.6(1)"
             ],
@@ -1415,7 +1415,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 2,
-            "number": null,
+            "number": "2",
             "regulationRefs": [
               "5.7(2)"
             ],
@@ -1427,7 +1427,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 3,
-            "number": null,
+            "number": "3",
             "regulationRefs": [
               "5.7(3)(a)"
             ],
@@ -1439,7 +1439,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 4,
-            "number": null,
+            "number": "4",
             "regulationRefs": [
               "5.7(3)(b)"
             ],
@@ -1451,11 +1451,11 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 5,
-            "number": null,
+            "number": "5",
             "regulationRefs": [
-              "5.7(3)"
+              "5.7(3)(c)"
             ],
-            "regulationRaw": "5.7(3)©",
+            "regulationRaw": "5.7(3)(c)",
             "guidanceUrl": null,
             "action": "Verify that the ERP specifies the prescribed actions",
             "records": "A copy of the ERP, sections of it, or a reference to it",
@@ -1463,7 +1463,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 6,
-            "number": null,
+            "number": "6",
             "regulationRefs": [
               "5.7(3)(d)"
             ],
@@ -1475,7 +1475,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 7,
-            "number": null,
+            "number": "7",
             "regulationRefs": [
               "5.7(4)"
             ],
@@ -1487,7 +1487,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 8,
-            "number": null,
+            "number": "8",
             "regulationRefs": [
               "5.8"
             ],
@@ -1499,7 +1499,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 9,
-            "number": null,
+            "number": "9",
             "regulationRefs": [
               "5.9"
             ],
@@ -1511,11 +1511,11 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 10,
-            "number": null,
+            "number": "10",
             "regulationRefs": [
-              "5.1"
+              "5.10"
             ],
-            "regulationRaw": "5.1",
+            "regulationRaw": "5.10",
             "guidanceUrl": null,
             "action": "Verify that the PCBU is able to confirm the plan is available to every person responsible for executing any part of the plan and emergency service providers identified in the plan",
             "records": "A note recording how the plan has been made available A reference to its location",
@@ -1523,7 +1523,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 11,
-            "number": null,
+            "number": "11",
             "regulationRefs": [
               "5.11"
             ],
@@ -1535,7 +1535,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           },
           {
             "ordinal": 12,
-            "number": null,
+            "number": "12",
             "regulationRefs": [
               "5.12"
             ],

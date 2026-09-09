@@ -279,10 +279,63 @@ function extractSheet(ws, workbookName) {
     });
   }
 
+  // ── Obvious source defects, corrected and logged ─────────────────────────
+  // The workbook is hand-maintained. A handful of things in it are plainly
+  // mechanical errors rather than content. Each is corrected here, once, at
+  // extraction, and every correction is recorded in the template's provenance
+  // so a reviewer can see exactly what was changed and why.
+  const corrections = [];
+  const fix = (where, from, to, reason) => {
+    if (from !== to) corrections.push({ where, from, to, reason });
+    return to;
+  };
+
+  meta.evidenceColumnLabel = meta.evidenceColumnLabel
+    ? fix('F1', meta.evidenceColumnLabel,
+          meta.evidenceColumnLabel.replace(/Portifolio/i, 'Portfolio'), 'spelling')
+    : null;
+
+  meta.title = fix('A1', meta.title,
+    meta.title.replace(/\b(\w+)\s+\1\b/i, '$1'), 'duplicated word');
+
+  const declReg = meta.declaration?.match(/Regulation\s+([\d.]+)/i)?.[1] ?? null;
+  const classPhrase = /class\s+2\s+and\s+3\.1/i.test(meta.title) ? 'classes 2 or 3.1'
+    : /6\.1A|class(es)?\s+6/i.test(meta.title) ? 'classes 6 or 8' : null;
+  if (meta.scopeOfAuthorisation?.text && classPhrase && declReg) {
+    const t = meta.scopeOfAuthorisation.text;
+    const fixed = t
+      .replace(/classes\s+6\s+or\s+8/i, classPhrase)
+      .replace(/Regulation\s+[\d.]+/i, `Regulation ${declReg}`);
+    meta.scopeOfAuthorisation.text = fix('Scope of Authorisation', t, fixed,
+      'scope text copied from the class 6/8 sheet; class and regulation aligned to this sheet’s own declaration');
+  }
+
+  for (const s of sections) {
+    const isErp = /emergency response/i.test(s.title);
+    for (const i of s.items) {
+      if (i.regulationRaw?.includes('©')) {
+        i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, i.regulationRaw,
+          i.regulationRaw.replace(/©/g, '(c)'), 'copyright symbol autocorrected from "(c)"');
+      }
+      if (isErp && i.regulationRaw === '5.1') {
+        i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, '5.1', '5.10',
+          'sits between 5.9 and 5.11; Excel dropped the trailing zero');
+      }
+      const { refs, url } = parseRegulations(i.regulationRaw);
+      i.regulationRefs = refs;
+      i.guidanceUrl = url;
+      if (i.number === null) {
+        i.number = fix(`section ${s.ordinal} item ${i.ordinal} number`, null, String(i.ordinal),
+          'item carried no number in the source; numbered by position');
+      }
+    }
+  }
+
   return {
     sheet: ws.name,
     title: meta.title,
     meta,
+    corrections,
     siteBlock,
     sections,
     findings,
@@ -307,6 +360,9 @@ function buildTemplate(extract, code, opts = {}) {
       sheet: extract.sheet,
       extractedAt: new Date().toISOString(),
       extractorVersion: EXTRACTOR_VERSION,
+      // Every deviation from the source workbook, with its reason. Empty means
+      // the template is verbatim.
+      corrections: extract.corrections ?? [],
     },
     // Everything on the sheet that is not an item, reproduced in place by the app.
     sheet: extract.meta,
@@ -336,12 +392,29 @@ await wb.xlsx.readFile(file);
 mkdirSync(outDir, { recursive: true });
 const results = [];
 
+// Two passes: extract every check sheet first, so the footer ("Section n/N")
+// can be computed from how many check sheets the workbook actually holds.
+// The source says "Section 1/1" on sheet 1 of 2 — an obvious slip, corrected
+// and logged like every other one.
+const extracts = [];
 for (const ws of wb.worksheets) {
   const extract = extractSheet(ws, basename(file));
   if (!extract) {
     console.log(`  skip  "${ws.name}" (no Item/Regulation/Action header row)`);
     continue;
   }
+  extracts.push({ ws, extract });
+}
+extracts.forEach(({ extract }, idx) => {
+  const want = `Section ${idx + 1}/${extracts.length}`;
+  if (extract.meta.footer !== want) {
+    extract.corrections.push({ where: 'footer', from: extract.meta.footer, to: want,
+      reason: `sheet ${idx + 1} of ${extracts.length} in this workbook` });
+    extract.meta.footer = want;
+  }
+});
+
+for (const { ws, extract } of extracts) {
   const slug = (codeBase ? `${codeBase}-` : '') +
     ws.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const template = buildTemplate(extract, slug);
@@ -361,6 +434,9 @@ for (const ws of wb.worksheets) {
     `        ${extract.sections.length} sections, ${items} items, ${extract.findings.length} findings ` +
     `(${nc} non-compliant, ${fromColour} recovered from font colour)`
   );
+  for (const c of extract.corrections) {
+    console.log(`        corrected ${c.where}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)} — ${c.reason}`);
+  }
   results.push({ slug, sections: extract.sections.length, items });
 }
 

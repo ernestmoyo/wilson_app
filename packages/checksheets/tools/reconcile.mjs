@@ -144,6 +144,10 @@ canonical.classScope = [];
 canonical.source = {
   reconciledFrom: loaded.map((l) => ({ path: l.path, classKey: l.classKey, sheet: l.doc.source?.sheet })),
   reconciledAt: new Date().toISOString(),
+  // Every correction applied to any input, tagged with the class family it
+  // came from, so the canonical template's provenance is complete.
+  corrections: loaded.flatMap((l) =>
+    (l.doc.source?.corrections ?? []).map((c) => ({ classKey: l.classKey, ...c }))),
 };
 
 writeFileSync(outPath, JSON.stringify(canonical, null, 2) + '\n');

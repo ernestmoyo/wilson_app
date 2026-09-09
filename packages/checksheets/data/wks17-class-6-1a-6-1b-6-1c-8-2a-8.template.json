@@ -10,8 +10,9 @@
   "source": {
     "workbook": "G2 Chiller Class 6 and 8 location checksheets.xlsx",
     "sheet": "Class 6.1A, 6.1B, 6.1C, 8.2A, 8",
-    "extractedAt": "2026-09-09T20:12:01.529Z",
-    "extractorVersion": "1.0.0"
+    "extractedAt": "2026-09-09T21:37:59.682Z",
+    "extractorVersion": "1.0.0",
+    "corrections": []
   },
   "sheet": {
     "title": "Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances",

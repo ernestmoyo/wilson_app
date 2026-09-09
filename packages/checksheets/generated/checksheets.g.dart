@@ -142,22 +142,22 @@ class ChecksheetTemplate {
 
 const ChecksheetTemplate kWks17Class2And31Substances = ChecksheetTemplate(
   code: 'wks17-class-2-and-3-1-substances',
-  title: 'Check sheet Location Class 2 and 3.1 substances substances',
+  title: 'Check sheet Location Class 2 and 3.1 substances',
   psReference: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard',
   classScope: [],
   revision: 1,
   status: 'draft',
   sheet: SheetMeta(
-    title: 'Check sheet Location Class 2 and 3.1 substances substances',
+    title: 'Check sheet Location Class 2 and 3.1 substances',
     evidenceColumnLabel: 'Evidence Portfolio',
     banner: 'Requirements specific to class 2 and 3.1 substances',
     columnHeaders: ['Item', 'Regulation', 'Action', 'Records', 'Comments'],
     note: 'NB: Non compliances are in red',
     declaration: 'Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)',
     documentControl: {'Owner': 'BW', 'Revision': '1', 'Status': 'Current', 'Date of last revision': '2024-04-25', 'Frequency of revision': 'less than 12 months'},
-    scopeOfAuthorisation: ScopeOfAuthorisation(heading: 'Scope of Authorisation', text: 'Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:', confirmation: 'I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)'),
+    scopeOfAuthorisation: ScopeOfAuthorisation(heading: 'Scope of Authorisation', text: 'Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:', confirmation: 'I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)'),
     reference: 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017',
-    footer: null,
+    footer: 'Section 2/2',
   ),
   sheetByClass: null,
   sections: [
@@ -1104,7 +1104,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
   status: 'draft',
   sheet: SheetMeta(
     title: null,
-    evidenceColumnLabel: 'Evidence Portifolio',
+    evidenceColumnLabel: 'Evidence Portfolio',
     banner: null,
     columnHeaders: ['Item', 'Regulation', 'Action', 'Records', 'Comments'],
     note: 'NB: Non compliances are in red',
@@ -1112,7 +1112,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
     documentControl: null,
     scopeOfAuthorisation: null,
     reference: null,
-    footer: 'Section 1/1',
+    footer: 'Section 1/2',
   ),
   sheetByClass: {'class_6_8': SheetMeta(
         title: 'Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances',
@@ -1356,7 +1356,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
       items: [
         ChecksheetItem(
           ordinal: 1,
-          number: null,
+          number: '1',
           regulationRefs: ['5.6(1)'],
           regulationRefsByClass: null,
           regulationRaw: '5.6(1)',
@@ -1367,7 +1367,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 2,
-          number: null,
+          number: '2',
           regulationRefs: ['5.7(2)'],
           regulationRefsByClass: null,
           regulationRaw: '5.7(2)',
@@ -1378,7 +1378,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 3,
-          number: null,
+          number: '3',
           regulationRefs: ['5.7(3)(a)'],
           regulationRefsByClass: null,
           regulationRaw: '5.7(3)(a)',
@@ -1389,7 +1389,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 4,
-          number: null,
+          number: '4',
           regulationRefs: ['5.7(3)(b)'],
           regulationRefsByClass: null,
           regulationRaw: '5.7(3)(b)',
@@ -1400,10 +1400,10 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 5,
-          number: null,
-          regulationRefs: ['5.7(3)'],
+          number: '5',
+          regulationRefs: ['5.7(3)(c)'],
           regulationRefsByClass: null,
-          regulationRaw: '5.7(3)©',
+          regulationRaw: '5.7(3)(c)',
           guidanceUrl: null,
           action: 'Verify that the ERP specifies the prescribed actions',
           records: 'A copy of the ERP, sections of it, or a reference to it',
@@ -1411,7 +1411,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 6,
-          number: null,
+          number: '6',
           regulationRefs: ['5.7(3)(d)'],
           regulationRefsByClass: null,
           regulationRaw: '5.7(3)(d)',
@@ -1422,7 +1422,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 7,
-          number: null,
+          number: '7',
           regulationRefs: ['5.7(4)'],
           regulationRefsByClass: null,
           regulationRaw: '5.7(4)',
@@ -1433,7 +1433,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 8,
-          number: null,
+          number: '8',
           regulationRefs: ['5.8'],
           regulationRefsByClass: null,
           regulationRaw: '5.8',
@@ -1444,7 +1444,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 9,
-          number: null,
+          number: '9',
           regulationRefs: ['5.9'],
           regulationRefsByClass: null,
           regulationRaw: '5.9',
@@ -1455,10 +1455,10 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 10,
-          number: null,
-          regulationRefs: ['5.1'],
+          number: '10',
+          regulationRefs: ['5.10'],
           regulationRefsByClass: null,
-          regulationRaw: '5.1',
+          regulationRaw: '5.10',
           guidanceUrl: null,
           action: 'Verify that the PCBU is able to confirm the plan is available to every person responsible for executing any part of the plan and emergency service providers identified in the plan',
           records: 'A note recording how the plan has been made available A reference to its location',
@@ -1466,7 +1466,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 11,
-          number: null,
+          number: '11',
           regulationRefs: ['5.11'],
           regulationRefsByClass: null,
           regulationRaw: '5.11',
@@ -1477,7 +1477,7 @@ const ChecksheetTemplate kWks17General = ChecksheetTemplate(
         ),
         ChecksheetItem(
           ordinal: 12,
-          number: null,
+          number: '12',
           regulationRefs: ['5.12'],
           regulationRefsByClass: null,
           regulationRaw: '5.12',

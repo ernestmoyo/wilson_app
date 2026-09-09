@@ -10,20 +10,246 @@
   "source": {
     "reconciledFrom": [
       {
-        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v3g2/wks17-locations-general.template.json",
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v4g2/wks17-locations-general.template.json",
         "classKey": "class_6_8",
         "sheet": "Locations General"
       },
       {
-        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v3ab/wks17-locations-general.template.json",
+        "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v4ab/wks17-locations-general.template.json",
         "classKey": "class_2_3",
         "sheet": "Locations General"
       }
     ],
-    "reconciledAt": "2026-09-09T20:12:04.428Z"
+    "reconciledAt": "2026-09-09T21:38:02.258Z",
+    "corrections": [
+      {
+        "classKey": "class_6_8",
+        "where": "F1",
+        "from": "Evidence Portifolio",
+        "to": "Evidence Portfolio",
+        "reason": "spelling"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 1 number",
+        "from": null,
+        "to": "1",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 2 number",
+        "from": null,
+        "to": "2",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 3 number",
+        "from": null,
+        "to": "3",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 4 number",
+        "from": null,
+        "to": "4",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 5 regulation",
+        "from": "5.7(3)©",
+        "to": "5.7(3)(c)",
+        "reason": "copyright symbol autocorrected from \"(c)\""
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 5 number",
+        "from": null,
+        "to": "5",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 6 number",
+        "from": null,
+        "to": "6",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 7 number",
+        "from": null,
+        "to": "7",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 8 number",
+        "from": null,
+        "to": "8",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 9 number",
+        "from": null,
+        "to": "9",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 10 regulation",
+        "from": "5.1",
+        "to": "5.10",
+        "reason": "sits between 5.9 and 5.11; Excel dropped the trailing zero"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 10 number",
+        "from": null,
+        "to": "10",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 11 number",
+        "from": null,
+        "to": "11",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "section 6 item 12 number",
+        "from": null,
+        "to": "12",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_6_8",
+        "where": "footer",
+        "from": "Section 1/1",
+        "to": "Section 1/2",
+        "reason": "sheet 1 of 2 in this workbook"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "F1",
+        "from": "Evidence Portifolio",
+        "to": "Evidence Portfolio",
+        "reason": "spelling"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 1 number",
+        "from": null,
+        "to": "1",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 2 number",
+        "from": null,
+        "to": "2",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 3 number",
+        "from": null,
+        "to": "3",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 4 number",
+        "from": null,
+        "to": "4",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 5 regulation",
+        "from": "5.7(3)©",
+        "to": "5.7(3)(c)",
+        "reason": "copyright symbol autocorrected from \"(c)\""
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 5 number",
+        "from": null,
+        "to": "5",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 6 number",
+        "from": null,
+        "to": "6",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 7 number",
+        "from": null,
+        "to": "7",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 8 number",
+        "from": null,
+        "to": "8",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 9 number",
+        "from": null,
+        "to": "9",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 10 regulation",
+        "from": "5.1",
+        "to": "5.10",
+        "reason": "sits between 5.9 and 5.11; Excel dropped the trailing zero"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 10 number",
+        "from": null,
+        "to": "10",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 11 number",
+        "from": null,
+        "to": "11",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "section 6 item 12 number",
+        "from": null,
+        "to": "12",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_2_3",
+        "where": "footer",
+        "from": "Section 1/1",
+        "to": "Section 1/2",
+        "reason": "sheet 1 of 2 in this workbook"
+      }
+    ]
   },
   "sheet": {
-    "evidenceColumnLabel": "Evidence Portifolio",
+    "evidenceColumnLabel": "Evidence Portfolio",
     "columnHeaders": [
       "Item",
       "Regulation",
@@ -35,7 +261,7 @@
     "documentControl": null,
     "scopeOfAuthorisation": null,
     "reference": null,
-    "footer": "Section 1/1"
+    "footer": "Section 1/2"
   },
   "sections": [
     {
@@ -282,7 +508,7 @@
       "items": [
         {
           "ordinal": 1,
-          "number": null,
+          "number": "1",
           "regulationRefs": [
             "5.6(1)"
           ],
@@ -294,7 +520,7 @@
         },
         {
           "ordinal": 2,
-          "number": null,
+          "number": "2",
           "regulationRefs": [
             "5.7(2)"
           ],
@@ -306,7 +532,7 @@
         },
         {
           "ordinal": 3,
-          "number": null,
+          "number": "3",
           "regulationRefs": [
             "5.7(3)(a)"
           ],
@@ -318,7 +544,7 @@
         },
         {
           "ordinal": 4,
-          "number": null,
+          "number": "4",
           "regulationRefs": [
             "5.7(3)(b)"
           ],
@@ -330,11 +556,11 @@
         },
         {
           "ordinal": 5,
-          "number": null,
+          "number": "5",
           "regulationRefs": [
-            "5.7(3)"
+            "5.7(3)(c)"
           ],
-          "regulationRaw": "5.7(3)©",
+          "regulationRaw": "5.7(3)(c)",
           "guidanceUrl": null,
           "action": "Verify that the ERP specifies the prescribed actions",
           "records": "A copy of the ERP, sections of it, or a reference to it",
@@ -342,7 +568,7 @@
         },
         {
           "ordinal": 6,
-          "number": null,
+          "number": "6",
           "regulationRefs": [
             "5.7(3)(d)"
           ],
@@ -354,7 +580,7 @@
         },
         {
           "ordinal": 7,
-          "number": null,
+          "number": "7",
           "regulationRefs": [
             "5.7(4)"
           ],
@@ -366,7 +592,7 @@
         },
         {
           "ordinal": 8,
-          "number": null,
+          "number": "8",
           "regulationRefs": [
             "5.8"
           ],
@@ -378,7 +604,7 @@
         },
         {
           "ordinal": 9,
-          "number": null,
+          "number": "9",
           "regulationRefs": [
             "5.9"
           ],
@@ -390,11 +616,11 @@
         },
         {
           "ordinal": 10,
-          "number": null,
+          "number": "10",
           "regulationRefs": [
-            "5.1"
+            "5.10"
           ],
-          "regulationRaw": "5.1",
+          "regulationRaw": "5.10",
           "guidanceUrl": null,
           "action": "Verify that the PCBU is able to confirm the plan is available to every person responsible for executing any part of the plan and emergency service providers identified in the plan",
           "records": "A note recording how the plan has been made available A reference to its location",
@@ -402,7 +628,7 @@
         },
         {
           "ordinal": 11,
-          "number": null,
+          "number": "11",
           "regulationRefs": [
             "5.11"
           ],
@@ -414,7 +640,7 @@
         },
         {
           "ordinal": 12,
-          "number": null,
+          "number": "12",
           "regulationRefs": [
             "5.12"
           ],
