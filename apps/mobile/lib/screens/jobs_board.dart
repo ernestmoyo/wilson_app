@@ -86,8 +86,7 @@ class _JobsBoardState extends State<JobsBoard> {
   }
 
   Future<void> _open(int jobId) async {
-    await context.push('/jobs/$jobId');
-    if (mounted) _reload();
+    context.go('/jobs/$jobId');
   }
 
   Future<void> _createDemo() async {

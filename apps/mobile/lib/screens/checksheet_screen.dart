@@ -83,7 +83,7 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
               if (insp.jobId != null)
                 TextButton.icon(
                   key: const ValueKey('to-job'),
-                  onPressed: () => context.canPop() ? context.pop() : context.go('/jobs/${insp.jobId}'),
+                  onPressed: () => context.go('/jobs/${insp.jobId}'),
                   icon: const Icon(Icons.account_tree_outlined, size: 18, color: Brand.teal),
                   label: const Text('Job', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
                 ),

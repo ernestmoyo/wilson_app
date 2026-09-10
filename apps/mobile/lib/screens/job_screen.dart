@@ -41,6 +41,15 @@ class _JobScreenState extends State<JobScreen> {
     _reload();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Coming back from the sheet (a route pop) re-reads the job so the
+    // counts and the Now card reflect what was just recorded.
+    final route = ModalRoute.of(context);
+    if (route != null && route.isCurrent && _job != null && !_busy) _reload();
+  }
+
   Future<void> _reload() async {
     setState(() => _busy = true);
     try {
@@ -233,8 +242,7 @@ class _JobScreenState extends State<JobScreen> {
   }
 
   Future<void> _openSheet() async {
-    await context.push('/jobs/${widget.jobId}/sheet');
-    if (mounted) await _reload();
+    context.go('/jobs/${widget.jobId}/sheet');
   }
 
   // ── 1 to 8: where the job sits, and the legal next moves ─────────────────
