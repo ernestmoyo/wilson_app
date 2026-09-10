@@ -103,6 +103,12 @@ class _JobScreenState extends State<JobScreen> {
                 trailing: 'Job ${j.id}',
               ),
         actions: [
+          TextButton.icon(
+            key: const ValueKey('to-jobs'),
+            onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
+            label: const Text('Jobs', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh, color: Brand.teal),

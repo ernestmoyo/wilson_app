@@ -36,6 +36,17 @@ class _JobsBoardState extends State<JobsBoard> {
   bool _busy = false;
   String? _error;
 
+  /// Active hides closed, referred and monitoring jobs; the count on the
+  /// header says how many the filter hides.
+  String _filter = 'active';
+
+  static bool _isActive(JobSummary j) => !const {'closed', 'referred', 'monitoring'}.contains(j.stage);
+  List<JobSummary> _visible(List<JobSummary> all) => switch (_filter) {
+        'active' => all.where(_isActive).toList(),
+        'issued' => all.where((j) => j.certificateDecision != null).toList(),
+        _ => all,
+      };
+
   @override
   void initState() {
     super.initState();
@@ -176,17 +187,12 @@ class _JobsBoardState extends State<JobsBoard> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const ValueKey('new-job'),
-        onPressed: _busy ? null : _newJob,
-        icon: const Icon(Icons.add),
-        label: const Text('New job'),
-      ),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 48),
           children: [
+            _headerRow(jobs),
             if (_busy) const LinearProgressIndicator(minHeight: 2),
             if (_error != null)
               Card(
@@ -198,10 +204,54 @@ class _JobsBoardState extends State<JobsBoard> {
                 ),
               ),
             if (jobs != null && jobs.isEmpty) _empty(),
-            if (jobs != null) for (final j in jobs) _card(j),
+            if (jobs != null && jobs.isNotEmpty && _visible(jobs).isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Nothing under this filter.', style: TextStyle(color: Colors.black54)),
+              ),
+            if (jobs != null) for (final j in _visible(jobs)) _card(j),
           ],
         ),
       ),
+    );
+  }
+
+  /// The board's own header: what is listed, a filter, and the New job
+  /// button where the eye lands, not floating in a corner.
+  Widget _headerRow(List<JobSummary>? jobs) {
+    final all = jobs ?? const <JobSummary>[];
+    final shown = _visible(all).length;
+    Widget chip(String key, String label) => ChoiceChip(
+          label: Text(label, style: const TextStyle(fontSize: 12)),
+          selected: _filter == key,
+          onSelected: (_) => setState(() => _filter = key),
+          visualDensity: VisualDensity.compact,
+        );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(children: [
+        Expanded(
+          child: Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Text(
+                jobs == null ? 'Jobs' : '$shown of ${all.length} job${all.length == 1 ? '' : 's'}',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Brand.tealDark),
+              ),
+            ),
+            chip('active', 'Active'),
+            chip('issued', 'Certificate issued'),
+            chip('all', 'All'),
+          ]),
+        ),
+        const SizedBox(width: 12),
+        FilledButton.icon(
+          key: const ValueKey('new-job'),
+          onPressed: _busy ? null : _newJob,
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('New job'),
+        ),
+      ]),
     );
   }
 
@@ -235,7 +285,22 @@ class _JobsBoardState extends State<JobsBoard> {
         onTap: _busy ? null : () => _open(j.id),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
-          child: Column(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 44,
+              height: 44,
+              margin: const EdgeInsets.only(right: 14, top: 2),
+              decoration: BoxDecoration(
+                color: StageChip.colorFor(j.stage).withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                j.certificateDecision != null ? Icons.verified_outlined : Icons.factory_outlined,
+                color: StageChip.colorFor(j.stage),
+                size: 24,
+              ),
+            ),
+            Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
@@ -287,7 +352,8 @@ class _JobsBoardState extends State<JobsBoard> {
                 style: const TextStyle(fontSize: 11, color: Colors.black45),
               ),
             ],
-          ),
+          )),
+          ]),
         ),
       ),
     );

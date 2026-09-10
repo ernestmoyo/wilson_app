@@ -169,6 +169,33 @@ void main() {
     });
   });
 
+  group('SheetView — navigation', () {
+    testWidgets('section chips show progress; a chip jumps; a band row folds its items', (tester) async {
+      final insp = g2();
+      await pumpWide(tester, SheetView(inspection: insp, template: insp.templates.first));
+      final general = insp.templates.first;
+      final signage = general.sections.firstWhere((x) => x.title == 'Signage');
+
+      // A chip per section, with done/total.
+      expect(find.byKey(ValueKey('jump-${signage.ordinal}')), findsOneWidget);
+      expect(find.textContaining('Signage  0/5'), findsOneWidget);
+
+      // Folding hides the items; the band row keeps the count.
+      await tester.tap(find.byKey(const ValueKey('section-1')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Verify that the hazardous substances are present'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('section-1')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Verify that the hazardous substances are present'), findsOneWidget);
+
+      // Jumping brings the section's band row into view.
+      await tester.tap(find.byKey(ValueKey('jump-${signage.ordinal}')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('section-${signage.ordinal}')), findsOneWidget);
+      expect(find.textContaining('Verify that compliant signage is positioned'), findsOneWidget);
+    });
+  });
+
   testWidgets('ChecksheetScreen switches to the sheet layout at ≥ 900 px', (tester) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;

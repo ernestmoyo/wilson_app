@@ -41,13 +41,29 @@ class _SheetViewState extends State<SheetView> {
   /// checklist starts on the first screen.
   bool _siteBlockOpen = false;
 
+  /// Sections fold on their band row; a folded section still shows its
+  /// count. The chip row above the sheet jumps to a section and unfolds it.
+  final Set<int> _folded = {};
+  final Map<int, GlobalKey> _sectionKeys = {};
+  GlobalKey _keyFor(ChecksheetSection s) => _sectionKeys.putIfAbsent(s.ordinal, () => GlobalKey());
+
+  void _jumpTo(ChecksheetSection s) {
+    setState(() => _folded.remove(s.ordinal));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _keyFor(s).currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250), alignment: 0.02);
+      }
+    });
+  }
+
   Inspection get insp => widget.inspection;
   ChecksheetTemplate get t => widget.template;
   SheetMeta get sheet => t.sheetFor(insp.classKey);
   bool get isClassSheet => !t.code.contains('general');
 
   static const _rule = Color(0xFFBDBDBD);
-  static const _cellPad = EdgeInsets.symmetric(horizontal: 8, vertical: 6);
+  static const _cellPad = EdgeInsets.symmetric(horizontal: 8, vertical: 4);
   // Column proportions approximating the workbook's widths.
   static const _flex = [7, 12, 30, 24, 28, 9];
 
@@ -67,8 +83,57 @@ class _SheetViewState extends State<SheetView> {
 
   @override
   Widget build(BuildContext context) {
+    return Column(children: [
+      _jumpBar(),
+      Expanded(child: _sheet()),
+    ]);
+  }
+
+  /// One chip per section: number, a short title, done/total, red when the
+  /// section holds a non-compliance. Stays put while the sheet scrolls.
+  Widget _jumpBar() => Container(
+        color: const Color(0xFFF7F8F8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: SizedBox(
+          height: 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: t.sections.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            itemBuilder: (_, k) {
+              final s = t.sections[k];
+              final findings = s.items.map((i) => insp.findingFor(t, s, i)).toList();
+              final done = findings.where((f) => f.status != FindingStatus.pending).length;
+              final nc = findings.any((f) => f.status == FindingStatus.nonCompliant);
+              final complete = done == s.items.length;
+              return ActionChip(
+                key: ValueKey('jump-${s.ordinal}'),
+                onPressed: () => _jumpTo(s),
+                visualDensity: VisualDensity.compact,
+                side: BorderSide(color: nc ? Brand.nonCompliant : complete ? Brand.compliant : const Color(0xFFCFD8D8)),
+                backgroundColor: Colors.white,
+                label: Text(
+                  '${s.number ?? s.ordinal}  ${_shortTitle(s.title)}  $done/${s.items.length}',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: nc ? Brand.nonCompliant : complete ? Brand.compliant : Colors.black87,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+  static String _shortTitle(String title) {
+    const cut = 22;
+    return title.length <= cut ? title : '${title.substring(0, cut - 1).trimRight()}…';
+  }
+
+  Widget _sheet() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 48),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
       child: Container(
         decoration: BoxDecoration(color: Colors.white, border: Border.all(color: _rule)),
         child: Column(
@@ -80,8 +145,9 @@ class _SheetViewState extends State<SheetView> {
             if (sheet.banner != null) _bandRow(sheet.banner!, bold: true),
             _columnHeaders(),
             for (final s in t.sections) ...[
-              _sectionRow(s),
-              for (final i in s.items) _itemRow(s, i),
+              KeyedSubtree(key: _keyFor(s), child: _sectionRow(s)),
+              if (!_folded.contains(s.ordinal))
+                for (final i in s.items) _itemRow(s, i),
             ],
             if (sheet.note != null) _noteRow(sheet.note!),
             if (sheet.declaration != null) _declaration(sheet.declaration!),
@@ -234,25 +300,47 @@ class _SheetViewState extends State<SheetView> {
     );
   }
 
-  Widget _sectionRow(ChecksheetSection s) => Container(
+  Widget _sectionRow(ChecksheetSection s) {
+    final findings = s.items.map((i) => insp.findingFor(t, s, i)).toList();
+    final done = findings.where((f) => f.status != FindingStatus.pending).length;
+    final nc = findings.where((f) => f.status == FindingStatus.nonCompliant).length;
+    final folded = _folded.contains(s.ordinal);
+    return InkWell(
+      key: ValueKey('section-${s.ordinal}'),
+      onTap: () => setState(() => folded ? _folded.remove(s.ordinal) : _folded.add(s.ordinal)),
+      child: Container(
         color: Brand.band,
         child: _TRow(
           children: [
             Expanded(
               flex: _flex[0],
-              child: _cell(Text(s.number ?? '',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
+              child: _cell(Row(children: [
+                Icon(folded ? Icons.chevron_right : Icons.expand_more, size: 16),
+                const SizedBox(width: 2),
+                Text(s.number ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              ])),
             ),
             Expanded(
               flex: _flex.skip(1).fold(0, (a, b) => a + b),
               child: _cell(
-                Text(s.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                Row(children: [
+                  Expanded(child: Text(s.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))),
+                  if (nc > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text('$nc non-compliant',
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Brand.nonCompliant)),
+                    ),
+                  Text('$done/${s.items.length}', style: const TextStyle(fontSize: 11.5, color: Colors.black54)),
+                ]),
                 left: true,
               ),
             ),
           ],
         ),
-      );
+      ),
+    );
+  }
 
   Widget _itemRow(ChecksheetSection s, ChecksheetItem i) {
     final f = insp.findingFor(t, s, i);
@@ -298,8 +386,8 @@ class _SheetViewState extends State<SheetView> {
             left: true,
           ),
         ),
-        Expanded(flex: _flex[2], child: _cell(Text(i.action, style: const TextStyle(fontSize: 12.5, height: 1.35)), left: true)),
-        Expanded(flex: _flex[3], child: _cell(Text(i.records, style: const TextStyle(fontSize: 12.5, height: 1.35)), left: true)),
+        Expanded(flex: _flex[2], child: _cell(Text(i.action, style: const TextStyle(fontSize: 12, height: 1.3)), left: true)),
+        Expanded(flex: _flex[3], child: _cell(Text(i.records, style: const TextStyle(fontSize: 12, height: 1.3)), left: true)),
         Expanded(
           flex: _flex[4],
           child: _cell(

@@ -24,9 +24,12 @@ const { renderCertificateHtml, CERTIFICATE_DEFAULTS } = renderMod;
 /** Evidence bytes: Vercel Blob when a token is present, local disk otherwise. */
 async function storeEvidence(sha256, ext, buf, mime) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
+    // Private store: a photograph of a hazardous substance location is not a
+    // public document. Bytes come back only through GET /api/evidence/:key,
+    // which needs a signed-in user.
     const { put } = await import('@vercel/blob');
     const key = `evidence/${sha256}.${ext}`;
-    const b = await put(key, buf, { access: 'public', addRandomSuffix: false, contentType: mime });
+    const b = await put(key, buf, { access: 'private', addRandomSuffix: false, contentType: mime });
     return { storageKey: key, url: b.url, backend: 'vercel-blob' };
   }
   // On Vercel the bundle is read-only; /tmp is the only writable path and is
@@ -43,11 +46,12 @@ async function storeEvidence(sha256, ext, buf, mime) {
 
 async function readEvidence(storageKey) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { head } = await import('@vercel/blob');
-    const meta = await head(storageKey).catch(() => null);
-    if (!meta) return null;
-    const r = await fetch(meta.url);
-    return { buf: Buffer.from(await r.arrayBuffer()), mime: meta.contentType };
+    const { get } = await import('@vercel/blob');
+    const r = await get(storageKey, { access: 'private' }).catch(() => null);
+    if (!r || r.statusCode !== 200 || !r.stream) return null;
+    const chunks = [];
+    for await (const c of r.stream) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+    return { buf: Buffer.concat(chunks), mime: r.blob?.contentType ?? null };
   }
   // On Vercel the bundle is read-only; /tmp is the only writable path and is
   // per-instance and ephemeral. That is a smoke-test fallback only — real

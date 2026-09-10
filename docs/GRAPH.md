@@ -244,6 +244,18 @@ nothing on them is decided locally. The one next step per stage is
 `ProcessStage.nextAction`, computed from stage + counts, and the move
 buttons use verbs (`ProcessStage.moveLabel`), not the document's headings.
 
+**Reading a 54-row sheet.** A chip row pinned above the sheet lists every
+section with done/total (red when a non-compliance sits in it, green when
+complete) and jumps to it; a section's band row folds its items and keeps
+the count. Rows 2–14 fold behind a summary line. The wording in every cell
+is still the workbook's.
+
+**Evidence bytes.** `POST /api/evidence/upload` writes to a private Vercel
+Blob store (`BLOB_READ_WRITE_TOKEN`), keyed by the SHA-256 the device
+computed; `GET /api/evidence/:key` streams it back to a signed-in user.
+The record (who, occupation, when, where, hash) stays in Postgres; the store
+holds only bytes. Object lock is the DigitalOcean Spaces step.
+
 **Two devices, one job.** The outbox is on disk (`PrefsOutboxStore`) so a
 change queued in the chiller survives a refresh or a relaunch. The sheet
 pulls the job every 30 s and on Sync now (`SyncService.pull`): server

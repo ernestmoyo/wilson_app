@@ -78,6 +78,21 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
           appBar: BrandBar(
             title: 'Check sheet',
             subtitle: '${insp.locationName} · ${insp.pcbuName}',
+            actions: [
+              if (insp.jobId != null)
+                TextButton.icon(
+                  key: const ValueKey('to-job'),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.account_tree_outlined, size: 18, color: Brand.teal),
+                  label: const Text('Job', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+                ),
+              TextButton.icon(
+                key: const ValueKey('to-jobs'),
+                onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
+                label: const Text('Jobs', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+              ),
+            ],
             bottom: PreferredSize(
               // Context bar 40 + chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
               preferredSize: Size.fromHeight(40 + (widget.sync == null ? 112 : 150)),
