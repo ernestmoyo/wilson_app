@@ -49,7 +49,7 @@ void main() {
   testWidgets('the gate shows sign-in with no session, the inspections after, and sign-out returns', (t) async {
     final store = MemorySessionStore();
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: FakeServer().client_());
-    await t.pumpWidget(MaterialApp(home: AuthGate(store: store, api: api, outboxStore: InMemoryOutboxStore())));
+    await t.pumpWidget(AssureFieldApp(app: AppSession(store: store, api: api, outboxStore: InMemoryOutboxStore())));
     await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('login-submit')), findsOneWidget);
 
@@ -72,7 +72,7 @@ void main() {
     final store = MemorySessionStore();
     await store.save(const Session(token: 'saved', userId: 1, fullName: 'Bryan Wilson', occupation: 'Compliance certifier'));
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: FakeServer().client_());
-    await t.pumpWidget(MaterialApp(home: AuthGate(store: store, api: api, outboxStore: InMemoryOutboxStore())));
+    await t.pumpWidget(AssureFieldApp(app: AppSession(store: store, api: api, outboxStore: InMemoryOutboxStore())));
     await t.pumpAndSettle();
     expect(find.textContaining('G2 Chiller'), findsWidgets);
     expect(api.token, 'saved');

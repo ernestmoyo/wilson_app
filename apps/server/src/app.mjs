@@ -585,7 +585,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
 
   // ── dashboard: what needs attention, and what just happened ─────────────
   app.get('/api/dashboard', wrap(async (_req, res) => {
-    const [renewals, rfi, actions, stalled, activity] = await Promise.all([
+    const [renewals, rfi, actions, stalled, activity, noAction, triage, decide] = await Promise.all([
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, c.expiry_date
                 FROM certificate c JOIN job j ON j.id = c.job_id
                 JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
@@ -620,6 +620,23 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE e.outcome = 'applied'
                 ORDER BY e.occurred_at DESC LIMIT 30`),
+      // Stage 5: a non-compliance with no corrective action yet.
+      db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, count(*)::int AS n
+                FROM finding f JOIN inspection i ON i.id = f.inspection_id JOIN job j ON j.id = i.job_id
+                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                WHERE f.status = 'non_compliant'
+                  AND j.stage IN ('compliance_evaluation', 'gap_closure', 'final_validation')
+                  AND NOT EXISTS (SELECT 1 FROM corrective_action ca WHERE ca.finding_id = f.id)
+                GROUP BY j.id, cl.legal_name, l.name`),
+      // Stages 1 and 2: an enquiry or application untouched for 2 days.
+      db.query(`SELECT j.id AS job_id, j.stage, cl.legal_name AS client, l.name AS location, j.opened_at
+                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM job_stage_transition WHERE job_id = j.id) t ON true
+                WHERE j.stage IN ('enquiry', 'application') AND COALESCE(t.at, j.opened_at) < now() - interval '2 days'`),
+      // Stage 6: at final validation with nothing left to resolve; decide.
+      db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location
+                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                WHERE j.stage = 'final_validation' AND NOT EXISTS (SELECT 1 FROM certificate c WHERE c.job_id = j.id)`),
     ]);
     const reminders = [
       ...renewals.rows.map((r) => ({ kind: 'renewal', jobId: r.job_id, client: r.client, location: r.location,
@@ -630,6 +647,12 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
         when: r.due_date, text: `Corrective action ${new Date(r.due_date) < new Date() ? 'overdue' : 'due'} ${new Date(r.due_date).toISOString().slice(0, 10)}: ${r.description}` })),
       ...stalled.rows.map((r) => ({ kind: 'stalled', jobId: r.job_id, client: r.client, location: r.location,
         when: r.last_at, text: 'Site inspection open with no findings recorded for 14 days' })),
+      ...noAction.rows.map((r) => ({ kind: 'no_action', jobId: r.job_id, client: r.client, location: r.location,
+        when: null, text: `${r.n} non-compliance${r.n === 1 ? '' : 's'} with no corrective action raised` })),
+      ...triage.rows.map((r) => ({ kind: 'triage', jobId: r.job_id, client: r.client, location: r.location,
+        when: r.opened_at, text: r.stage === 'enquiry' ? 'Enquiry waiting for triage' : 'Application pack not yet sent' })),
+      ...decide.rows.map((r) => ({ kind: 'decide', jobId: r.job_id, client: r.client, location: r.location,
+        when: null, text: 'At final validation: run the issuance check and decide' })),
     ];
     res.json({ reminders, activity: activity.rows, mailConfigured: mailConfigured() });
   }));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/session.dart';
 import '../bootstrap.dart';
@@ -9,7 +10,6 @@ import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
-import 'job_screen.dart';
 
 /// The jobs board: every job the server holds, the way a certifier scans
 /// them. Who, where, which stage, what it needs now, when anything last
@@ -86,10 +86,8 @@ class _JobsBoardState extends State<JobsBoard> {
   }
 
   Future<void> _open(int jobId) async {
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => JobScreen(jobId: jobId, sync: widget.sync),
-    ));
-    _reload();
+    await context.push('/jobs/$jobId');
+    if (mounted) _reload();
   }
 
   Future<void> _createDemo() async {
@@ -220,7 +218,7 @@ class _JobsBoardState extends State<JobsBoard> {
           children: [
             _headerRow(jobs),
             if (_busy) const LinearProgressIndicator(minHeight: 2),
-            if (_dash != null && _dash!.reminders.isNotEmpty) _attention(_dash!),
+            if (_dash != null) _attention(_dash!),
             if (_dash != null && _dash!.activity.isNotEmpty) _activity(_dash!),
             if (_error != null)
               Card(
@@ -287,6 +285,9 @@ class _JobsBoardState extends State<JobsBoard> {
         'renewal' => Icons.event_repeat,
         'rfi' => Icons.hourglass_bottom,
         'action' => Icons.build_outlined,
+        'no_action' => Icons.report_gmailerrorred_outlined,
+        'triage' => Icons.inbox_outlined,
+        'decide' => Icons.gavel_outlined,
         _ => Icons.pause_circle_outline,
       };
 
@@ -300,6 +301,11 @@ class _JobsBoardState extends State<JobsBoard> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Needs attention', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Brand.conditional)),
             const SizedBox(height: 4),
+            if (d.reminders.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text('Nothing waiting on you right now.', style: TextStyle(fontSize: 12.5, color: Colors.black54)),
+              ),
             for (final r in d.reminders.take(6))
               InkWell(
                 onTap: _busy ? null : () => _open(r.jobId),

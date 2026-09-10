@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../theme.dart';
 
@@ -39,7 +40,10 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = Navigator.of(context).canPop();
+    // A route-aware back: pops the router's stack (the browser's back does
+    // the same), never the whole app.
+    final router = GoRouter.maybeOf(context);
+    final canPop = router?.canPop() ?? Navigator.of(context).canPop();
     return Material(
       color: Colors.white,
       elevation: 0,
@@ -57,7 +61,7 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                   else if (canPop)
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Brand.teal),
-                      onPressed: () => Navigator.of(context).maybePop(),
+                      onPressed: () => router != null ? router.pop() : Navigator.of(context).maybePop(),
                     )
                   else
                     const SizedBox(width: 12),
@@ -65,7 +69,7 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                   // first route, so pop to it.
                   InkWell(
                     key: const ValueKey('logo-home'),
-                    onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                    onTap: () => router != null ? router.go('/') : Navigator.of(context).popUntil((r) => r.isFirst),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Image.asset(

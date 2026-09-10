@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../generated/checksheets.g.dart';
 import '../models/finding.dart';
@@ -82,13 +83,13 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
               if (insp.jobId != null)
                 TextButton.icon(
                   key: const ValueKey('to-job'),
-                  onPressed: () => Navigator.of(context).maybePop(),
+                  onPressed: () => context.canPop() ? context.pop() : context.go('/jobs/${insp.jobId}'),
                   icon: const Icon(Icons.account_tree_outlined, size: 18, color: Brand.teal),
                   label: const Text('Job', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
                 ),
               TextButton.icon(
                 key: const ValueKey('to-jobs'),
-                onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                onPressed: () => context.go('/'),
                 icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
                 label: const Text('Jobs', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
               ),

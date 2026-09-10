@@ -8,7 +8,6 @@ import 'package:assure_field/auth/session.dart';
 import 'package:assure_field/models/inspection.dart';
 import 'package:assure_field/sync/api_client.dart';
 import 'package:assure_field/sync/outbox.dart';
-import 'package:assure_field/theme.dart';
 
 import 'fake_server.dart';
 
@@ -138,9 +137,8 @@ void main() {
   testWidgets('the board lists the job: client, location, stage, what it needs now', (tester) async {
     final server = FakeServer()..stage = 'site_inspection';
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: server.client_());
-    await tester.pumpWidget(MaterialApp(
-      theme: buildTheme(),
-      home: AuthGate(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
+    await tester.pumpWidget(AssureFieldApp(
+      app: AppSession(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
     ));
     await tester.pumpAndSettle();
     expect(find.text('Argenta Manufacturing Limited'), findsOneWidget);
@@ -158,9 +156,8 @@ void main() {
   testWidgets('board → hub → check sheet, with verbatim section titles', (tester) async {
     final server = FakeServer()..stage = 'site_inspection';
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: server.client_());
-    await tester.pumpWidget(MaterialApp(
-      theme: buildTheme(),
-      home: AuthGate(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
+    await tester.pumpWidget(AssureFieldApp(
+      app: AppSession(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
     ));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('job-7')));

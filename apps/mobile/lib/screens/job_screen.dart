@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../bootstrap.dart' show CurrentUser, itemTotalFor, openInspectionForJob;
+import '../bootstrap.dart' show CurrentUser, itemTotalFor;
 import '../models/job.dart';
 import '../sync/api_client.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
-import 'checksheet_screen.dart';
 
 /// The job through the Assure Safety compliance certification process flow.
 ///
@@ -105,7 +105,7 @@ class _JobScreenState extends State<JobScreen> {
         actions: [
           TextButton.icon(
             key: const ValueKey('to-jobs'),
-            onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            onPressed: () => context.go('/'),
             icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
             label: const Text('Jobs', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
           ),
@@ -233,21 +233,8 @@ class _JobScreenState extends State<JobScreen> {
   }
 
   Future<void> _openSheet() async {
-    setState(() => _busy = true);
-    try {
-      final insp = await openInspectionForJob(api, widget.sync, widget.jobId);
-      if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ChecksheetScreen(inspection: insp, sync: widget.sync, stage: _job?.stage),
-      ));
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
-    } catch (e) {
-      if (mounted) setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-      await _reload();
-    }
+    await context.push('/jobs/${widget.jobId}/sheet');
+    if (mounted) await _reload();
   }
 
   // ── 1 to 8: where the job sits, and the legal next moves ─────────────────

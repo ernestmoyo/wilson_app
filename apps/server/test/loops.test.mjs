@@ -151,6 +151,8 @@ await step('the dashboard carries the corrective action due soon and the activit
   const r = await api.get('/api/dashboard').set(H(tokens.cert));
   expect(r.status === 200, `${r.status}`);
   expect(r.body.reminders.some((x) => x.kind === 'action' && x.jobId === jobId), JSON.stringify(r.body.reminders));
+  // The imported job below has not run yet; this job has an action, so no 'no_action' reminder for it.
+  expect(!r.body.reminders.some((x) => x.kind === 'no_action' && x.jobId === jobId), 'a finding with an action must not be flagged');
   expect(r.body.activity.length >= 5 && r.body.activity[0].user_name, JSON.stringify(r.body.activity[0]));
   expect(r.body.activity.every((a) => a.job_id === jobId), 'activity should resolve the job');
   expect(r.body.mailConfigured === false, 'mail flag');
