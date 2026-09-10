@@ -5,12 +5,8 @@
 // their clauses, and sends the right sync events for the interest declaration
 // and for verifying a corrective action.
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
 import 'package:assure_field/models/job.dart';
 import 'package:assure_field/screens/job_screen.dart';
@@ -18,109 +14,7 @@ import 'package:assure_field/sync/api_client.dart';
 import 'package:assure_field/sync/outbox.dart';
 import 'package:assure_field/sync/sync_service.dart';
 
-class FakeServer {
-  bool declared = false;
-  String caStatus = 'open';
-  String stage = 'final_validation';
-  final List<Map<String, dynamic>> comms = [
-    {
-      'id': 1,
-      'direction': 'outbound',
-      'medium': 'email',
-      'party': 'Jesh Chandra',
-      'summary': 'Sent application form, required documents checklist, terms and fee estimate',
-      'body': null,
-      'occurred_at': '2026-09-02T00:00:00Z',
-    },
-  ];
-  final List<Map<String, dynamic>> events = [];
-
-  Map<String, dynamic> job() => {
-        'id': 7,
-        'stage': stage,
-        'class_key': 'class_6_8',
-        'client': {'legalName': 'Argenta Manufacturing Limited'},
-        'location': {'id': 1, 'name': 'G2 Chiller', 'address': '2 Sterling Avenue'},
-        'inspections': [
-          {'id': 3}
-        ],
-        'findings': [
-          {
-            'id': 11,
-            'inspection_id': 3,
-            'template_code': 'wks17-general',
-            'section_ordinal': 4,
-            'item_ordinal': 4,
-            'status': 'non_compliant',
-            'failure_reason': 'reg 2.6(3): no signage at the room entrance',
-          },
-          {
-            'id': 12,
-            'inspection_id': 3,
-            'template_code': 'wks17-general',
-            'section_ordinal': 1,
-            'item_ordinal': 1,
-            'status': 'compliant',
-          },
-        ],
-        'correctiveActions': [
-          {
-            'id': 1,
-            'finding_id': 11,
-            'severity': 'major',
-            'description': 'Install compliant signage',
-            'due_date': '2026-10-01',
-            'status': caStatus,
-            'reverified_by': caStatus == 'verified' ? 1 : null,
-            'reverified_at': caStatus == 'verified' ? '2026-09-10T00:00:00Z' : null,
-          },
-        ],
-        'transitions': [
-          {'from_stage': 'enquiry', 'to_stage': 'application', 'occurred_at': '2026-09-01T00:00:00Z'},
-          {'from_stage': 'compliance_evaluation', 'to_stage': 'final_validation', 'occurred_at': '2026-09-09T00:00:00Z', 'reason': 'All actions verified'},
-        ],
-        'interestDeclarations': declared ? [{'conflict_found': false}] : [],
-        'certificate': null,
-        'retention': null,
-        'allowedNext': stage == 'document_review'
-            ? ['rfi', 'site_inspection']
-            : ['gap_closure', 'site_inspection', 'certificate_issued'],
-        'communications': comms,
-      };
-
-  Map<String, dynamic> check() => {
-        'canGrant': false,
-        'canIssueConditional': declared,
-        'unresolvedNonCompliances': caStatus == 'verified' ? 0 : 1,
-        'blockers': declared
-            ? []
-            : [
-                {'clause': 'IPS 23(1)', 'reason': 'no interest declaration recorded for job 7'}
-              ],
-      };
-
-  http.Client client() => MockClient((req) async {
-        final path = req.url.path;
-        if (path == '/api/jobs/7') return http.Response(jsonEncode(job()), 200);
-        if (path == '/api/jobs/7/issuance-check') return http.Response(jsonEncode(check()), 200);
-        if (path == '/api/sync') {
-          final body = jsonDecode(req.body) as Map<String, dynamic>;
-          final applied = <Map<String, dynamic>>[];
-          for (final e in (body['events'] as List).cast<Map<String, dynamic>>()) {
-            events.add(e);
-            if (e['type'] == 'interest.declare') declared = true;
-            if (e['type'] == 'corrective_action.update') caStatus = e['payload']['status'] as String;
-            if (e['type'] == 'communication.record') {
-              comms.add({...e['payload'] as Map<String, dynamic>, 'id': comms.length + 1, 'occurred_at': '2026-09-10T00:00:00Z'});
-            }
-            if (e['type'] == 'job.transition') stage = e['payload']['toStage'] as String;
-            applied.add({'id': e['id'], 'result': {}});
-          }
-          return http.Response(jsonEncode({'applied': applied, 'rejected': [], 'duplicate': []}), 200);
-        }
-        return http.Response('not found', 404);
-      });
-}
+import 'fake_server.dart';
 
 void main() {
   late FakeServer server;
@@ -132,7 +26,7 @@ void main() {
       baseUrl: Uri.parse('http://fake.test'),
       deviceId: 'test',
       userId: 1,
-      httpClient: server.client(),
+      httpClient: server.client_(),
     );
     sync = SyncService(outbox: Outbox(InMemoryOutboxStore()), api: api);
   });
@@ -168,7 +62,9 @@ void main() {
     }
     expect(find.byKey(const ValueKey('move-gap_closure')), findsOneWidget);
     expect(find.byKey(const ValueKey('move-site_inspection')), findsOneWidget);
-    expect(find.byKey(const ValueKey('move-certificate_issued')), findsOneWidget);
+    expect(find.byKey(const ValueKey('move-certificate_issued')), findsNothing);
+    expect(find.byKey(const ValueKey('now-card')), findsOneWidget);
+    expect(find.text('Hand to client for gap closure'), findsOneWidget);
     expect(find.byKey(const ValueKey('move-monitoring')), findsNothing);
     expect(find.text('Final Validation'), findsOneWidget);
   });

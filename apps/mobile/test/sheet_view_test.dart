@@ -53,6 +53,11 @@ void main() {
       expect(find.text('Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'), findsOneWidget);
       expect(find.text('Evidence Portfolio'), findsWidgets); // source spelt it "Portifolio"; corrected + logged
 
+      // Rows 2–14 fold behind a one-line summary so the checklist starts on
+      // the first screen; open them, then check every label in the sheet's words.
+      expect(find.text('Show site details'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('site-block-toggle')));
+      await tester.pumpAndSettle();
       // Rows 2–14 — every label, in the sheet's words.
       for (final label in [
         'Legal Entity Name', 'Trading as Name', 'Site / Location Address', 'Postal Address',

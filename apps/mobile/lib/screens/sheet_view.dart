@@ -37,6 +37,10 @@ class _SheetViewState extends State<SheetView> {
   final _comment = <String, TextEditingController>{};
   final _reason = <String, TextEditingController>{};
 
+  /// Rows 2–14 are on the sheet verbatim but folded behind one line, so the
+  /// checklist starts on the first screen.
+  bool _siteBlockOpen = false;
+
   Inspection get insp => widget.inspection;
   ChecksheetTemplate get t => widget.template;
   SheetMeta get sheet => t.sheetFor(insp.classKey);
@@ -72,7 +76,7 @@ class _SheetViewState extends State<SheetView> {
           children: [
             _letterhead(),
             _titleRow(),
-            if (insp.siteBlock != null) ..._siteBlock(insp.siteBlock!),
+            if (insp.siteBlock != null) ..._siteBlockFolded(insp.siteBlock!),
             if (sheet.banner != null) _bandRow(sheet.banner!, bold: true),
             _columnHeaders(),
             for (final s in t.sections) ...[
@@ -146,6 +150,39 @@ class _SheetViewState extends State<SheetView> {
           ),
         ],
       );
+
+  List<Widget> _siteBlockFolded(SiteBlock sb) => [
+        InkWell(
+          key: const ValueKey('site-block-toggle'),
+          onTap: () => setState(() => _siteBlockOpen = !_siteBlockOpen),
+          child: Container(
+            color: const Color(0xFFF4F6F6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(children: [
+              Icon(_siteBlockOpen ? Icons.expand_less : Icons.expand_more, size: 18),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _siteBlockOpen
+                      ? 'Site details (rows 2 to 14)'
+                      : [
+                          sb.legalEntityName,
+                          sb.siteAddress,
+                          if (sb.inspectionDate != null) 'inspected ${SiteBlock.formatDate(sb.inspectionDate)}',
+                          if ((sb.managerName ?? '').isNotEmpty) 'manager ${sb.managerName}',
+                        ].where((x) => x != null && x.isNotEmpty).join('  ·  '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(_siteBlockOpen ? 'Hide' : 'Show site details',
+                  style: const TextStyle(fontSize: 12, color: Brand.teal, fontWeight: FontWeight.w700)),
+            ]),
+          ),
+        ),
+        if (_siteBlockOpen) ..._siteBlock(sb),
+      ];
 
   List<Widget> _siteBlock(SiteBlock sb) => [
         for (final r in sb.rows())

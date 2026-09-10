@@ -188,26 +188,62 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
   );
 }
 
-/// Build the local inspection model for the G2 job, attach sync, and make
-/// sure it exists on the server (opening it if needed), then hydrate the
-/// findings the server already holds so state survives a reload.
-Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
-  final job = await ensureG2Job(api);
+/// The sheets a job's class calls for: the general sheet plus one class sheet.
+List<ChecksheetTemplate> templatesFor(String? classKey) => [
+      kTemplatesByCode['wks17-general']!,
+      if (classKey == 'class_2_3')
+        kTemplatesByCode['wks17-class-2-and-3-1-substances']!
+      else
+        kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!,
+    ];
+
+int itemTotalFor(String? classKey) => templatesFor(classKey).fold(0, (n, t) => n + t.itemCount);
+
+/// Read one job from the server into a ServerJob (the site block, signatures
+/// and certificate come from the same payload).
+Future<ServerJob> fetchJob(ApiClient api, int jobId) async {
+  final full = await api.getJson('/api/jobs/$jobId') as Map<String, dynamic>;
+  final inspections = (full['inspections'] as List?) ?? const [];
+  final loc = full['location'] as Map<String, dynamic>;
+  return ServerJob(
+    jobId: jobId,
+    hsLocationId: toInt(loc['id']),
+    inspectionId: inspections.isEmpty ? null : toInt((inspections.first as Map)['id']),
+    stage: full['stage'] as String,
+    classKey: full['class_key'] as String?,
+    findings: (full['findings'] as List?) ?? const [],
+    raw: full,
+  );
+}
+
+/// Open any job's inspection: build the local model from the payload, walk
+/// the job to site_inspection if it is still ahead of it, open the inspection
+/// on the server if needed, then hydrate. Works the same from a phone or a
+/// laptop, which is what lets an inspection start on one and finish on the
+/// other.
+Future<Inspection> openInspectionForJob(ApiClient api, SyncService sync, int jobId) async {
+  var job = await fetchJob(api, jobId);
+  final client = Map<String, dynamic>.from(job.raw['client'] as Map);
+  final loc = Map<String, dynamic>.from(job.raw['location'] as Map);
+
+  // The demo job predates contacts and substances on the server; backfill
+  // its site block once. Other jobs carry theirs from creation.
+  if (loc['name'] == 'G2 Chiller' &&
+      (((job.raw['contacts'] as List?) ?? const []).isEmpty ||
+          ((job.raw['substances'] as List?) ?? const []).isEmpty)) {
+    await api.postJson('/api/jobs/$jobId/site-block', {'contacts': g2Contacts, 'substances': g2Substances});
+    job = await fetchJob(api, jobId);
+  }
 
   final insp = Inspection(
-    locationName: 'G2 Chiller',
-    pcbuName: 'Argenta Manufacturing Limited',
-    siteAddress: '2 Sterling Avenue, Manurewa East, Auckland 2102',
+    locationName: loc['name'] as String? ?? '',
+    pcbuName: client['legalName'] as String? ?? '',
+    siteAddress: loc['address'] as String? ?? '',
     certifierName: CurrentUser.name,
     classKey: job.classKey ?? 'class_6_8',
-    templates: [
-      kTemplatesByCode['wks17-general']!,
-      kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!,
-    ],
+    templates: templatesFor(job.classKey ?? 'class_6_8'),
   )..jobId = job.jobId;
 
-  // Move the job to site_inspection if it is still at the front of the flow.
-  // The server enforces legality; we only ask.
   const path = ['application', 'document_review', 'site_inspection'];
   if (job.stage == 'enquiry' || job.stage == 'application' || job.stage == 'document_review') {
     final start = job.stage == 'enquiry' ? 0 : path.indexOf(job.stage) + 1;
@@ -223,22 +259,29 @@ Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
   } else {
     await sync.openInspection(insp, jobId: job.jobId, hsLocationId: job.hsLocationId);
   }
+  applyJobToInspection(insp, job);
+  return insp;
+}
 
-  // Hydrate what the server already knows without re-enqueueing it.
-  insp.hydrate(job.findings.cast<Map<String, dynamic>>().map((f) => HydratedFinding(
-        templateCode: f['template_code'] as String,
-        sectionOrdinal: toInt(f['section_ordinal']),
-        itemOrdinal: toInt(f['item_ordinal']),
-        status: FindingStatus.fromWire(f['status'] as String),
-        comment: f['comment'] as String? ?? '',
-        verificationMethod: f['verification_method'] as String? ?? '',
-        failureReason: f['failure_reason'] as String? ?? '',
-        evidenceCount: f['evidence_count'] == null ? 0 : toInt(f['evidence_count']),
-      )));
+/// Everything in a job payload that the inspection model shows: findings,
+/// rows 2 to 14, the two signatures, the certificate decision. Used on first
+/// open and on every pull, so a change made on another device lands here.
+void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal = const {}}) {
+  insp.hydrate(job.findings
+      .cast<Map<String, dynamic>>()
+      .where((f) => job.inspectionId == null || toInt(f['inspection_id']) == insp.inspectionId)
+      .where((f) => !keepLocal.contains('${f['template_code']}/${f['section_ordinal']}/${f['item_ordinal']}'))
+      .map((f) => HydratedFinding(
+            templateCode: f['template_code'] as String,
+            sectionOrdinal: toInt(f['section_ordinal']),
+            itemOrdinal: toInt(f['item_ordinal']),
+            status: FindingStatus.fromWire(f['status'] as String),
+            comment: f['comment'] as String? ?? '',
+            verificationMethod: f['verification_method'] as String? ?? '',
+            failureReason: f['failure_reason'] as String? ?? '',
+            evidenceCount: f['evidence_count'] == null ? 0 : toInt(f['evidence_count']),
+          )));
 
-  // Rows 2–14 and the trailing blocks come from the same payload. On a job's
-  // first open the inspection did not exist when the payload was fetched, so
-  // row 11 falls back to what was just recorded locally.
   final sb = job.siteBlock();
   insp.siteBlock = sb.inspectionDate != null
       ? sb
@@ -274,6 +317,12 @@ Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
     insp.requirementsNotMet = ((cert['requirements_not_met'] as List?) ?? const []).map((x) => '$x').toList();
     insp.conditions = ((cert['conditions'] as List?) ?? const []).map((x) => '$x').toList();
   }
+}
 
-  return insp;
+/// Build the local inspection model for the G2 job, attach sync, and make
+/// sure it exists on the server (opening it if needed), then hydrate the
+/// findings the server already holds so state survives a reload.
+Future<Inspection> openG2Inspection(ApiClient api, SyncService sync) async {
+  final job = await ensureG2Job(api);
+  return openInspectionForJob(api, sync, job.jobId);
 }

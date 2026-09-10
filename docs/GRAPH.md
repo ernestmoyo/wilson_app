@@ -227,6 +227,31 @@ The last four are the ones a spreadsheet cannot enforce and a database can. That
 
 ---
 
+### 3a. The screen graph: Client → Job → Stage → Task
+
+```
+ Sign in ──► Jobs board ──tap job──► Job hub ──"Now" button──► Check sheet (stage 4)
+             (GET /api/jobs)         (GET /api/jobs/:id)         (SheetView / list)
+             client · location ·     context bar on every       context bar, folded
+             stage chip · next       job screen; Now card       site block, section
+             action · progress ·     names the one next step    rows verbatim
+             last activity           and opens it
+```
+
+Every screen answers "which client, where, what stage" in the same strip
+(`JobContextBar`). The board and the hub are read models over the server;
+nothing on them is decided locally. The one next step per stage is
+`ProcessStage.nextAction`, computed from stage + counts, and the move
+buttons use verbs (`ProcessStage.moveLabel`), not the document's headings.
+
+**Two devices, one job.** The outbox is on disk (`PrefsOutboxStore`) so a
+change queued in the chiller survives a refresh or a relaunch. The sheet
+pulls the job every 30 s and on Sync now (`SyncService.pull`): server
+findings are merged in except where this device holds an unsent change for
+the same item (the local version is about to win on the server anyway), and
+the screen says "N items updated from another device". Start on the phone,
+finish on the laptop, or the reverse.
+
 ### 3b. The process flow on screen
 
 Stage 4 is the check sheet screen. Every other stage of the document is the

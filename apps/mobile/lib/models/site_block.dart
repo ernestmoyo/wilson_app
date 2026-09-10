@@ -44,6 +44,8 @@ class SiteBlock {
     this.summary,
   });
 
+  static String formatDate(DateTime? d) => _d(d);
+
   static String _d(DateTime? d) {
     if (d == null) return '';
     final l = d.toLocal();

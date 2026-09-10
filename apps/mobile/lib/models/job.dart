@@ -46,6 +46,130 @@ class ProcessStage {
         'referred' => 'Referred (out of scope)',
         _ => flow.firstWhere((s) => s.key == key, orElse: () => ProcessStage(0, key, key)).title,
       };
+
+  /// Short form for chips and cards.
+  static String short(String key) => switch (key) {
+        'enquiry' => 'Enquiry',
+        'application' => 'Application',
+        'document_review' => 'Document review',
+        'rfi' => 'Awaiting information',
+        'site_inspection' => 'Site inspection',
+        'compliance_evaluation' => 'Compliance evaluation',
+        'gap_closure' => 'Gap closure',
+        'final_validation' => 'Final validation',
+        'certificate_issued' => 'Certificate issued',
+        'monitoring' => 'Monitoring',
+        'closed' => 'Closed',
+        'referred' => 'Referred',
+        _ => key,
+      };
+
+  /// What the button that moves a job to [next] should say: a verb, not a
+  /// document heading.
+  static String moveLabel(String from, String next) => switch (next) {
+        'application' => 'Accept enquiry, start application',
+        'document_review' => from == 'rfi' ? 'Information received, resume review' : 'Start document review',
+        'rfi' => 'Request further information',
+        'site_inspection' => from == 'final_validation' ? 'Send back for re-inspection' : 'Start site inspection',
+        'compliance_evaluation' => from == 'gap_closure' ? 'Client done, re-evaluate' : 'Start compliance evaluation',
+        'gap_closure' => 'Hand to client for gap closure',
+        'final_validation' => 'Start final validation',
+        'certificate_issued' => 'Issue certificate',
+        'monitoring' => 'Certificate sent, start monitoring',
+        'enquiry' => 'Renewal: open a new enquiry',
+        'closed' => 'Close job',
+        'referred' => 'Out of scope, refer elsewhere',
+        _ => label(next),
+      };
+
+  /// The one line a certifier reads first: what this job needs now.
+  static String nextAction(String stage, {int itemTotal = 0, int assessed = 0, int nonCompliant = 0,
+      bool interestDeclared = false, int openActions = 0, String? certificateDecision}) {
+    final pending = itemTotal - assessed;
+    return switch (stage) {
+      'enquiry' => 'Triage the enquiry: in scope, urgent?',
+      'application' => 'Send the application pack and quote',
+      'document_review' => 'Review the documents; request anything missing',
+      'rfi' => 'Waiting on the client for further information',
+      'site_inspection' => itemTotal == 0
+          ? 'Start the site inspection'
+          : pending > 0
+              ? 'Continue the inspection: $assessed of $itemTotal items assessed'
+              : 'Inspection complete: start compliance evaluation',
+      'compliance_evaluation' => nonCompliant > 0
+          ? '$nonCompliant non-compliance${nonCompliant == 1 ? '' : 's'}: raise and track corrective actions'
+          : 'No non-compliances: start final validation',
+      'gap_closure' => openActions > 0
+          ? 'Client remediating: $openActions action${openActions == 1 ? '' : 's'} still open'
+          : 'Client remediating',
+      'final_validation' => !interestDeclared
+          ? 'Answer the register of interests, then run the issuance check'
+          : 'Run the issuance check and issue the certificate',
+      'certificate_issued' => 'Send the certificate to the client, then start monitoring',
+      'monitoring' => certificateDecision == 'conditional'
+          ? 'Conditional certificate: follow up the conditions'
+          : 'Renewal reminder 3 to 6 months before expiry',
+      'closed' => 'Closed',
+      'referred' => 'Referred to another provider',
+      _ => '',
+    };
+  }
+}
+
+/// One row of the jobs board, as GET /api/jobs returns it.
+class JobSummary {
+  final int id;
+  final String stage;
+  final String? classKey;
+  final String clientName;
+  final String? tradingName;
+  final String locationName;
+  final String? address;
+  final DateTime? openedAt;
+  final int? inspectionId;
+  final int itemTotal;
+  final int assessed;
+  final int nonCompliant;
+  final String? certificateDecision;
+  final DateTime? lastActivity;
+
+  const JobSummary({
+    required this.id,
+    required this.stage,
+    this.classKey,
+    required this.clientName,
+    this.tradingName,
+    required this.locationName,
+    this.address,
+    this.openedAt,
+    this.inspectionId,
+    this.itemTotal = 0,
+    this.assessed = 0,
+    this.nonCompliant = 0,
+    this.certificateDecision,
+    this.lastActivity,
+  });
+
+  int get pending => itemTotal - assessed;
+  String get nextAction => ProcessStage.nextAction(stage,
+      itemTotal: itemTotal, assessed: assessed, nonCompliant: nonCompliant, certificateDecision: certificateDecision);
+
+  factory JobSummary.fromJson(Map<String, dynamic> j) => JobSummary(
+        id: _int(j['id']),
+        stage: j['stage'] as String,
+        classKey: j['class_key'] as String?,
+        clientName: j['client'] as String? ?? '',
+        tradingName: j['trading_name'] as String?,
+        locationName: j['location'] as String? ?? '',
+        address: j['address'] as String?,
+        openedAt: j['opened_at'] == null ? null : DateTime.tryParse('${j['opened_at']}'),
+        inspectionId: j['inspection_id'] == null ? null : _int(j['inspection_id']),
+        itemTotal: j['item_total'] == null ? 0 : _int(j['item_total']),
+        assessed: j['assessed'] == null ? 0 : _int(j['assessed']),
+        nonCompliant: j['non_compliant'] == null ? 0 : _int(j['non_compliant']),
+        certificateDecision: j['certificate_decision'] as String?,
+        lastActivity: j['last_activity'] == null ? null : DateTime.tryParse('${j['last_activity']}'),
+      );
 }
 
 class JobFinding {
@@ -57,6 +181,7 @@ class JobFinding {
   final String status;
   final String? comment;
   final String? failureReason;
+  final DateTime? updatedAt;
   const JobFinding({
     required this.id,
     required this.inspectionId,
@@ -66,6 +191,7 @@ class JobFinding {
     required this.status,
     this.comment,
     this.failureReason,
+    this.updatedAt,
   });
 
   String get ref => '${templateCode == 'wks17-general' ? 'General' : 'Class sheet'} '
@@ -152,6 +278,7 @@ class JobCertificate {
 class JobRecord {
   final int id;
   final String stage;
+  final String? classKey;
   final List<String> allowedNext;
   final String clientName;
   final String locationName;
@@ -169,6 +296,7 @@ class JobRecord {
   const JobRecord({
     required this.id,
     required this.stage,
+    this.classKey,
     required this.allowedNext,
     required this.clientName,
     required this.locationName,
@@ -188,6 +316,8 @@ class JobRecord {
   List<CorrectiveAction> actionsFor(int findingId) =>
       correctiveActions.where((c) => c.findingId == findingId).toList();
   int get pendingCount => findings.where((f) => f.status == 'pending').length;
+  int get assessedCount => findings.where((f) => f.status != 'pending').length;
+  int get openActions => correctiveActions.where((c) => !c.isVerified).length;
 
   static DateTime? _d(Object? v) => v == null ? null : DateTime.tryParse('$v');
   static List<String> _strings(Object? v) =>
@@ -203,6 +333,7 @@ class JobRecord {
     return JobRecord(
       id: _int(j['id']),
       stage: j['stage'] as String,
+      classKey: j['class_key'] as String?,
       allowedNext: _strings(j['allowedNext']),
       clientName: client['legalName'] as String? ?? '',
       locationName: loc['name'] as String? ?? '',
@@ -219,6 +350,7 @@ class JobRecord {
             status: f['status'] as String,
             comment: f['comment'] as String?,
             failureReason: f['failure_reason'] as String?,
+            updatedAt: _d(f['updated_at']),
           ),
       ],
       correctiveActions: [

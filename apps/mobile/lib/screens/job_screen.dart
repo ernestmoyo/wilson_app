@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../bootstrap.dart' show CurrentUser;
+import '../bootstrap.dart' show CurrentUser, itemTotalFor, openInspectionForJob;
 import '../models/job.dart';
 import '../sync/api_client.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
+import '../widgets/job_context_bar.dart';
+import 'checksheet_screen.dart';
 
 /// The job through the Assure Safety compliance certification process flow.
 ///
@@ -89,8 +91,17 @@ class _JobScreenState extends State<JobScreen> {
     final j = _job;
     return Scaffold(
       appBar: BrandBar(
-        title: j == null ? 'Job' : 'Job ${j.id}: ${j.locationName}',
+        title: j == null ? 'Job' : j.locationName,
         subtitle: j?.clientName,
+        bottom: j == null
+            ? null
+            : JobContextBar(
+                clientName: j.clientName,
+                locationName: j.locationName,
+                address: j.address,
+                stage: j.stage,
+                trailing: 'Job ${j.id}',
+              ),
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -113,6 +124,7 @@ class _JobScreenState extends State<JobScreen> {
               children: [
                 if (_busy) const LinearProgressIndicator(minHeight: 2),
                 if (_error != null) _errorBanner(),
+                _nowCard(j),
                 _stageCard(j),
                 _communicationsCard(j),
                 _interestCard(j),
@@ -156,6 +168,81 @@ class _JobScreenState extends State<JobScreen> {
           ),
         ),
       );
+
+  // ── Now: the one thing this job needs, and the button that does it ───────
+
+  Widget _nowCard(JobRecord j) {
+    final total = j.inspectionId == null ? 0 : itemTotalFor(j.classKey);
+    final text = ProcessStage.nextAction(
+      j.stage,
+      itemTotal: total,
+      assessed: j.assessedCount,
+      nonCompliant: j.nonCompliances.length,
+      interestDeclared: j.interestDeclared,
+      openActions: j.openActions,
+      certificateDecision: j.certificate?.decision,
+    );
+    final n = ProcessStage.numberOf(j.stage);
+    final sheetLabel = j.inspectionId == null
+        ? 'Start site inspection'
+        : n <= 4
+            ? 'Continue check sheet'
+            : 'Open check sheet';
+    final canIssue = j.stage == 'final_validation' && j.certificate == null;
+    return Card(
+      key: const ValueKey('now-card'),
+      margin: const EdgeInsets.only(bottom: 12),
+      color: const Color(0xFFE6F1F1),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('NOW', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: Brand.tealDark)),
+          const SizedBox(height: 4),
+          Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Brand.tealDark)),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            if (n <= 4 || j.inspectionId != null)
+              FilledButton.icon(
+                key: const ValueKey('open-sheet'),
+                onPressed: _busy || n == 0 ? null : _openSheet,
+                icon: const Icon(Icons.fact_check_outlined, size: 18),
+                label: Text(sheetLabel),
+              ),
+            if (canIssue)
+              FilledButton.icon(
+                onPressed: _busy ? null : _issue,
+                icon: const Icon(Icons.verified_outlined, size: 18),
+                label: const Text('Issue certificate'),
+              ),
+            if (j.certificate != null)
+              OutlinedButton.icon(
+                onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: const Text('Open certificate'),
+              ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _openSheet() async {
+    setState(() => _busy = true);
+    try {
+      final insp = await openInspectionForJob(api, widget.sync, widget.jobId);
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => ChecksheetScreen(inspection: insp, sync: widget.sync, stage: _job?.stage),
+      ));
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      await _reload();
+    }
+  }
 
   // ── 1 to 8: where the job sits, and the legal next moves ─────────────────
 
@@ -217,11 +304,11 @@ class _JobScreenState extends State<JobScreen> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final next in j.allowedNext)
+          for (final next in j.allowedNext.where((n) => n != 'certificate_issued'))
             OutlinedButton(
               key: ValueKey('move-$next'),
               onPressed: _busy ? null : () => _move(next),
-              child: Text(ProcessStage.label(next), style: const TextStyle(fontSize: 12)),
+              child: Text(ProcessStage.moveLabel(j.stage, next), style: const TextStyle(fontSize: 12)),
             ),
         ],
       ),
@@ -233,7 +320,7 @@ class _JobScreenState extends State<JobScreen> {
 
   Future<void> _move(String next) async {
     final reason = await _askText(
-      title: 'Move to ${ProcessStage.label(next)}',
+      title: ProcessStage.moveLabel(_job?.stage ?? '', next),
       label: 'Reason (recorded against the move)',
       hint: next == 'certificate_issued' ? 'Use the Certificate card to issue' : 'e.g. Site visit completed 10/09/2026',
     );

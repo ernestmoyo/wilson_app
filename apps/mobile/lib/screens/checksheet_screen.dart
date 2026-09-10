@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../generated/checksheets.g.dart';
@@ -6,8 +8,8 @@ import '../models/inspection.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
+import '../widgets/job_context_bar.dart';
 import 'item_screen.dart';
-import 'job_screen.dart';
 import 'sheet_view.dart';
 
 /// The inspection screen: every section and item of the applicable check
@@ -19,7 +21,10 @@ import 'sheet_view.dart';
 class ChecksheetScreen extends StatefulWidget {
   final Inspection inspection;
   final SyncService? sync;
-  const ChecksheetScreen({super.key, required this.inspection, this.sync});
+
+  /// The job's stage, for the context bar. The sheet itself is stage 4.
+  final String? stage;
+  const ChecksheetScreen({super.key, required this.inspection, this.sync, this.stage});
 
   @override
   State<ChecksheetScreen> createState() => _ChecksheetScreenState();
@@ -28,33 +33,63 @@ class ChecksheetScreen extends StatefulWidget {
 class _ChecksheetScreenState extends State<ChecksheetScreen> {
   int _templateIndex = 0;
   final Set<int> _collapsed = {};
+  Timer? _pull;
 
   Inspection get insp => widget.inspection;
   ChecksheetTemplate get template => insp.templates[_templateIndex];
+
+  @override
+  void initState() {
+    super.initState();
+    // Every 30 s bring in what another device recorded. Local unsent changes
+    // are left alone; see SyncService.pull.
+    final sync = widget.sync;
+    if (sync != null && insp.jobId != null) {
+      _pull = Timer.periodic(const Duration(seconds: 30), (_) => sync.pull(insp).catchError((_) => 0));
+    }
+  }
+
+  @override
+  void dispose() {
+    _pull?.cancel();
+    super.dispose();
+  }
+
+  void _announceRemote(SyncService s) {
+    if (s.remoteChanges == 0) return;
+    final n = s.remoteChanges;
+    s.remoteChanges = 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$n item${n == 1 ? '' : 's'} updated from another device'),
+        duration: const Duration(seconds: 3),
+      ));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([insp, if (widget.sync != null) widget.sync!]),
       builder: (context, _) {
+        if (widget.sync != null) _announceRemote(widget.sync!);
         return Scaffold(
           appBar: BrandBar(
-            title: insp.locationName,
-            subtitle: insp.pcbuName,
-            actions: [
-              if (widget.sync != null && insp.jobId != null)
-                TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => JobScreen(jobId: insp.jobId!, sync: widget.sync!),
-                  )),
-                  icon: const Icon(Icons.account_tree_outlined, size: 18, color: Brand.teal),
-                  label: const Text('Job', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
-                ),
-            ],
+            title: 'Check sheet',
+            subtitle: '${insp.locationName} · ${insp.pcbuName}',
             bottom: PreferredSize(
-              // Measured: chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
-              preferredSize: Size.fromHeight(widget.sync == null ? 112 : 150),
-              child: _header(),
+              // Context bar 40 + chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
+              preferredSize: Size.fromHeight(40 + (widget.sync == null ? 112 : 150)),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                JobContextBar(
+                  clientName: insp.pcbuName,
+                  locationName: insp.locationName,
+                  address: insp.siteAddress,
+                  stage: widget.stage ?? 'site_inspection',
+                ),
+                _header(),
+              ]),
             ),
           ),
           // Wide (normal web, iPad landscape): the sheet as the workbook lays
@@ -149,7 +184,7 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
               // reg 13.39 — surfaced continuously so the decision is never a
               // guess made at the end.
               _pill(
-                insp.canGrant ? 'Can grant' : 'Cannot grant',
+                insp.canGrant ? 'Can grant' : 'Cannot grant yet',
                 insp.canGrant ? Brand.compliant : Brand.tealDark,
               ),
             ],
@@ -200,7 +235,7 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
         SizedBox(
           height: 28,
           child: TextButton.icon(
-            onPressed: s.isFlushing ? null : () => s.flush(),
+            onPressed: s.isFlushing ? null : () => s.syncNow(insp),
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10),

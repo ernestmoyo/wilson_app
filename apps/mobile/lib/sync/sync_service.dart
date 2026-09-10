@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../bootstrap.dart' show applyJobToInspection, fetchJob;
 import '../models/finding.dart';
 import '../models/inspection.dart';
 import 'api_client.dart';
@@ -18,7 +19,12 @@ class SyncService extends ChangeNotifier {
 
   bool _flushing = false;
   DateTime? lastFlushAt;
+  DateTime? lastPullAt;
   String? lastError;
+
+  /// Findings changed by a pull since the last time the UI looked. The
+  /// screen shows "updated from another device" and resets it.
+  int remoteChanges = 0;
 
   SyncService({required this.outbox, required this.api});
 
@@ -107,6 +113,45 @@ class SyncService extends ChangeNotifier {
       lastError = e.toString();
     } finally {
       _flushing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Bring in what the server holds that this device does not: findings,
+  /// signatures, the certificate. A finding with an unsent local change is
+  /// left alone (the local version is about to win on the server anyway).
+  /// Returns how many findings changed.
+  Future<int> pull(Inspection insp) async {
+    if (insp.jobId == null) return 0;
+    await outbox.load();
+    final keepLocal = outbox.pending
+        .where((e) => e.type == 'finding.upsert')
+        .map((e) => '${e.payload['templateCode']}/${e.payload['sectionOrdinal']}/${e.payload['itemOrdinal']}')
+        .toSet();
+    final before = {for (final f in insp.findings) f.key: _fingerprint(f)};
+    final job = await fetchJob(api, insp.jobId!);
+    applyJobToInspection(insp, job, keepLocal: keepLocal);
+    var changed = 0;
+    for (final f in insp.findings) {
+      if (before[f.key] != _fingerprint(f)) changed++;
+    }
+    lastPullAt = DateTime.now();
+    remoteChanges += changed;
+    notifyListeners();
+    return changed;
+  }
+
+  static String _fingerprint(Finding f) =>
+      '${f.status.wireValue}|${f.comment}|${f.verificationMethod}|${f.failureReason}|${f.evidenceIds.length}';
+
+  /// Send, then pull: the button a person presses when they want this screen
+  /// to match the other device right now.
+  Future<void> syncNow(Inspection insp) async {
+    await flush();
+    try {
+      await pull(insp);
+    } catch (e) {
+      lastError ??= e.toString();
       notifyListeners();
     }
   }

@@ -167,15 +167,40 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   }));
 
   // ── jobs ─────────────────────────────────────────────────────────────────
+  /**
+   * The jobs board. One row per job with what a certifier scans for: who,
+   * where, which stage, how far the inspection has got, and when anything
+   * last happened. Computed here so every device sees the same numbers.
+   */
   app.get('/api/jobs', wrap(async (_req, res) => {
     const r = await db.query(`
       SELECT j.id, j.stage, j.class_key, j.opened_at,
-             c.legal_name AS client, l.name AS location, s.address
+             c.legal_name AS client, c.trading_name, l.name AS location, s.address,
+             i.id AS inspection_id, i.inspected_at,
+             COALESCE(items.n, 0)::int       AS item_total,
+             COALESCE(fc.assessed, 0)::int   AS assessed,
+             COALESCE(fc.non_compliant, 0)::int AS non_compliant,
+             cert.decision                   AS certificate_decision,
+             GREATEST(j.opened_at, tr.at, fc.last_at, cm.at) AS last_activity
       FROM job j
       JOIN client c ON c.id = j.client_id
       LEFT JOIN hs_location l ON l.id = j.hs_location_id
       LEFT JOIN site s ON s.id = l.site_id
-      ORDER BY j.opened_at DESC`);
+      LEFT JOIN LATERAL (SELECT id, inspected_at FROM inspection
+                         WHERE job_id = j.id ORDER BY inspected_at DESC LIMIT 1) i ON true
+      LEFT JOIN LATERAL (SELECT count(ci.id) AS n
+                         FROM inspection_template it
+                         JOIN checksheet_section cs ON cs.template_id = it.template_id
+                         JOIN checksheet_item ci ON ci.section_id = cs.id
+                         WHERE it.inspection_id = i.id) items ON true
+      LEFT JOIN LATERAL (SELECT count(*) FILTER (WHERE f.status <> 'pending') AS assessed,
+                                count(*) FILTER (WHERE f.status = 'non_compliant') AS non_compliant,
+                                max(f.updated_at) AS last_at
+                         FROM finding f WHERE f.inspection_id = i.id) fc ON true
+      LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM job_stage_transition WHERE job_id = j.id) tr ON true
+      LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM communication WHERE job_id = j.id) cm ON true
+      LEFT JOIN LATERAL (SELECT decision FROM certificate WHERE job_id = j.id LIMIT 1) cert ON true
+      ORDER BY last_activity DESC NULLS LAST, j.id DESC`);
     res.json(r.rows);
   }));
 
@@ -295,7 +320,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 WHERE i.job_id = $1 GROUP BY i.id ORDER BY i.inspected_at DESC`, [id]),
       db.query(`SELECT f.id, f.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal,
                        i.ordinal AS item_ordinal, f.status, f.comment, f.verification_method,
-                       f.failure_reason, f.decided_at,
+                       f.failure_reason, f.decided_at, f.updated_at,
                        (SELECT count(*)::int FROM evidence e WHERE e.finding_id = f.id) AS evidence_count
                 FROM finding f
                 JOIN inspection ins ON ins.id = f.inspection_id

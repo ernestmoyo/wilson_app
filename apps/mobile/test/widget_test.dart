@@ -6,7 +6,11 @@ import 'package:assure_field/main.dart';
 import 'package:assure_field/models/finding.dart';
 import 'package:assure_field/auth/session.dart';
 import 'package:assure_field/models/inspection.dart';
+import 'package:assure_field/sync/api_client.dart';
+import 'package:assure_field/sync/outbox.dart';
 import 'package:assure_field/theme.dart';
+
+import 'fake_server.dart';
 
 /// A store that already holds Bryan's session, so the gate opens on the
 /// inspections list rather than the sign-in screen.
@@ -131,23 +135,40 @@ void main() {
     });
   });
 
-  testWidgets('app renders the inspection list', (tester) async {
-    await tester.pumpWidget(MaterialApp(theme: buildTheme(), home: AuthGate(store: signedIn())));
-    await tester.pump();
-    expect(find.text('G2 Chiller'), findsOneWidget);
+  testWidgets('the board lists the job: client, location, stage, what it needs now', (tester) async {
+    final server = FakeServer()..stage = 'site_inspection';
+    final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: server.client_());
+    await tester.pumpWidget(MaterialApp(
+      theme: buildTheme(),
+      home: AuthGate(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
+    ));
+    await tester.pumpAndSettle();
     expect(find.text('Argenta Manufacturing Limited'), findsOneWidget);
-    expect(find.textContaining('54 items'), findsOneWidget);
+    expect(find.textContaining('G2 Chiller'), findsWidgets);
+    expect(find.textContaining('4 · Site inspection'), findsOneWidget);
+    expect(find.text('Continue the inspection: 2 of 54 items assessed'), findsOneWidget);
+    expect(find.textContaining('2/54'), findsOneWidget);
   });
 
-  testWidgets('opening an inspection shows verbatim section titles', (tester) async {
-    await tester.pumpWidget(MaterialApp(theme: buildTheme(), home: AuthGate(store: signedIn())));
-    await tester.pump();
-    await tester.tap(find.text('G2 Chiller'));
+  testWidgets('board → hub → check sheet, with verbatim section titles', (tester) async {
+    final server = FakeServer()..stage = 'site_inspection';
+    final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: server.client_());
+    await tester.pumpWidget(MaterialApp(
+      theme: buildTheme(),
+      home: AuthGate(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore()),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('job-7')));
+    await tester.pumpAndSettle();
+    // The hub: context bar and the Now card name the next step.
+    expect(find.byKey(const ValueKey('now-card')), findsOneWidget);
+    expect(find.text('Continue the inspection: 2 of 54 items assessed'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('open-sheet')));
     await tester.pumpAndSettle();
 
     // Section 1 is above the fold.
     expect(find.textContaining('Determining which regulations apply'), findsOneWidget);
-    expect(find.text('Cannot grant'), findsOneWidget);
+    expect(find.text('Cannot grant yet'), findsOneWidget);
 
     // Section 4 is below the fold; a ListView does not build off-screen
     // children, so scroll it into view rather than asserting blindly.
