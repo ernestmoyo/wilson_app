@@ -84,7 +84,9 @@ class AppSession extends ChangeNotifier {
 /// a refresh and a shared link all land where a person expects:
 ///   /login · / (jobs board) · /jobs/:id (hub) · /jobs/:id/sheet (check sheet)
 GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
-      initialLocation: initialLocation ?? '/',
+      // On web the address bar wins: a deep link or a refresh lands where it
+      // says, not on the board.
+      initialLocation: initialLocation ?? (kIsWeb && Uri.base.path.isNotEmpty ? Uri.base.path : '/'),
       refreshListenable: app,
       redirect: (context, state) {
         if (!app.loaded) return null;
