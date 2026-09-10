@@ -35,14 +35,38 @@ export const nzDate = (iso) => {
  *                letterhead?: { logo?: string, details?: string, ribbon?: string } }  data URLs
  * @returns HTML string
  */
+/** Assure Safety's contact details as text, with inline icons. */
+export const COMPANY = {
+  address: '59A Vintage Drive, Henderson, Auckland (0612)',
+  email: 'compliancecertifier@assuresafety.co.nz',
+  website: 'www.assuresafety.co.nz',
+  phone: '+64 21 204 8493',
+};
+
+const ICON = {
+  place: '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2.2V18h16V7.2l-8 5.3-8-5.3zM4.6 7l7.4 4.9L19.4 7H4.6z"/></svg>',
+  globe: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 9h-3a15.6 15.6 0 0 0-1.3-5.4A8 8 0 0 1 18.9 11zM12 4c.9 1.2 1.7 3.5 1.9 7h-3.8c.2-3.5 1-5.8 1.9-7zM5.1 13h3a15.6 15.6 0 0 0 1.3 5.4A8 8 0 0 1 5.1 13zm3-2h-3a8 8 0 0 1 4.3-5.4A15.6 15.6 0 0 0 8.1 11zM12 20c-.9-1.2-1.7-3.5-1.9-7h3.8c-.2 3.5-1 5.8-1.9 7zm2.6-1.6a15.6 15.6 0 0 0 1.3-5.4h3a8 8 0 0 1-4.3 5.4z"/></svg>',
+  phone: '<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.6 3.6a1 1 0 0 1-.25 1L6.6 10.8z"/></svg>',
+};
+
+function contactBlock() {
+  const line = (icon, text) => `<span class="lh-line">${ICON[icon]}<span>${text}</span></span>`;
+  return `<div class="lh-details">
+      ${line('place', COMPANY.address)}
+      ${line('mail', COMPANY.email)}
+      <span class="lh-row">${line('globe', COMPANY.website)}${line('phone', COMPANY.phone)}</span>
+    </div>`;
+}
+
 export function renderCertificateHtml(cert, { signatureDataUrl = null, letterhead = null } = {}) {
   // The workbook's Certificate sheet carries the Assure Safety letterhead as
   // three images: the logo and the company-details band at the top, the
   // ribbon at the bottom. Rendered here the same way when supplied.
-  const head = letterhead && (letterhead.logo || letterhead.details)
+  const head = letterhead
     ? `<div class="letterhead">
       ${letterhead.logo ? `<img class="lh-logo" src="${letterhead.logo}" alt="Assure Safety">` : '<span></span>'}
-      ${letterhead.details ? `<img class="lh-details" src="${letterhead.details}" alt="Assure Safety contact details">` : ''}
+      ${contactBlock()}
     </div>`
     : '';
   const foot = letterhead?.ribbon
@@ -97,7 +121,10 @@ export function renderCertificateHtml(cert, { signatureDataUrl = null, letterhea
   /* Letterhead, as carried on the workbook's Certificate sheet. */
   .letterhead{display:flex;align-items:center;justify-content:space-between;gap:8mm;padding:2mm 0 4mm}
   .lh-logo{height:22mm;width:auto}
-  .lh-details{height:18mm;width:auto;max-width:62%}
+  .lh-details{display:flex;flex-direction:column;align-items:flex-end;gap:1.2mm;font-size:10.5pt;color:#222}
+  .lh-line{display:inline-flex;align-items:center;gap:1.8mm;white-space:nowrap}
+  .lh-line svg{width:4.2mm;height:4.2mm;fill:#006666;flex:none}
+  .lh-row{display:inline-flex;gap:5mm}
   .lh-ribbon{display:block;width:100%;height:auto;margin-top:5mm}
   @media print { html,body{background:#fff} .page{width:auto;margin:0} }
 </style>

@@ -7,6 +7,7 @@ import '../models/inspection.dart';
 import '../models/site_block.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
+import '../widgets/company_details.dart';
 import 'evidence_capture.dart';
 
 /// The check sheet as the workbook lays it out, for wide screens.
@@ -164,9 +165,8 @@ class _SheetViewState extends State<SheetView> {
 
   // ── letterhead: the same three images the certificate carries ────────────
 
-  // company-details.png is three lines of small type (address, email, web,
-  // phone) at 1605x456; below ~90px tall it collapses into an unreadable
-  // grey strip, which is why the earlier 52px render looked blank.
+  // The contact block is text, not the workbook's pasted bitmap: it stays
+  // crisp at any width and reads the same on the certificate.
   Widget _letterhead() => Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
         child: Row(
@@ -175,15 +175,7 @@ class _SheetViewState extends State<SheetView> {
             Image.asset('assets/brand/logo-white.png', height: 56, fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => const SizedBox.shrink()),
             const Spacer(),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380, maxHeight: 96),
-                child: Image.asset('assets/brand/company-details.png',
-                    fit: BoxFit.contain,
-                    alignment: Alignment.centerRight,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink()),
-              ),
-            ),
+            const CompanyDetails(),
           ],
         ),
       );

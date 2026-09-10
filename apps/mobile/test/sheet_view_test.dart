@@ -52,6 +52,9 @@ void main() {
       // Row 1 — class-conditional title and the Evidence Portfolio column label.
       expect(find.text('Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'), findsOneWidget);
       expect(find.text('Evidence Portfolio'), findsWidgets); // source spelt it "Portifolio"; corrected + logged
+      // The letterhead's contact block is text, not the pasted bitmap.
+      expect(find.text('compliancecertifier@assuresafety.co.nz'), findsOneWidget);
+      expect(find.text('+64 21 204 8493'), findsOneWidget);
 
       // Rows 2–14 fold behind a one-line summary so the checklist starts on
       // the first screen; open them, then check every label in the sheet's words.
