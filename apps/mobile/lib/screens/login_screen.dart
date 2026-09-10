@@ -34,15 +34,19 @@ class _LoginScreenState extends State<LoginScreen> {
       _busy = true;
       _error = null;
     });
+    var signedIn = false;
     try {
       final s = await widget.api.login(_email.text.trim(), _passcode.text);
+      signedIn = true;
       await widget.onSignedIn(s);
     } on ApiException catch (e) {
       setState(() => _error = e.status == 401 ? 'Email or passcode not recognised.' : e.message);
     } catch (e) {
-      // Anything after a 200 (saving the session, applying it) is named
-      // plainly: a silent failure here looks like a broken passcode.
-      setState(() => _error = 'Signed in, but the app could not keep the session: $e');
+      // Before a 200 the server was never reached: say so. After it, the
+      // sign-in worked and keeping the session failed: say that instead.
+      setState(() => _error = signedIn
+          ? 'Signed in, but the app could not keep the session: $e'
+          : 'Could not reach the server at ${widget.api.baseUrl.host}. Check the connection and try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
