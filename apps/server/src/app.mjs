@@ -47,7 +47,9 @@ async function storeEvidence(sha256, ext, buf, mime) {
 async function readEvidence(storageKey) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { get } = await import('@vercel/blob');
-    const r = await get(storageKey, { access: 'private' }).catch(() => null);
+    // Uploads live under evidence/; the route is called with the bare key.
+    const pathname = storageKey.startsWith('evidence/') ? storageKey : 'evidence/' + storageKey;
+    const r = await get(pathname, { access: 'private' }).catch(() => null);
     if (!r || r.statusCode !== 200 || !r.stream) return null;
     const chunks = [];
     for await (const c of r.stream) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
