@@ -13,6 +13,7 @@
  */
 
 import { explain, isClientError } from './errors.mjs';
+import { checkEventRole } from '../roles.mjs';
 
 /**
  * An inspection is pinned to the template revisions it was opened against
@@ -300,6 +301,8 @@ export async function applyEvents(db, ctx, events) {
 
     await db.query('SAVEPOINT ev');
     try {
+      // Role first: a reviewer's signature must never reach the database.
+      checkEventRole(ev.type, ev.payload ?? {}, ctx.role);
       const result = await handler(db, ev.payload ?? {}, ctx);
       await db.query('RELEASE SAVEPOINT ev');
       await recordSync(db, ev, ctx, 'applied');
@@ -321,10 +324,10 @@ export async function applyEvents(db, ctx, events) {
 
 async function recordSync(db, ev, ctx, outcome, clause = null, reason = null) {
   await db.query(
-    `INSERT INTO sync_event (id, device_id, type, payload, occurred_at, outcome, reject_clause, reject_reason)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+    `INSERT INTO sync_event (id, device_id, user_id, type, payload, occurred_at, outcome, reject_clause, reject_reason)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
      ON CONFLICT (id) DO NOTHING`,
-    [ev.id, ctx.deviceId, ev.type, JSON.stringify(ev.payload ?? {}),
+    [ev.id, ctx.deviceId, ctx.userId ?? null, ev.type, JSON.stringify(ev.payload ?? {}),
      ev.occurredAt ?? new Date().toISOString(), outcome, clause, reason]
   );
 }

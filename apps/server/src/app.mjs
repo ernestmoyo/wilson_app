@@ -14,12 +14,33 @@ import { applyEvents, EVENT_TYPES } from './sync/apply.mjs';
 import { explain, isClientError } from './sync/errors.mjs';
 import { assetPath } from './db.mjs';
 import { authenticate, login, logout, tokenFromRequest } from './auth.mjs';
+import { canDecide, canRecord } from './roles.mjs';
+import { mailConfigured, sendMail } from './mail.mjs';
+import { randomUUID } from 'crypto';
 
 // The certificate renderer lives in packages/checksheets; vendored on Vercel.
 const renderMod = await import(
   pathToFileURL(assetPath('lib/render-certificate.mjs', 'packages/checksheets/lib/render-certificate.mjs')).href
 );
 const { renderCertificateHtml, CERTIFICATE_DEFAULTS } = renderMod;
+const reportMod = await import(
+  pathToFileURL(assetPath('lib/render-report.mjs', 'packages/checksheets/lib/render-report.mjs')).href
+);
+const { renderNonComplianceReport } = reportMod;
+const readJson = (vendorRel, repoRel) => JSON.parse(readFileSync(assetPath(vendorRel, repoRel), 'utf8'));
+const SHEET_SETS = readJson('data/sheet-sets.json', 'packages/checksheets/data/sheet-sets.json');
+const AUTHORISATION = readJson('data/authorisation.json', 'packages/checksheets/data/authorisation.json');
+const templatesForClass = (classKey) =>
+  (SHEET_SETS.sets.find((x) => x.key === classKey) ?? SHEET_SETS.sets[0]).templates;
+
+/** The letterhead images as data URLs, shared by every rendered document. */
+function letterheadImages() {
+  const brand = (name) => {
+    const p = assetPath(`brand/${name}`, `packages/checksheets/brand/${name}`);
+    return existsSync(p) ? `data:image/png;base64,${readFileSync(p).toString('base64')}` : null;
+  };
+  return { logo: brand('logo-white.png'), ribbon: brand('bottom-ribbon.png') };
+}
 
 /** Evidence bytes: Vercel Blob when a token is present, local disk otherwise. */
 async function storeEvidence(sha256, ext, buf, mime) {
@@ -84,9 +105,16 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // the x-user-id header still works, and the sync route's body userId too.
   app.use((req, _res, next) => (async () => {
     const session = await authenticate(db, tokenFromRequest(req));
+    const headerUser = requireAuth ? null : (req.header('x-user-id') ? Number(req.header('x-user-id')) : null);
+    let role = session?.role ?? null;
+    if (!role && headerUser) {
+      const u = await db.query(`SELECT role FROM app_user WHERE id = $1`, [headerUser]);
+      role = u.rows[0]?.role ?? null;
+    }
     req.ctx = {
       deviceId: req.header('x-device-id') ?? session?.deviceId ?? null,
-      userId: session?.userId ?? (requireAuth ? null : (req.header('x-user-id') ? Number(req.header('x-user-id')) : null)),
+      userId: session?.userId ?? headerUser,
+      role,
       authenticated: !!session,
     };
     if (requireAuth && !session && !isPublic(req)) {
@@ -211,12 +239,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   }));
 
   /** Create a client + site + location + job in one call (stage 1, enquiry). */
-  app.post('/api/jobs', wrap(async (req, res) => {
-    const b = req.body ?? {};
-    if (!b.client?.legalName || !b.site?.address || !b.location?.name)
-      return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
-
-    const out = await db.withTx(async (tx) => {
+  /** Client + site + location + job, plus contacts and substances, in one transaction. */
+  async function createJob(tx, b) {
       const c = await tx.query(
         `INSERT INTO client (legal_name, trading_name, nzbn, companies_number, postal_address, phone, website, industry)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
@@ -250,7 +274,14 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       }
       return { jobId: j.rows[0].id, clientId: c.rows[0].id, siteId: s.rows[0].id,
                hsLocationId: l.rows[0].id, stage: j.rows[0].stage };
-    });
+  }
+
+  app.post('/api/jobs', wrap(async (req, res) => {
+    const b = req.body ?? {};
+    if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot create a job', clause: 'Role' });
+    if (!b.client?.legalName || !b.site?.address || !b.location?.name)
+      return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
+    const out = await db.withTx((tx) => createJob(tx, b));
     res.status(201).json(out);
   }));
 
@@ -314,7 +345,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
     const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances,
-           correctiveActions, allowedNext, communications] = await Promise.all([
+           correctiveActions, allowedNext, communications, events] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
@@ -376,6 +407,18 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       // RFI and its answer).
       db.query(`SELECT id, direction, medium, party, summary, body, occurred_at, recorded_by
                 FROM communication WHERE job_id = $1 ORDER BY occurred_at, id`, [id]),
+      // IPS 22: who did what on this job, newest first. Events name a job
+      // directly or through an inspection of it.
+      db.query(`SELECT e.id, e.type, e.payload, e.occurred_at, e.outcome, e.reject_clause,
+                       u.full_name AS user_name, u.role AS user_role, e.device_id
+                FROM sync_event e
+                LEFT JOIN app_user u ON u.id = e.user_id
+                WHERE NULLIF(e.payload->>'jobId','')::bigint = $1
+                   OR NULLIF(e.payload->>'inspectionId','')::bigint IN (SELECT id FROM inspection WHERE job_id = $1)
+                   OR NULLIF(e.payload->>'correctiveActionId','')::bigint IN (
+                        SELECT ca.id FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id
+                        JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = $1)
+                ORDER BY e.occurred_at DESC, e.received_at DESC LIMIT 100`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -394,6 +437,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       correctiveActions: correctiveActions.rows,
       allowedNext: allowedNext.rows.map((r) => r.stage),
       communications: communications.rows,
+      events: events.rows,
     });
   }));
 
@@ -434,6 +478,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   app.post('/api/jobs/:id/certificate', wrap(async (req, res) => {
     const id = Number(req.params.id);
     const b = req.body ?? {};
+    if (!canDecide(req.ctx.role)) {
+      return res.status(403).json({ error: 'issuing a certificate needs a compliance certifier', clause: 'Role' });
+    }
     const out = await db.withTx(async (tx) => {
       await tx.query(`UPDATE job SET stage = 'certificate_issued' WHERE id = $1`, [id]);
       const r = await tx.query(
@@ -457,8 +504,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // ── certificate rendered FROM the job ────────────────────────────────────
   // The same renderer that reproduces the legacy workbook, fed from findings.
   // The certificate stops being a separately-typed document.
-  app.get('/api/jobs/:id/certificate.html', wrap(async (req, res) => {
-    const id = Number(req.params.id);
+  async function fetchCertificateHtml(id) {
     const r = await db.query(`
       SELECT c.*, u.full_name, u.authorisation_number, u.email AS certifier_email,
              cl.legal_name, cl.postal_address, cl.nzbn, cl.companies_number,
@@ -472,7 +518,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       LEFT JOIN site s        ON s.id = l.site_id
       LEFT JOIN contact ct    ON ct.client_id = cl.id AND ct.is_site_manager
       WHERE c.job_id = $1`, [id]);
-    if (!r.rows.length) return res.status(404).json({ error: 'no certificate issued for this job' });
+    if (!r.rows.length) return null;
     const row = r.rows[0];
     const subs = row.hs_location_id
       ? await db.query(`SELECT name, hazard_class, quantity, unit FROM substance
@@ -513,7 +559,182 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       details: brand('company-details.png'),
       ribbon: brand('bottom-ribbon.png'),
     };
-    res.type('html').send(renderCertificateHtml(cert, { signatureDataUrl, letterhead }));
+    return renderCertificateHtml(cert, { signatureDataUrl, letterhead });
+  }
+
+  app.get('/api/jobs/:id/certificate.html', wrap(async (req, res) => {
+    const html = await fetchCertificateHtml(Number(req.params.id));
+    if (!html) return res.status(404).json({ error: 'no certificate issued for this job' });
+    res.type('html').send(html);
+  }));
+
+  // ── catalogues: what the certifier may certify, and the sheet sets ──────
+  app.get('/api/authorisation', (_req, res) => res.json(AUTHORISATION));
+  app.get('/api/sheet-sets', (_req, res) => {
+    const byKey = Object.fromEntries(AUTHORISATION.authorisations.map((a) => [a.key, a]));
+    res.json({
+      sets: SHEET_SETS.sets.map((x) => ({
+        ...x,
+        authorised: !!(x.authorisation && byKey[x.authorisation]),
+        authorisationEntry: x.authorisation ? byKey[x.authorisation] ?? null : null,
+      })),
+      planned: SHEET_SETS.planned,
+      certifier: AUTHORISATION.certifier,
+    });
+  });
+
+  // ── dashboard: what needs attention, and what just happened ─────────────
+  app.get('/api/dashboard', wrap(async (_req, res) => {
+    const [renewals, rfi, actions, stalled, activity] = await Promise.all([
+      db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, c.expiry_date
+                FROM certificate c JOIN job j ON j.id = c.job_id
+                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                WHERE c.expiry_date IS NOT NULL AND c.expiry_date <= now() + interval '180 days'
+                ORDER BY c.expiry_date`),
+      db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, t.occurred_at AS since
+                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                JOIN LATERAL (SELECT max(occurred_at) AS occurred_at FROM job_stage_transition WHERE job_id = j.id) t ON true
+                WHERE j.stage = 'rfi' AND t.occurred_at < now() - interval '7 days'`),
+      db.query(`SELECT ca.id, ca.description, ca.severity, ca.due_date, ca.status, j.id AS job_id,
+                       cl.legal_name AS client, l.name AS location
+                FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id
+                JOIN inspection i ON i.id = f.inspection_id JOIN job j ON j.id = i.job_id
+                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                WHERE ca.status <> 'verified' AND ca.due_date IS NOT NULL AND ca.due_date <= now() + interval '14 days'
+                ORDER BY ca.due_date`),
+      db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, fc.last_at
+                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                LEFT JOIN LATERAL (SELECT max(f.updated_at) AS last_at FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = j.id) fc ON true
+                WHERE j.stage = 'site_inspection' AND COALESCE(fc.last_at, j.opened_at) < now() - interval '14 days'`),
+      db.query(`SELECT e.type, e.occurred_at, e.payload, u.full_name AS user_name,
+                       COALESCE(NULLIF(e.payload->>'jobId','')::bigint, i.job_id, ci.job_id) AS job_id,
+                       cl.legal_name AS client, l.name AS location
+                FROM sync_event e
+                LEFT JOIN app_user u ON u.id = e.user_id
+                LEFT JOIN inspection i ON i.id = NULLIF(e.payload->>'inspectionId','')::bigint
+                LEFT JOIN corrective_action ca ON ca.id = NULLIF(e.payload->>'correctiveActionId','')::bigint
+                LEFT JOIN finding cf ON cf.id = ca.finding_id
+                LEFT JOIN inspection ci ON ci.id = cf.inspection_id
+                LEFT JOIN job j ON j.id = COALESCE(NULLIF(e.payload->>'jobId','')::bigint, i.job_id, ci.job_id)
+                LEFT JOIN client cl ON cl.id = j.client_id
+                LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                WHERE e.outcome = 'applied'
+                ORDER BY e.occurred_at DESC LIMIT 30`),
+    ]);
+    const reminders = [
+      ...renewals.rows.map((r) => ({ kind: 'renewal', jobId: r.job_id, client: r.client, location: r.location,
+        when: r.expiry_date, text: `Certificate expires ${new Date(r.expiry_date).toISOString().slice(0, 10)}: start the renewal` })),
+      ...rfi.rows.map((r) => ({ kind: 'rfi', jobId: r.job_id, client: r.client, location: r.location,
+        when: r.since, text: 'Waiting on further information for more than 7 days' })),
+      ...actions.rows.map((r) => ({ kind: 'action', jobId: r.job_id, client: r.client, location: r.location,
+        when: r.due_date, text: `Corrective action ${new Date(r.due_date) < new Date() ? 'overdue' : 'due'} ${new Date(r.due_date).toISOString().slice(0, 10)}: ${r.description}` })),
+      ...stalled.rows.map((r) => ({ kind: 'stalled', jobId: r.job_id, client: r.client, location: r.location,
+        when: r.last_at, text: 'Site inspection open with no findings recorded for 14 days' })),
+    ];
+    res.json({ reminders, activity: activity.rows, mailConfigured: mailConfigured() });
+  }));
+
+  // ── the non-compliance report: what goes to the client after the visit ──
+  async function nonComplianceData(id) {
+    const j = await db.query(`
+      SELECT j.id, j.stage, cl.legal_name AS client, l.name AS location, s.address,
+             i.inspected_at, u.full_name AS certifier
+      FROM job j JOIN client cl ON cl.id = j.client_id
+      LEFT JOIN hs_location l ON l.id = j.hs_location_id LEFT JOIN site s ON s.id = l.site_id
+      LEFT JOIN LATERAL (SELECT inspected_at, certifier_id FROM inspection WHERE job_id = j.id ORDER BY inspected_at DESC LIMIT 1) i ON true
+      LEFT JOIN app_user u ON u.id = i.certifier_id
+      WHERE j.id = $1`, [id]);
+    if (!j.rows.length) return null;
+    const items = await db.query(`
+      SELECT t.title AS sheet, COALESCE(ci.number, ci.ordinal::text) AS number, ci.action, ci.regulation_raw AS regulation,
+             f.id AS finding_id, f.failure_reason AS reason, f.comment
+      FROM finding f JOIN inspection ins ON ins.id = f.inspection_id
+      JOIN checksheet_item ci ON ci.id = f.item_id JOIN checksheet_section cs ON cs.id = ci.section_id
+      JOIN checksheet_template t ON t.id = cs.template_id
+      WHERE ins.job_id = $1 AND f.status = 'non_compliant' ORDER BY t.code, cs.ordinal, ci.ordinal`, [id]);
+    const cas = await db.query(`
+      SELECT ca.finding_id, ca.severity, ca.description, ca.due_date AS "dueDate", ca.status
+      FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id JOIN inspection i ON i.id = f.inspection_id
+      WHERE i.job_id = $1 ORDER BY ca.id`, [id]);
+    const row = j.rows[0];
+    return {
+      job: { id: row.id, client: row.client, location: row.location, address: row.address,
+             inspectedAt: row.inspected_at, certifier: row.certifier, stage: row.stage },
+      items: items.rows.map((it) => ({ ...it, actions: cas.rows.filter((c) => c.finding_id === it.finding_id) })),
+    };
+  }
+
+  app.get('/api/jobs/:id/non-compliance.html', wrap(async (req, res) => {
+    const data = await nonComplianceData(Number(req.params.id));
+    if (!data) return res.status(404).json({ error: 'job not found' });
+    res.type('html').send(renderNonComplianceReport({ ...data, letterhead: letterheadImages() }));
+  }));
+
+  // ── send a document to the client, and record that it went ──────────────
+  app.post('/api/jobs/:id/send', wrap(async (req, res) => {
+    const id = Number(req.params.id);
+    const { document, to, subject } = req.body ?? {};
+    if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot send', clause: 'Role' });
+    if (!to || !/^[^@\s]+@[^@\s]+$/.test(to)) return res.status(400).json({ error: 'a recipient email is required' });
+    let html, label;
+    if (document === 'certificate') {
+      if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'sending a certificate needs a compliance certifier', clause: 'Role' });
+      const r = await fetchCertificateHtml(id);
+      if (!r) return res.status(404).json({ error: 'no certificate issued for this job' });
+      html = r; label = 'certificate';
+    } else if (document === 'non_compliance') {
+      const data = await nonComplianceData(id);
+      if (!data) return res.status(404).json({ error: 'job not found' });
+      html = renderNonComplianceReport({ ...data, letterhead: letterheadImages() }); label = 'non-compliance report';
+    } else {
+      return res.status(400).json({ error: "document must be 'certificate' or 'non_compliance'" });
+    }
+    const result = await sendMail({ to, subject: subject ?? `Assure Safety: ${label}`, html,
+      text: `Please find the ${label} attached.`, attachments: [{ filename: `${label.replace(/ /g, '-')}.html`, content: html }] });
+    const summary = result.sent
+      ? `Emailed the ${label} to ${to}`
+      : `Prepared the ${label} for ${to} (email not sent: ${result.reason})`;
+    await db.query(
+      `INSERT INTO communication (job_id, direction, medium, party, summary, occurred_at, recorded_by)
+       VALUES ($1,'outbound','email',$2,$3,now(),$4)`,
+      [id, to, summary, req.ctx.userId ?? null]);
+    res.json({ ...result, summary });
+  }));
+
+  // ── import a job that already exists on paper (a past workbook) ─────────
+  app.post('/api/jobs/import', wrap(async (req, res) => {
+    const b = req.body ?? {};
+    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'importing a job needs a compliance certifier', clause: 'Role' });
+    if (!b.client?.legalName || !b.site?.address || !b.location?.name) {
+      return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
+    }
+    const classKey = b.classKey ?? 'class_6_8';
+    const created = await db.withTx((tx) => createJob(tx, { ...b, classKey }));
+    const target = b.stage ?? 'site_inspection';
+    const path = ['application', 'document_review', 'site_inspection', 'compliance_evaluation', 'final_validation'];
+    const stop = path.indexOf(target);
+    const ev = (type, payload) => ({ id: randomUUID(), type, payload, occurredAt: b.inspection?.inspectedAt ?? new Date().toISOString() });
+    const events = [
+      ...path.slice(0, Math.max(0, Math.min(stop, 2)) + 1).map((st) => ev('job.transition', { jobId: created.jobId, toStage: st, reason: 'imported from workbook' })),
+      ev('inspection.open', { jobId: created.jobId, hsLocationId: created.hsLocationId,
+        inspectedAt: b.inspection?.inspectedAt, equipmentUsed: b.inspection?.equipmentUsed ?? 'iPad, tape measure',
+        templateCodes: templatesForClass(classKey) }),
+    ];
+    const ctx = { deviceId: 'import', userId: req.ctx.userId, role: req.ctx.role };
+    const first = await db.withTx((tx) => applyEvents(tx, ctx, events));
+    if (first.rejected.length) return res.status(422).json({ error: 'import stopped', rejected: first.rejected, jobId: created.jobId });
+    const inspectionId = first.applied.find((a) => a.type === 'inspection.open')?.result?.inspectionId;
+    const findings = (b.findings ?? []).map((f) => ev('finding.upsert', {
+      inspectionId, templateCode: f.templateCode, sectionOrdinal: f.sectionOrdinal, itemOrdinal: f.itemOrdinal,
+      status: f.status ?? 'pending', comment: f.comment ?? null, verificationMethod: f.verificationMethod ?? null,
+      failureReason: f.failureReason ?? null, decidedAt: b.inspection?.inspectedAt,
+    }));
+    const second = findings.length ? await db.withTx((tx) => applyEvents(tx, ctx, findings)) : { applied: [], rejected: [] };
+    const later = stop > 2
+      ? await db.withTx((tx) => applyEvents(tx, ctx, path.slice(3, stop + 1).map((st) => ev('job.transition', { jobId: created.jobId, toStage: st, reason: 'imported from workbook' }))))
+      : { rejected: [] };
+    res.status(201).json({ jobId: created.jobId, inspectionId, findings: second.applied.length,
+      rejected: [...second.rejected, ...later.rejected] });
   }));
 
   // ── evidence bytes ───────────────────────────────────────────────────────
@@ -553,7 +774,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const { deviceId, userId, events } = req.body ?? {};
     // The signed-in user outranks whatever the body claims (IPS 21(5)).
     const ctx = { deviceId: deviceId ?? req.ctx.deviceId,
-                  userId: req.ctx.authenticated ? req.ctx.userId : (userId ?? req.ctx.userId) };
+                  userId: req.ctx.authenticated ? req.ctx.userId : (userId ?? req.ctx.userId),
+                  role: req.ctx.role };
     if (!ctx.deviceId) return res.status(400).json({ error: 'deviceId is required' });
     if (!Array.isArray(events)) return res.status(400).json({ error: 'events must be an array' });
     for (const ev of events) {

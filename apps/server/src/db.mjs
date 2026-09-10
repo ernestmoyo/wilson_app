@@ -16,7 +16,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ensurePasscodeFromEnv } from './auth.mjs';
+import { ensurePasscodesFromEnv } from './auth.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const serverRoot = join(here, '..');
@@ -139,5 +139,5 @@ export async function seedDefaults(db) {
      ON CONFLICT (id) DO NOTHING`
   );
   await db.query(`SELECT setval('app_user_id_seq', GREATEST((SELECT max(id) FROM app_user), 1))`);
-  await ensurePasscodeFromEnv(db, 1);
+  await ensurePasscodesFromEnv(db);
 }

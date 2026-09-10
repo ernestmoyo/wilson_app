@@ -32,10 +32,28 @@ export function verifyPasscode(passcode, stored) {
 const tokenHash = (token) => createHash('sha256').update(String(token)).digest('hex');
 
 /**
- * The ASSURE_PASSCODE environment variable is the source of truth for user
- * 1's passcode: set it and the next boot applies it; change it and the next
- * boot rotates it. Nothing is written when the variable is absent.
+ * Every seeded person's passcode comes from the environment: user 1 from
+ * ASSURE_PASSCODE, the role addresses from ASSURE_PASSCODE_REVIEWER and
+ * ASSURE_PASSCODE_VIEWER. Absent variable, no change; changed value, rotated.
  */
+export async function ensurePasscodesFromEnv(db) {
+  const out = [];
+  out.push(await ensurePasscodeFromEnv(db, 1));
+  for (const [email, env] of [
+    ['reviewer@assuresafety.co.nz', 'ASSURE_PASSCODE_REVIEWER'],
+    ['viewer@assuresafety.co.nz', 'ASSURE_PASSCODE_VIEWER'],
+  ]) {
+    const pass = process.env[env];
+    if (!pass) continue;
+    const r = await db.query(`SELECT id, passcode_hash FROM app_user WHERE lower(email) = lower($1)`, [email]);
+    if (!r.rows.length) continue;
+    if (verifyPasscode(pass, r.rows[0].passcode_hash)) continue;
+    await db.query(`UPDATE app_user SET passcode_hash = $2 WHERE id = $1`, [r.rows[0].id, hashPasscode(pass)]);
+    out.push({ applied: true, email });
+  }
+  return out;
+}
+
 export async function ensurePasscodeFromEnv(db, userId = 1) {
   const pass = process.env.ASSURE_PASSCODE;
   if (!pass) return { applied: false };
@@ -79,12 +97,13 @@ export async function login(db, { email, passcode, deviceId }) {
 export async function authenticate(db, token) {
   if (!token) return null;
   const r = await db.query(
-    `SELECT user_id, device_id FROM auth_token
-     WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()`,
+    `SELECT t.user_id, t.device_id, u.role FROM auth_token t
+     JOIN app_user u ON u.id = t.user_id
+     WHERE t.token_hash = $1 AND t.revoked_at IS NULL AND t.expires_at > now() AND u.active`,
     [tokenHash(token)]
   );
   if (!r.rows.length) return null;
-  return { userId: Number(r.rows[0].user_id), deviceId: r.rows[0].device_id };
+  return { userId: Number(r.rows[0].user_id), deviceId: r.rows[0].device_id, role: r.rows[0].role };
 }
 
 export async function logout(db, token) {

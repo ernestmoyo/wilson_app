@@ -1,0 +1,74 @@
+{
+  "source": "https://compliancecertifiers.worksafe.govt.nz/home/show/337/",
+  "retrievedAt": "2026-09-10",
+  "certifier": {
+    "fullName": "Bryan Wilson",
+    "organisation": "Assure Safety NZ",
+    "number": "TST100250",
+    "status": "Active",
+    "start": "2022-05-09",
+    "expiry": "2027-05-09",
+    "homeRegion": "Auckland",
+    "workingRegions": ["Bay of Plenty", "Canterbury", "Gisborne", "Hawke's Bay", "Manawatu-Wanganui", "Marlborough", "Nelson", "Northland", "Otago", "Southland", "Taranaki", "Tasman", "Waikato", "Wellington", "West Coast"]
+  },
+  "authorisations": [
+    {
+      "key": "handler-class-6",
+      "category": "Certified Handler",
+      "title": "Class 6",
+      "description": "Certified handlers in control of class 6 substances",
+      "regulation": "Regulations 4.1 and 13.9, Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": "The certification of handlers (class 6) does not include agrichemicals.",
+      "lifeCycles": ["disposal", "storage", "transport", "use"]
+    },
+    {
+      "key": "handler-fumigants",
+      "category": "Certified Handler",
+      "title": "Fumigants",
+      "description": "Certified handlers in control of Fumigants",
+      "regulation": "Regulations 4.1 and 14.3, Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": "The certification of handlers (fumigants) is authorised for the following substances: aluminium phosphide; chloropicrin; dichloropropene; dichloropropene & chloropicrin; hydrocyanic acid; magnesium phosphide; methyl bromide; phosphine",
+      "lifeCycles": ["disposal", "storage", "transport", "use"]
+    },
+    {
+      "key": "handler-vta",
+      "category": "Certified Handler",
+      "title": "Vertebrate Toxic Agents",
+      "description": "Certified handlers in control of Vertebrate Toxic Agents",
+      "regulation": "Regulations 4.1 and 13.9, Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": "The certification of handlers (vertebrate toxic agents) is authorised for the following substances: sodium cyanide; potassium cyanide; para-aminopropiophenone (PAPP); sodium fluoroacetate (1080)",
+      "lifeCycles": ["disposal", "storage", "transport", "use"]
+    },
+    {
+      "key": "cylinder-importation",
+      "category": "Cylinder Importation",
+      "title": "Importation",
+      "description": "Cylinder importation",
+      "regulation": "Regulation 15.16, Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": null,
+      "lifeCycles": []
+    },
+    {
+      "key": "cylinder-importation-un",
+      "category": "Cylinder Importation (UN)",
+      "title": "UNRTDG",
+      "description": "UNRTDG cylinder importation",
+      "regulation": "Regulation 15.3(3), Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": null,
+      "lifeCycles": []
+    },
+    {
+      "key": "location-6-8",
+      "category": "Location",
+      "title": "Classes 6 or 8",
+      "description": "Locations where classes 6 or 8 substances are present",
+      "regulation": "Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "scope": "The certification of locations where class 6 or 8 substances are present is limited to storage in packages up to a maximum quantity of 5,000 kg or 5,000 L.",
+      "lifeCycles": []
+    }
+  ],
+  "conditions": [
+    "Mr Wilson must perform the functions of a compliance certifier in an objective manner that promotes safety.",
+    "Mr Wilson must remain a fit and proper person throughout the period of this authorisation."
+  ]
+}

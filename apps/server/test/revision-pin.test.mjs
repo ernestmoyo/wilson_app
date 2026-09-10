@@ -11,7 +11,7 @@
 
 import { randomUUID } from 'crypto';
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import request from 'supertest';
@@ -50,11 +50,13 @@ const sync = (events) => api.post('/api/sync').set(H).send({ deviceId: 'ipad-tes
 
 let jobId, inspectionId;
 
-await step('old seed + migrations 002–005, tracked so migrate() will not replay them', async () => {
+await step('old seed + every schema migration, tracked so migrate() will not replay them', async () => {
   await db.exec(seedOld);
   await db.exec(`CREATE TABLE IF NOT EXISTS schema_migration (
     name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
-  for (const f of ['002_instance_layer.sql', '003_guards_and_events.sql', '004_sync.sql', '005_inspection_signatures.sql']) {
+  // Every schema migration, tracked, so migrate() below applies only the
+  // template re-seed (rev 2): the server never serves a half-migrated schema.
+  for (const f of readdirSync(mig).filter((x) => x.endsWith('.sql')).sort()) {
     await db.exec(readFileSync(join(mig, f), 'utf8'));
     await db.query(`INSERT INTO schema_migration (name) VALUES ($1)`, [f]);
   }

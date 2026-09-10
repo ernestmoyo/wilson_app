@@ -20,6 +20,7 @@
  */
 
 import { createRequire } from 'module';
+import { pathToFileURL } from 'url';
 import { writeFileSync, mkdirSync } from 'fs';
 import { basename, join } from 'path';
 
@@ -370,7 +371,12 @@ function buildTemplate(extract, code, opts = {}) {
   };
 }
 
+export { extractSheet, buildTemplate, extractSiteBlock };
+
 // ── CLI ────────────────────────────────────────────────────────────────────
+// Runs only when invoked directly; import-job.mjs imports the functions.
+const isMain = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (isMain) {
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--'));
 const getFlag = (name) => {
@@ -443,4 +449,5 @@ for (const { ws, extract } of extracts) {
 if (!results.length) {
   console.error('no check sheet found in workbook');
   process.exit(2);
+}
 }

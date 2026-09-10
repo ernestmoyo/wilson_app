@@ -87,6 +87,7 @@ export function explain(err) {
     if (msg.includes(`"${name}"`)) return { ...info, code: err.code };
   }
 
+  if (msg.startsWith('Role:')) return { clause: 'Role', reason: msg.slice(5).trim(), code: err.code };
   const m = msg.match(CLAUSE_PREFIX);
   if (m) return { clause: m[1], reason: m[2], code: err.code };
 
