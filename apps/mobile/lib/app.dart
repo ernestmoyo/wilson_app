@@ -83,6 +83,16 @@ class AppSession extends ChangeNotifier {
 /// The route graph. Every screen has a URL, so the browser's back button,
 /// a refresh and a shared link all land where a person expects:
 ///   /login · / (jobs board) · /jobs/:id (hub) · /jobs/:id/sheet (check sheet)
+/// Nothing that needs the server renders before the saved session (and
+/// its token) is loaded: a deep link to /jobs/1 would otherwise fire its
+/// first request with no token and be refused.
+Widget _gated(AppSession app, Widget Function() build) => ListenableBuilder(
+      listenable: app,
+      builder: (context, _) => app.loaded && app.session != null
+          ? build()
+          : const Scaffold(body: Center(child: CircularProgressIndicator())),
+    );
+
 GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
       // On web the address bar wins: a deep link or a refresh lands where it
       // says, not on the board.
@@ -105,22 +115,18 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
         ),
         GoRoute(
           path: '/',
-          // Listens to the session itself: when load() finishes on the same URL
-          // the router does not rebuild the page, this does.
-          builder: (context, state) => ListenableBuilder(
-            listenable: app,
-            builder: (context, _) => app.loaded && app.session != null
-                ? JobsBoard(api: app.api, sync: app.sync, session: app.session!, onSignOut: app.signOut)
-                : const Scaffold(body: Center(child: CircularProgressIndicator())),
-          ),
+          builder: (context, state) => _gated(app,
+              () => JobsBoard(api: app.api, sync: app.sync, session: app.session!, onSignOut: app.signOut)),
           routes: [
             GoRoute(
               path: 'jobs/:id',
-              builder: (context, state) => JobScreen(jobId: int.parse(state.pathParameters['id']!), sync: app.sync),
+              builder: (context, state) => _gated(app,
+                  () => JobScreen(jobId: int.parse(state.pathParameters['id']!), sync: app.sync, onUnauthorized: app.signOut)),
               routes: [
                 GoRoute(
                   path: 'sheet',
-                  builder: (context, state) => SheetRoute(app: app, jobId: int.parse(state.pathParameters['id']!)),
+                  builder: (context, state) => _gated(app,
+                      () => SheetRoute(app: app, jobId: int.parse(state.pathParameters['id']!))),
                 ),
               ],
             ),

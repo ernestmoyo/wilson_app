@@ -21,7 +21,11 @@ import '../widgets/job_context_bar.dart';
 class JobScreen extends StatefulWidget {
   final int jobId;
   final SyncService sync;
-  const JobScreen({super.key, required this.jobId, required this.sync});
+
+  /// Called on a 401: the token died (revoked, expired). The gate then shows
+  /// sign-in and brings the person back here afterwards.
+  final Future<void> Function()? onUnauthorized;
+  const JobScreen({super.key, required this.jobId, required this.sync, this.onUnauthorized});
 
   @override
   State<JobScreen> createState() => _JobScreenState();
@@ -66,6 +70,12 @@ class _JobScreenState extends State<JobScreen> {
         _check = c;
         _error = null;
       });
+    } on ApiException catch (e) {
+      if (e.status == 401 && widget.onUnauthorized != null) {
+        await widget.onUnauthorized!();
+        return;
+      }
+      if (mounted) setState(() => _error = e.message);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {

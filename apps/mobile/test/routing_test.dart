@@ -12,6 +12,18 @@ import 'package:assure_field/sync/outbox.dart';
 
 import 'fake_server.dart';
 
+/// A store that takes a moment, like shared_preferences on a cold web load.
+class SlowSessionStore implements SessionStore {
+  final Session? s;
+  SlowSessionStore(this.s);
+  @override
+  Future<Session?> load() => Future.delayed(const Duration(milliseconds: 300), () => s);
+  @override
+  Future<void> save(Session s) async {}
+  @override
+  Future<void> clear() async {}
+}
+
 SessionStore signedIn() => MemorySessionStore()
   ..save(const Session(token: 't', userId: 1, fullName: 'Bryan Wilson', occupation: 'Compliance certifier', authorisationNumber: 'TST100250'));
 
@@ -58,6 +70,22 @@ void main() {
     await t.tap(find.byKey(const ValueKey('logo-home')).first);
     await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('job-7')), findsOneWidget);
+  });
+
+  testWidgets('a deep link waits for the saved session before asking the server', (t) async {
+    server.requireLogin = true;
+    server.token = 't';
+    app = AppSession(
+      store: SlowSessionStore(const Session(token: 't', userId: 1, fullName: 'Bryan Wilson', occupation: 'Compliance certifier')),
+      api: app.api,
+      outboxStore: InMemoryOutboxStore(),
+    );
+    await t.pumpWidget(AssureFieldApp(app: app, initialLocation: '/jobs/7'));
+    await t.pump(); // spinner while the store loads; no request yet
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('now-card')), findsOneWidget);
+    expect(find.textContaining('login required'), findsNothing);
   });
 
   testWidgets('signed out, a deep link goes to /login and comes back after sign-in', (t) async {
