@@ -115,6 +115,16 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  /// Absolute URL for a server path, for things the browser opens itself
+  /// (the rendered certificate).
+  Uri uri(String path) => _u(path);
+
+  /// POST /api/jobs/:id/certificate — issue. The stage change and the
+  /// certificate row share one transaction on the server; a rejection comes
+  /// back with its clause in the message.
+  Future<Map<String, dynamic>> issueCertificate(int jobId, Map<String, dynamic> body) async =>
+      (await postJson('/api/jobs/$jobId/certificate', body)) as Map<String, dynamic>;
+
   Future<dynamic> getJson(String path) async {
     final res = await _http.get(_u(path), headers: _headers);
     if (res.statusCode != 200) throw ApiException(res.statusCode, _reason(res.body));

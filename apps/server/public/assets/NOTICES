@@ -1749,6 +1749,12 @@ flutter_plugin_android_lifecycle
 image_picker_for_web
 image_picker_macos
 image_picker_platform_interface
+url_launcher_android
+url_launcher_ios
+url_launcher_linux
+url_launcher_macos
+url_launcher_web
+url_launcher_windows
 
 Copyright 2013 The Flutter Authors
 
@@ -5277,6 +5283,8 @@ flutter_lints
 image_picker_linux
 image_picker_windows
 plugin_platform_interface
+url_launcher
+url_launcher_platform_interface
 
 Copyright 2013 The Flutter Authors. All rights reserved.
 

@@ -12,6 +12,7 @@ class CurrentUser {
   static const int id = 1;
   static const String name = 'Bryan Wilson';
   static const String occupation = 'Compliance certifier';
+  static const String authorisationNumber = 'TST100250';
 }
 
 /// Site block rows 10, 12 and 13 for the G2 Chiller job, from the workbook.

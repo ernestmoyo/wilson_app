@@ -7,6 +7,7 @@ import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import 'item_screen.dart';
+import 'job_screen.dart';
 import 'sheet_view.dart';
 
 /// The inspection screen: every section and item of the applicable check
@@ -40,6 +41,16 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
           appBar: BrandBar(
             title: insp.locationName,
             subtitle: insp.pcbuName,
+            actions: [
+              if (widget.sync != null && insp.jobId != null)
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => JobScreen(jobId: insp.jobId!, sync: widget.sync!),
+                  )),
+                  icon: const Icon(Icons.account_tree_outlined, size: 18, color: Brand.teal),
+                  label: const Text('Job', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+                ),
+            ],
             bottom: PreferredSize(
               // Measured: chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
               preferredSize: Size.fromHeight(widget.sync == null ? 112 : 150),

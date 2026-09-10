@@ -181,6 +181,67 @@ const handlers = {
     return { inspectionId: r.rows[0].id, which, signedAt: r.rows[0].signed_at, signedBy: r.rows[0].signed_by };
   },
 
+  /**
+   * Process flow stage 5: a non-compliance becomes a corrective action with a
+   * severity (critical / major / minor, the flow's own words), a description
+   * of what must change, and a due date. Addressed by finding id, or by the
+   * same (inspection, sheet, section, item) key the app uses for findings.
+   */
+  async 'corrective_action.raise'(db, p, ctx) {
+    let findingId = p.findingId ?? null;
+    if (!findingId && p.inspectionId && p.templateCode) {
+      const itemId = await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal);
+      if (itemId) {
+        const f = await db.query(`SELECT id FROM finding WHERE inspection_id = $1 AND item_id = $2`,
+          [p.inspectionId, itemId]);
+        findingId = f.rows[0]?.id ?? null;
+      }
+    }
+    if (!findingId) {
+      const e = new Error('a corrective action must name the finding it addresses');
+      e.code = '22P02';
+      throw e;
+    }
+    const r = await db.query(
+      `INSERT INTO corrective_action (finding_id, severity, description, due_date, status)
+       VALUES ($1,$2,$3,$4,'open') RETURNING id`,
+      [findingId, p.severity, p.description, p.dueDate ?? null]
+    );
+    return { correctiveActionId: r.rows[0].id, findingId };
+  },
+
+  /**
+   * Move a corrective action through open → in_progress → resolved → verified.
+   * 'verified' is a claim that a named person re-checked the control (reg
+   * 6.24, process flow stage 6), so the verifier is the authenticated user.
+   */
+  async 'corrective_action.update'(db, p, ctx) {
+    const status = p.status;
+    if (status === 'verified' && !ctx.userId) {
+      const e = new Error('reg 6.24: verifying a corrective action needs an authenticated verifier');
+      e.code = 'P0001';
+      throw e;
+    }
+    const r = await db.query(
+      `UPDATE corrective_action
+         SET status        = $2,
+             description   = COALESCE($3, description),
+             due_date      = COALESCE($4, due_date),
+             reverified_by = CASE WHEN $2 = 'verified' THEN $5 ELSE reverified_by END,
+             reverified_at = CASE WHEN $2 = 'verified' THEN COALESCE($6, now()) ELSE reverified_at END
+       WHERE id = $1
+       RETURNING id, status`,
+      [p.correctiveActionId, status, p.description ?? null, p.dueDate ?? null,
+       ctx.userId ?? null, p.verifiedAt ?? null]
+    );
+    if (!r.rows.length) {
+      const e = new Error(`corrective action ${p.correctiveActionId} not found`);
+      e.code = '22P02';
+      throw e;
+    }
+    return { correctiveActionId: r.rows[0].id, status: r.rows[0].status };
+  },
+
   /** IPS 21(2)(a): a communication with the applicant is a statutory record. */
   async 'communication.record'(db, p, ctx) {
     const r = await db.query(

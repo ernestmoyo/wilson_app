@@ -227,6 +227,33 @@ The last four are the ones a spreadsheet cannot enforce and a database can. That
 
 ---
 
+### 3b. The process flow on screen
+
+Stage 4 is the check sheet screen. Every other stage of the document is the
+**Job screen** (`apps/mobile/lib/screens/job_screen.dart`), reached from the
+Job button on the check sheet. It is a read model over `GET /api/jobs/:id`
+plus the issuance dry-run; every button sends one sync event or one POST and
+re-reads the job. The screen offers only `allowedNext`, which the server
+computes from the same `job_stage_allowed()` the trigger enforces.
+
+| Process flow | Screen element | Wire | Guard |
+|---|---|---|---|
+| 1–8 stage, loops (RFI, gap closure) | Process flow card, numbered as in the document | `GET /api/jobs/:id` → `stage`, `allowedNext` | `job_stage_allowed` |
+| Move between stages, with reason | Move to … buttons → reason dialog | `job.transition {jobId, toStage, reason}` | trigger + `job_stage_transition` (who, when, why) |
+| §5 prioritise gaps critical / major / minor, actions list | Non-compliances card → Add action | `corrective_action.raise {findingId, severity, description, dueDate}` | severity CHECK |
+| §5–6 client remediates, certifier re-verifies | Resolved / Verify buttons | `corrective_action.update {correctiveActionId, status}` | `verified_needs_verifier` (reg 6.24): verifier = authenticated user |
+| IPS 23 conflict question | Register of interests card | `interest.declare {jobId, conflictFound, description}` | `conflict_needs_description` |
+| §6 confirm all controls in place | Issuance check card (blockers with clause) | `GET /api/jobs/:id/issuance-check` | `assert_can_issue_certificate` dry-run |
+| §7 prepare and issue, dates, conditions | Certificate card → Issue dialog | `POST /api/jobs/:id/certificate` | `has_a_number`, `dates_ordered`, conditional/refusal reasons, retention clock, WorkSafe register due |
+| §7 send certificate | Open certificate | `GET /api/jobs/:id/certificate.html` | rendered from the job, never typed |
+| §8 renewal | Move to Monitoring; renewal re-enters at Enquiry | `job.transition` | `monitoring → enquiry` allowed |
+
+Covered by `apps/server/test/process-flow.test.mjs` (the screen's contract
+against PGlite, stages 5–8) and `apps/mobile/test/job_screen_test.dart`
+(the screen against a fake server that answers as apps/server does).
+
+---
+
 ## 4. Integrity model
 
 ```

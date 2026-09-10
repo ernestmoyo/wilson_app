@@ -247,7 +247,8 @@ export function buildApp(db, { allowedOrigin } = {}) {
       WHERE j.id = $1`, [id]);
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
-    const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances] = await Promise.all([
+    const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances,
+           correctiveActions, allowedNext] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
@@ -286,6 +287,24 @@ export function buildApp(db, { allowedOrigin } = {}) {
       db.query(`SELECT s.id, s.name, s.hazard_class, s.quantity, s.unit, s.un_number, s.hsno_approval
                 FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id
                 WHERE j.id = $1 ORDER BY s.name`, [id]),
+      // Process flow stage 5: corrective actions keyed the way the app keys findings.
+      db.query(`SELECT ca.id, ca.finding_id, ca.severity, ca.description, ca.due_date, ca.status,
+                       ca.reverified_by, ca.reverified_at, ca.created_at,
+                       f.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal, i.ordinal AS item_ordinal
+                FROM corrective_action ca
+                JOIN finding f ON f.id = ca.finding_id
+                JOIN inspection ins ON ins.id = f.inspection_id
+                JOIN checksheet_item i ON i.id = f.item_id
+                JOIN checksheet_section s ON s.id = i.section_id
+                JOIN checksheet_template t ON t.id = s.template_id
+                WHERE ins.job_id = $1 ORDER BY ca.id`, [id]),
+      // The stages this job may legally move to next, from the same function
+      // the trigger enforces. The app offers only these.
+      db.query(`SELECT e.enumlabel AS stage
+                FROM pg_enum e JOIN pg_type ty ON ty.oid = e.enumtypid
+                WHERE ty.typname = 'job_stage'
+                  AND job_stage_allowed((SELECT stage FROM job WHERE id = $1), e.enumlabel::job_stage)
+                ORDER BY e.enumsortorder`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -301,6 +320,8 @@ export function buildApp(db, { allowedOrigin } = {}) {
       interestDeclarations: interests.rows,
       contacts: contacts.rows,
       substances: substances.rows,
+      correctiveActions: correctiveActions.rows,
+      allowedNext: allowedNext.rows.map((r) => r.stage),
     });
   }));
 
