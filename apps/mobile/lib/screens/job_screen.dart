@@ -710,7 +710,7 @@ class _JobScreenState extends State<JobScreen> {
           const SizedBox(height: 8),
           OutlinedButton.icon(
             key: const ValueKey('open-certificate'),
-            onPressed: () => launchUrl(api.uri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
+            onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
             icon: const Icon(Icons.open_in_new, size: 16),
             label: const Text('Open certificate'),
           ),

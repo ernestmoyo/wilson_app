@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import 'auth/session.dart';
 import 'bootstrap.dart';
 import 'generated/checksheets.g.dart';
 import 'models/inspection.dart';
 import 'screens/checksheet_screen.dart';
+import 'screens/login_screen.dart';
 import 'sync/api_client.dart';
 import 'sync/outbox.dart';
 import 'sync/sync_service.dart';
@@ -35,12 +37,69 @@ class AssureFieldApp extends StatelessWidget {
         title: 'Assure Safety Field',
         theme: buildTheme(),
         debugShowCheckedModeBanner: false,
-        home: const HomeScreen(),
+        home: const AuthGate(),
       );
 }
 
+/// Sign-in first. The gate owns the one ApiClient the app uses, restores a
+/// saved session, and hands the client to the home screen with the token set.
+class AuthGate extends StatefulWidget {
+  final SessionStore? store;
+  final ApiClient? api;
+  const AuthGate({super.key, this.store, this.api});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late final SessionStore _store = widget.store ?? PrefsSessionStore();
+  late final ApiClient _api = widget.api ??
+      ApiClient(baseUrl: Uri.parse(AppConfig.apiBase), deviceId: AppConfig.deviceId, userId: CurrentUser.id);
+  Session? _session;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _store.load().then((s) {
+      if (!mounted) return;
+      if (s != null) {
+        _api.token = s.token;
+        CurrentUser.apply(s);
+      }
+      setState(() {
+        _session = s;
+        _loaded = true;
+      });
+    });
+  }
+
+  Future<void> _signedIn(Session s) async {
+    await _store.save(s);
+    CurrentUser.apply(s);
+    if (mounted) setState(() => _session = s);
+  }
+
+  Future<void> _signOut() async {
+    await _api.logout();
+    await _store.clear();
+    if (mounted) setState(() => _session = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_session == null) return LoginScreen(api: _api, onSignedIn: _signedIn);
+    return HomeScreen(api: _api, session: _session!, onSignOut: _signOut);
+  }
+}
+
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ApiClient api;
+  final Session session;
+  final Future<void> Function() onSignOut;
+  const HomeScreen({super.key, required this.api, required this.session, required this.onSignOut});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -56,11 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _api = ApiClient(
-      baseUrl: Uri.parse(AppConfig.apiBase),
-      deviceId: AppConfig.deviceId,
-      userId: CurrentUser.id,
-    );
+    _api = widget.api;
     _sync = SyncService(outbox: Outbox(InMemoryOutboxStore()), api: _api);
     _checkHealth();
   }
@@ -114,6 +169,12 @@ class _HomeScreenState extends State<HomeScreen> {
       await Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => ChecksheetScreen(inspection: insp, sync: sync)),
       );
+    } on ApiException catch (e) {
+      if (e.status == 401) {
+        await widget.onSignOut();
+        return;
+      }
+      setState(() => _error = e.message);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -137,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: BrandBar(
         title: 'Field inspections',
-        subtitle: 'WKS-17 location compliance certification',
+        subtitle: '${widget.session.fullName} · ${widget.session.authorisationNumber ?? ''}',
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -166,6 +227,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          ),
+          IconButton(
+            key: const ValueKey('sign-out'),
+            tooltip: 'Sign out',
+            icon: const Icon(Icons.logout),
+            onPressed: widget.onSignOut,
           ),
           IconButton(
             icon: const Icon(Icons.info_outline),

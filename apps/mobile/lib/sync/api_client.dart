@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import '../auth/session.dart';
 import 'outbox.dart';
 
 /// The wire to the server. One method per endpoint the app uses; nothing
@@ -13,6 +14,10 @@ class ApiClient {
   final String deviceId;
   final int? userId;
   final http.Client _http;
+
+  /// Bearer token from login. When set it is the identity the server uses;
+  /// the x-user-id header is only honoured by servers not enforcing sign-in.
+  String? token;
 
   ApiClient({
     required this.baseUrl,
@@ -25,6 +30,7 @@ class ApiClient {
         'content-type': 'application/json',
         'x-device-id': deviceId,
         if (userId != null) 'x-user-id': '$userId',
+        if (token != null) 'authorization': 'Bearer $token',
       };
 
   Uri _u(String path) => baseUrl.resolve(path);
@@ -118,6 +124,38 @@ class ApiClient {
   /// Absolute URL for a server path, for things the browser opens itself
   /// (the rendered certificate).
   Uri uri(String path) => _u(path);
+
+  /// The same, carrying the token as ?token= for a page the browser opens
+  /// on its own (no header possible).
+  Uri authedUri(String path) {
+    final base = _u(path);
+    if (token == null) return base;
+    return base.replace(queryParameters: {...base.queryParameters, 'token': token!});
+  }
+
+  /// POST /api/auth/login — email + passcode → session. Sets [token].
+  Future<Session> login(String email, String passcode) async {
+    final res = await _http.post(
+      _u('/api/auth/login'),
+      headers: {'content-type': 'application/json', 'x-device-id': deviceId},
+      body: jsonEncode({'email': email, 'passcode': passcode, 'deviceId': deviceId}),
+    );
+    if (res.statusCode != 200) throw ApiException(res.statusCode, _reason(res.body));
+    final s = Session.fromLogin(jsonDecode(res.body) as Map<String, dynamic>);
+    token = s.token;
+    return s;
+  }
+
+  /// POST /api/auth/logout — revokes the token server-side, then forgets it.
+  Future<void> logout() async {
+    try {
+      await _http.post(_u('/api/auth/logout'), headers: _headers);
+    } catch (_) {
+      // Offline: the token still dies locally; the server copy expires.
+    }
+    token = null;
+  }
+
 
   /// POST /api/jobs/:id/certificate — issue. The stage change and the
   /// certificate row share one transaction on the server; a rejection comes

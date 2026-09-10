@@ -249,6 +249,7 @@ computes from the same `job_stage_allowed()` the trigger enforces.
 | §7 prepare and issue, dates, conditions | Certificate card → Issue dialog | `POST /api/jobs/:id/certificate` | `has_a_number`, `dates_ordered`, conditional/refusal reasons, retention clock, WorkSafe register due |
 | §7 send certificate | Open certificate | `GET /api/jobs/:id/certificate.html` | rendered from the job, never typed |
 | §8 renewal | Move to Monitoring; renewal re-enters at Enquiry | `job.transition` | `monitoring → enquiry` allowed |
+| Who is recording (IPS 21(4)(a), 21(5); reg 6.24) | Sign-in screen; name and authorisation number in the home bar; Sign out | `POST /api/auth/login {email, passcode, deviceId}` → bearer token; `Authorization: Bearer` on every call; `?token=` for the certificate tab | `AUTH_REQUIRED=1`: no token, no job route (401 with clause); the signed-in user outranks any userId in a body; passcode = scrypt hash from `ASSURE_PASSCODE`, rotated at boot; tokens stored as SHA-256 only (migration 007) |
 
 Covered by `apps/server/test/process-flow.test.mjs` (the screen's contract
 against PGlite, stages 5–8) and `apps/mobile/test/job_screen_test.dart`

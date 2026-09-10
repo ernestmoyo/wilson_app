@@ -20,6 +20,10 @@ import 'package:assure_field/sync/outbox.dart';
 import 'package:assure_field/sync/sync_service.dart';
 
 const liveApi = String.fromEnvironment('LIVE_API', defaultValue: '');
+// A server enforcing sign-in (AUTH_REQUIRED=1) needs a passcode:
+//   --dart-define=LIVE_PASSCODE=…
+const livePasscode = String.fromEnvironment('LIVE_PASSCODE', defaultValue: '');
+String? liveToken;
 
 void main() {
   if (liveApi.isEmpty) {
@@ -30,7 +34,15 @@ void main() {
   // flutter_test installs an HttpOverrides that answers every request with
   // 400 so tests never touch the network by accident. This test exists to
   // touch the network, so restore the real client.
-  setUpAll(() => HttpOverrides.global = null);
+  setUpAll(() async {
+    HttpOverrides.global = null;
+    if (livePasscode.isNotEmpty) {
+      final a = ApiClient(baseUrl: Uri.parse(liveApi), deviceId: 'flutter-live-test', httpClient: http.Client());
+      final session = await a.login('compliancecertifier@assuresafety.co.nz', livePasscode);
+      liveToken = session.token;
+      a.close();
+    }
+  });
 
   late ApiClient api;
   late SyncService sync;
@@ -41,7 +53,7 @@ void main() {
       deviceId: 'flutter-live-test',
       userId: CurrentUser.id,
       httpClient: http.Client(),
-    );
+    )..token = liveToken;
     sync = SyncService(outbox: Outbox(InMemoryOutboxStore()), api: api);
   });
 

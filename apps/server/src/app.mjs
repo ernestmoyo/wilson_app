@@ -13,6 +13,7 @@ import { pathToFileURL } from 'url';
 import { applyEvents, EVENT_TYPES } from './sync/apply.mjs';
 import { explain, isClientError } from './sync/errors.mjs';
 import { assetPath } from './db.mjs';
+import { authenticate, login, logout, tokenFromRequest } from './auth.mjs';
 
 // The certificate renderer lives in packages/checksheets; vendored on Vercel.
 const renderMod = await import(
@@ -59,22 +60,56 @@ async function readEvidence(storageKey) {
   return { buf: readFileSync(file), mime: null };
 }
 
-export function buildApp(db, { allowedOrigin } = {}) {
+/** Routes a device may call before it has signed in. */
+const PUBLIC_PATHS = new Set(['/api/health', '/api/auth/login', '/api/templates', '/api/sync/event-types']);
+const isPublic = (req) =>
+  PUBLIC_PATHS.has(req.path) || req.path.startsWith('/api/templates/') || !req.path.startsWith('/api/');
+
+export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQUIRED === '1' } = {}) {
   const app = express();
   app.use(express.json({ limit: '2mb' }));
   app.use(cors({ origin: allowedOrigin ?? true, credentials: true }));
 
-  // Until real auth lands, identity comes from headers the app sets. This is
-  // deliberately a single place to replace.
-  app.use((req, _res, next) => {
-    req.ctx = {
-      deviceId: req.header('x-device-id') ?? null,
-      userId: req.header('x-user-id') ? Number(req.header('x-user-id')) : null,
-    };
-    next();
-  });
-
   const wrap = (fn) => (req, res, next) => fn(req, res).catch(next);
+
+  // Identity. A bearer token (or ?token= for pages the browser opens itself)
+  // names the user; that name is the server's, not the client's. With
+  // AUTH_REQUIRED=1 nothing else is accepted. Without it (tests, local dev)
+  // the x-user-id header still works, and the sync route's body userId too.
+  app.use((req, _res, next) => (async () => {
+    const session = await authenticate(db, tokenFromRequest(req));
+    req.ctx = {
+      deviceId: req.header('x-device-id') ?? session?.deviceId ?? null,
+      userId: session?.userId ?? (requireAuth ? null : (req.header('x-user-id') ? Number(req.header('x-user-id')) : null)),
+      authenticated: !!session,
+    };
+    if (requireAuth && !session && !isPublic(req)) {
+      return _res.status(401).json({ error: 'login required', clause: 'IPS 21(5)' });
+    }
+    next();
+  })().catch(next));
+
+  // ── auth ─────────────────────────────────────────────────────────────────
+  app.post('/api/auth/login', wrap(async (req, res) => {
+    const b = req.body ?? {};
+    if (!b.passcode) return res.status(400).json({ error: 'passcode is required' });
+    const out = await login(db, { email: b.email, passcode: b.passcode, deviceId: b.deviceId ?? req.ctx.deviceId });
+    if (!out) return res.status(401).json({ error: 'email or passcode not recognised' });
+    res.json(out);
+  }));
+  app.post('/api/auth/logout', wrap(async (req, res) => {
+    await logout(db, tokenFromRequest(req));
+    res.json({ ok: true });
+  }));
+  app.get('/api/auth/me', wrap(async (req, res) => {
+    if (!req.ctx.userId) return res.status(401).json({ error: 'not signed in' });
+    const r = await db.query(
+      `SELECT id, full_name, occupation, email, role, authorisation_number FROM app_user WHERE id = $1`,
+      [req.ctx.userId]);
+    const u = r.rows[0];
+    res.json({ id: u.id, fullName: u.full_name, occupation: u.occupation, email: u.email,
+               role: u.role, authorisationNumber: u.authorisation_number, authenticated: req.ctx.authenticated });
+  }));
 
   // ── health ───────────────────────────────────────────────────────────────
   app.get('/api/health', wrap(async (_req, res) => {
@@ -485,7 +520,9 @@ export function buildApp(db, { allowedOrigin } = {}) {
 
   app.post('/api/sync', wrap(async (req, res) => {
     const { deviceId, userId, events } = req.body ?? {};
-    const ctx = { deviceId: deviceId ?? req.ctx.deviceId, userId: userId ?? req.ctx.userId };
+    // The signed-in user outranks whatever the body claims (IPS 21(5)).
+    const ctx = { deviceId: deviceId ?? req.ctx.deviceId,
+                  userId: req.ctx.authenticated ? req.ctx.userId : (userId ?? req.ctx.userId) };
     if (!ctx.deviceId) return res.status(400).json({ error: 'deviceId is required' });
     if (!Array.isArray(events)) return res.status(400).json({ error: 'events must be an array' });
     for (const ev of events) {

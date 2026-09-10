@@ -1,4 +1,5 @@
 import 'generated/checksheets.g.dart';
+import 'auth/session.dart';
 import 'models/finding.dart';
 import 'models/inspection.dart';
 import 'models/site_block.dart';
@@ -9,10 +10,19 @@ import 'sync/sync_service.dart';
 /// seeded user id 1 — IPS 21(4)(a) needs both the name and the occupation on
 /// every photograph, so both live here, once.
 class CurrentUser {
-  static const int id = 1;
-  static const String name = 'Bryan Wilson';
-  static const String occupation = 'Compliance certifier';
-  static const String authorisationNumber = 'TST100250';
+  static int id = 1;
+  static String name = 'Bryan Wilson';
+  static String occupation = 'Compliance certifier';
+  static String authorisationNumber = 'TST100250';
+
+  /// After login the server's description of the person replaces the
+  /// defaults; the defaults only matter to a server not enforcing sign-in.
+  static void apply(Session s) {
+    id = s.userId;
+    name = s.fullName;
+    occupation = s.occupation;
+    if (s.authorisationNumber != null) authorisationNumber = s.authorisationNumber!;
+  }
 }
 
 /// Site block rows 10, 12 and 13 for the G2 Chiller job, from the workbook.

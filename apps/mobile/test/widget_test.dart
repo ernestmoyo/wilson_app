@@ -4,7 +4,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:assure_field/generated/checksheets.g.dart';
 import 'package:assure_field/main.dart';
 import 'package:assure_field/models/finding.dart';
+import 'package:assure_field/auth/session.dart';
 import 'package:assure_field/models/inspection.dart';
+import 'package:assure_field/theme.dart';
+
+/// A store that already holds Bryan's session, so the gate opens on the
+/// inspections list rather than the sign-in screen.
+SessionStore signedIn() => MemorySessionStore()
+  ..save(const Session(
+      token: 'test-token',
+      userId: 1,
+      fullName: 'Bryan Wilson',
+      occupation: 'Compliance certifier',
+      authorisationNumber: 'TST100250'));
 
 void main() {
   group('generated WKS-17 templates', () {
@@ -120,14 +132,16 @@ void main() {
   });
 
   testWidgets('app renders the inspection list', (tester) async {
-    await tester.pumpWidget(const AssureFieldApp());
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(), home: AuthGate(store: signedIn())));
+    await tester.pump();
     expect(find.text('G2 Chiller'), findsOneWidget);
     expect(find.text('Argenta Manufacturing Limited'), findsOneWidget);
     expect(find.textContaining('54 items'), findsOneWidget);
   });
 
   testWidgets('opening an inspection shows verbatim section titles', (tester) async {
-    await tester.pumpWidget(const AssureFieldApp());
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(), home: AuthGate(store: signedIn())));
+    await tester.pump();
     await tester.tap(find.text('G2 Chiller'));
     await tester.pumpAndSettle();
 
