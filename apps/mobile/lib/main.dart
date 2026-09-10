@@ -76,9 +76,15 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _signedIn(Session s) async {
-    await _store.save(s);
     CurrentUser.apply(s);
     if (mounted) setState(() => _session = s);
+    // Persisting is best effort: a store that fails (private browsing, a
+    // missing plugin) should not undo a sign-in the server accepted.
+    try {
+      await _store.save(s);
+    } catch (e) {
+      debugPrint('session not persisted: $e');
+    }
   }
 
   Future<void> _signOut() async {

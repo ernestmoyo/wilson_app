@@ -59,7 +59,7 @@ void main() {
   testWidgets('a wrong passcode shows the refusal; the right one hands back a session', (t) async {
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: fakeAuthServer());
     Session? got;
-    await t.pumpWidget(MaterialApp(home: LoginScreen(api: api, onSignedIn: (s) => got = s)));
+    await t.pumpWidget(MaterialApp(home: LoginScreen(api: api, onSignedIn: (s) async => got = s)));
     expect(find.text('compliancecertifier@assuresafety.co.nz'), findsOneWidget);
 
     await t.enterText(find.byKey(const ValueKey('login-passcode')), 'wrong');

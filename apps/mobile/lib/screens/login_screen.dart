@@ -9,7 +9,7 @@ import '../widgets/brand_bar.dart';
 /// knows by that passcode; from then on every record carries that identity.
 class LoginScreen extends StatefulWidget {
   final ApiClient api;
-  final void Function(Session) onSignedIn;
+  final Future<void> Function(Session) onSignedIn;
   final String initialEmail;
   const LoginScreen({
     super.key,
@@ -36,11 +36,13 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       final s = await widget.api.login(_email.text.trim(), _passcode.text);
-      widget.onSignedIn(s);
+      await widget.onSignedIn(s);
     } on ApiException catch (e) {
       setState(() => _error = e.status == 401 ? 'Email or passcode not recognised.' : e.message);
     } catch (e) {
-      setState(() => _error = 'Could not reach the server. Check the connection and try again.');
+      // Anything after a 200 (saving the session, applying it) is named
+      // plainly: a silent failure here looks like a broken passcode.
+      setState(() => _error = 'Signed in, but the app could not keep the session: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
