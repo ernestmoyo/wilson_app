@@ -114,6 +114,7 @@ class _JobScreenState extends State<JobScreen> {
                 if (_busy) const LinearProgressIndicator(minHeight: 2),
                 if (_error != null) _errorBanner(),
                 _stageCard(j),
+                _communicationsCard(j),
                 _interestCard(j),
                 _correctiveActionsCard(j),
                 _issuanceCard(j),
@@ -238,6 +239,213 @@ class _JobScreenState extends State<JobScreen> {
     );
     if (reason == null) return;
     await _send('job.transition', {'jobId': widget.jobId, 'toStage': next, if (reason.isNotEmpty) 'reason': reason});
+  }
+
+  // ── Stages 1 to 3: communications, the application pack, the RFI loop ───
+
+  /// The two email templates at the end of the process flow document, as
+  /// prefilled summaries. The body stays with the email; the record is the
+  /// fact, the date and what it was about (IPS 21(2)(a)).
+  static const _templates = <String, (String, String)>{
+    'Enquiry acknowledged (email template 1)':
+        ('outbound', 'Acknowledged enquiry; asked for business name, site, contact, certificate type, substances, urgency'),
+    'Application pack sent (email template 2)':
+        ('outbound', 'Sent application form, required documents checklist, terms and fee estimate'),
+    'Application accepted':
+        ('inbound', 'Completed application form and acceptance of quote received'),
+    'Site visit confirmed':
+        ('outbound', 'Confirmed visit date, time and who needs to be present'),
+    'Certificate sent':
+        ('outbound', 'Sent certificate with cover letter: what was assessed, conditions, renewal date'),
+  };
+
+  Widget _communicationsCard(JobRecord j) => _card(
+        'Communications',
+        subtitle: 'IPS clause 21(2)(a). Stages 1 to 3: enquiry, application pack, request for further information.',
+        [
+          if (j.communications.isEmpty)
+            const Text('Nothing recorded yet.', style: TextStyle(fontSize: 13))
+          else
+            for (final c in j.communications)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(c.direction == 'inbound' ? Icons.call_received : Icons.call_made,
+                        size: 14, color: c.direction == 'inbound' ? Brand.compliant : Brand.teal),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(c.summary, style: const TextStyle(fontSize: 12.5)),
+                        Text('${_d(c.at)} · ${c.medium} · ${c.party}',
+                            style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                        if ((c.body ?? '').isNotEmpty)
+                          Text(c.body!, style: const TextStyle(fontSize: 11.5, color: Colors.black87)),
+                      ]),
+                    ),
+                  ],
+                ),
+              ),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              key: const ValueKey('record-communication'),
+              onPressed: _busy ? null : _recordCommunication,
+              icon: const Icon(Icons.mail_outline, size: 16),
+              label: const Text('Record communication', style: TextStyle(fontSize: 12)),
+            ),
+            if (j.stage == 'document_review')
+              FilledButton.tonalIcon(
+                key: const ValueKey('send-rfi'),
+                onPressed: _busy ? null : _sendRfi,
+                icon: const Icon(Icons.help_outline, size: 16),
+                label: const Text('Request further information', style: TextStyle(fontSize: 12)),
+              ),
+            if (j.stage == 'rfi')
+              FilledButton.tonalIcon(
+                key: const ValueKey('rfi-answered'),
+                onPressed: _busy ? null : _rfiAnswered,
+                icon: const Icon(Icons.mark_email_read_outlined, size: 16),
+                label: const Text('Information received', style: TextStyle(fontSize: 12)),
+              ),
+          ]),
+        ],
+      );
+
+  Future<void> _recordCommunication() async {
+    var direction = 'outbound';
+    var medium = 'email';
+    final party = TextEditingController(text: _job?.clientName ?? '');
+    final summary = TextEditingController();
+    final body = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Record a communication'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Template (optional)'),
+                items: [
+                  for (final e in _templates.entries) DropdownMenuItem(value: e.key, child: Text(e.key, style: const TextStyle(fontSize: 13))),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setD(() {
+                    direction = _templates[v]!.$1;
+                    summary.text = _templates[v]!.$2;
+                  });
+                },
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: direction,
+                decoration: const InputDecoration(labelText: 'Direction'),
+                items: const [
+                  DropdownMenuItem(value: 'outbound', child: Text('Sent to the client')),
+                  DropdownMenuItem(value: 'inbound', child: Text('Received from the client')),
+                ],
+                onChanged: (v) => setD(() => direction = v ?? direction),
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: medium,
+                decoration: const InputDecoration(labelText: 'Medium'),
+                items: const [
+                  DropdownMenuItem(value: 'email', child: Text('Email')),
+                  DropdownMenuItem(value: 'phone', child: Text('Phone')),
+                  DropdownMenuItem(value: 'meeting', child: Text('Meeting')),
+                  DropdownMenuItem(value: 'letter', child: Text('Letter')),
+                  DropdownMenuItem(value: 'other', child: Text('Other')),
+                ],
+                onChanged: (v) => setD(() => medium = v ?? medium),
+              ),
+              TextField(controller: party, decoration: const InputDecoration(labelText: 'With whom')),
+              TextField(
+                controller: summary,
+                key: const ValueKey('comm-summary'),
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'What it was about'),
+              ),
+              TextField(controller: body, maxLines: 3, decoration: const InputDecoration(labelText: 'Detail (optional)')),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(key: const ValueKey('comm-save'), onPressed: () => Navigator.pop(ctx, true), child: const Text('Record')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || summary.text.trim().isEmpty) return;
+    await _send('communication.record', {
+      'jobId': widget.jobId,
+      'direction': direction,
+      'medium': medium,
+      'party': party.text.trim(),
+      'summary': summary.text.trim(),
+      if (body.text.trim().isNotEmpty) 'body': body.text.trim(),
+    });
+  }
+
+  /// Stage 3: "issue Request for Further Information with a clear list of
+  /// gaps". The list is the record; the stage moves to RFI in the same batch.
+  Future<void> _sendRfi() async {
+    final gaps = await _askText(
+      title: 'Request for further information',
+      label: 'Gaps, one per line',
+      hint: 'e.g. Current SDS for Abamectin\nEmergency response plan',
+      lines: 5,
+    );
+    if (gaps == null || gaps.isEmpty) return;
+    await _sendAll([
+      ('communication.record', {
+        'jobId': widget.jobId,
+        'direction': 'outbound',
+        'medium': 'email',
+        'party': _job?.clientName ?? '',
+        'summary': 'Request for further information',
+        'body': gaps,
+      }),
+      ('job.transition', {'jobId': widget.jobId, 'toStage': 'rfi', 'reason': 'RFI issued'}),
+    ]);
+  }
+
+  Future<void> _rfiAnswered() async {
+    final note = await _askText(
+      title: 'Information received',
+      label: 'What was received',
+      hint: 'e.g. SDS and ERP received by email',
+    );
+    if (note == null) return;
+    await _sendAll([
+      ('communication.record', {
+        'jobId': widget.jobId,
+        'direction': 'inbound',
+        'medium': 'email',
+        'party': _job?.clientName ?? '',
+        'summary': note.isEmpty ? 'Further information received' : note,
+      }),
+      ('job.transition', {'jobId': widget.jobId, 'toStage': 'document_review', 'reason': 'RFI answered'}),
+    ]);
+  }
+
+  /// Several events that belong together go in one flush; the server applies
+  /// each in its own savepoint, so a rejected one is reported on its own.
+  Future<void> _sendAll(List<(String, Map<String, dynamic>)> events) async {
+    setState(() => _busy = true);
+    final ids = <String>[];
+    for (final (type, payload) in events) {
+      ids.add((await widget.sync.outbox.enqueue(type, payload)).id);
+    }
+    await widget.sync.flush();
+    final rejected = widget.sync.rejected.where((r) => ids.contains(r.id)).toList();
+    for (final r in rejected) {
+      final o = r.outcome;
+      _error = [if (o?.clause != null) o!.clause, o?.reason ?? 'rejected'].join(': ');
+      await widget.sync.dismissRejected(r.id);
+    }
+    await _reload();
   }
 
   // ── IPS 23: the conflict-of-interest question ────────────────────────────
@@ -611,7 +819,7 @@ class _JobScreenState extends State<JobScreen> {
             ),
       ]);
 
-  Future<String?> _askText({required String title, required String label, String? hint}) async {
+  Future<String?> _askText({required String title, required String label, String? hint, int lines = 2}) async {
     final c = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
@@ -621,7 +829,7 @@ class _JobScreenState extends State<JobScreen> {
           controller: c,
           key: const ValueKey('ask-text'),
           autofocus: true,
-          maxLines: 2,
+          maxLines: lines,
           decoration: InputDecoration(labelText: label, hintText: hint),
         ),
         actions: [

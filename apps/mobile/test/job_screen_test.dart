@@ -21,11 +21,23 @@ import 'package:assure_field/sync/sync_service.dart';
 class FakeServer {
   bool declared = false;
   String caStatus = 'open';
+  String stage = 'final_validation';
+  final List<Map<String, dynamic>> comms = [
+    {
+      'id': 1,
+      'direction': 'outbound',
+      'medium': 'email',
+      'party': 'Jesh Chandra',
+      'summary': 'Sent application form, required documents checklist, terms and fee estimate',
+      'body': null,
+      'occurred_at': '2026-09-02T00:00:00Z',
+    },
+  ];
   final List<Map<String, dynamic>> events = [];
 
   Map<String, dynamic> job() => {
         'id': 7,
-        'stage': 'final_validation',
+        'stage': stage,
         'class_key': 'class_6_8',
         'client': {'legalName': 'Argenta Manufacturing Limited'},
         'location': {'id': 1, 'name': 'G2 Chiller', 'address': '2 Sterling Avenue'},
@@ -70,7 +82,10 @@ class FakeServer {
         'interestDeclarations': declared ? [{'conflict_found': false}] : [],
         'certificate': null,
         'retention': null,
-        'allowedNext': ['gap_closure', 'site_inspection', 'certificate_issued'],
+        'allowedNext': stage == 'document_review'
+            ? ['rfi', 'site_inspection']
+            : ['gap_closure', 'site_inspection', 'certificate_issued'],
+        'communications': comms,
       };
 
   Map<String, dynamic> check() => {
@@ -95,6 +110,10 @@ class FakeServer {
             events.add(e);
             if (e['type'] == 'interest.declare') declared = true;
             if (e['type'] == 'corrective_action.update') caStatus = e['payload']['status'] as String;
+            if (e['type'] == 'communication.record') {
+              comms.add({...e['payload'] as Map<String, dynamic>, 'id': comms.length + 1, 'occurred_at': '2026-09-10T00:00:00Z'});
+            }
+            if (e['type'] == 'job.transition') stage = e['payload']['toStage'] as String;
             applied.add({'id': e['id'], 'result': {}});
           }
           return http.Response(jsonEncode({'applied': applied, 'rejected': [], 'duplicate': []}), 200);
@@ -186,6 +205,31 @@ void main() {
     expect(find.byKey(const ValueKey('verify-1')), findsNothing);
     expect(find.textContaining('verified 10/09/2026'), findsOneWidget);
     expect(find.text('0 unresolved non-compliance(s) · 0 item(s) still pending'), findsOneWidget);
+  });
+
+  testWidgets('communications are listed; the RFI action appears only at document review', (t) async {
+    await pump(t);
+    expect(find.text('Sent application form, required documents checklist, terms and fee estimate'), findsOneWidget);
+    expect(find.byKey(const ValueKey('record-communication')), findsOneWidget);
+    expect(find.byKey(const ValueKey('send-rfi')), findsNothing);
+  });
+
+  testWidgets('an RFI records the gap list and moves the job to rfi in one batch', (t) async {
+    server.stage = 'document_review';
+    await pump(t);
+    await t.tap(find.byKey(const ValueKey('send-rfi')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const ValueKey('ask-text')), 'Current SDS for Abamectin\nEmergency response plan');
+    await t.tap(find.byKey(const ValueKey('ask-ok')));
+    await t.pumpAndSettle();
+    expect(server.events.map((e) => e['type']).toList(), ['communication.record', 'job.transition']);
+    expect(server.events[0]['payload']['summary'], 'Request for further information');
+    expect(server.events[0]['payload']['body'], contains('Emergency response plan'));
+    expect(server.events[1]['payload']['toStage'], 'rfi');
+    // Re-read: the job is now at rfi, so the answer action replaces the RFI one.
+    expect(find.byKey(const ValueKey('rfi-answered')), findsOneWidget);
+    expect(find.byKey(const ValueKey('send-rfi')), findsNothing);
+    expect(find.text('Request for further information'), findsWidgets);
   });
 
   testWidgets('moving the job asks for a reason and sends job.transition', (t) async {

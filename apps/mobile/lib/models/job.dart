@@ -95,6 +95,27 @@ class CorrectiveAction {
   bool get isVerified => status == 'verified';
 }
 
+/// IPS 21(2)(a): a communication with the applicant. Stages 1 to 3 of the
+/// process flow (enquiry, application pack, RFI) are made of these.
+class Communication {
+  final int id;
+  final String direction;
+  final String medium;
+  final String party;
+  final String summary;
+  final String? body;
+  final DateTime? at;
+  const Communication({
+    required this.id,
+    required this.direction,
+    required this.medium,
+    required this.party,
+    required this.summary,
+    this.body,
+    this.at,
+  });
+}
+
 class StageTransition {
   final String? from;
   final String to;
@@ -139,6 +160,7 @@ class JobRecord {
   final List<JobFinding> findings;
   final List<CorrectiveAction> correctiveActions;
   final List<StageTransition> transitions;
+  final List<Communication> communications;
   final bool interestDeclared;
   final bool? conflictFound;
   final JobCertificate? certificate;
@@ -155,6 +177,7 @@ class JobRecord {
     this.findings = const [],
     this.correctiveActions = const [],
     this.transitions = const [],
+    this.communications = const [],
     this.interestDeclared = false,
     this.conflictFound,
     this.certificate,
@@ -218,6 +241,18 @@ class JobRecord {
             to: t['to_stage'] as String,
             at: _d(t['occurred_at']),
             reason: t['reason'] as String?,
+          ),
+      ],
+      communications: [
+        for (final c in (j['communications'] as List?) ?? const [])
+          Communication(
+            id: _int(c['id']),
+            direction: c['direction'] as String,
+            medium: c['medium'] as String,
+            party: c['party'] as String? ?? '',
+            summary: c['summary'] as String? ?? '',
+            body: c['body'] as String?,
+            at: _d(c['occurred_at']),
           ),
       ],
       interestDeclared: interests.isNotEmpty,

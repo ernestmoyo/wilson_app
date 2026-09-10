@@ -248,7 +248,7 @@ export function buildApp(db, { allowedOrigin } = {}) {
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
     const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances,
-           correctiveActions, allowedNext] = await Promise.all([
+           correctiveActions, allowedNext, communications] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
@@ -305,6 +305,11 @@ export function buildApp(db, { allowedOrigin } = {}) {
                 WHERE ty.typname = 'job_stage'
                   AND job_stage_allowed((SELECT stage FROM job WHERE id = $1), e.enumlabel::job_stage)
                 ORDER BY e.enumsortorder`, [id]),
+      // IPS 21(2)(a): every communication with the applicant is a record of
+      // the job. Stages 1 to 3 of the process flow live here (enquiry, pack,
+      // RFI and its answer).
+      db.query(`SELECT id, direction, medium, party, summary, body, occurred_at, recorded_by
+                FROM communication WHERE job_id = $1 ORDER BY occurred_at, id`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -322,6 +327,7 @@ export function buildApp(db, { allowedOrigin } = {}) {
       substances: substances.rows,
       correctiveActions: correctiveActions.rows,
       allowedNext: allowedNext.rows.map((r) => r.stage),
+      communications: communications.rows,
     });
   }));
 

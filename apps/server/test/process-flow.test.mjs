@@ -50,15 +50,45 @@ await step('create the job and walk it to site inspection', async () => {
   expect(JSON.stringify(j0.allowedNext) === JSON.stringify(['application', 'closed', 'referred']),
     `enquiry may go to ${JSON.stringify(j0.allowedNext)}`);
   const s = await sync([
+    ev('communication.record', { jobId, direction: 'inbound', medium: 'phone', party: 'Jesh Chandra',
+      summary: 'Enquiry: LCC for G2 Chiller, classes 6.1B and 6.1C' }),
+    ev('communication.record', { jobId, direction: 'outbound', medium: 'email', party: 'Jesh Chandra',
+      summary: 'Sent application form, required documents checklist, terms and fee estimate' }),
     ev('job.transition', { jobId, toStage: 'application' }),
     ev('job.transition', { jobId, toStage: 'document_review' }),
+  ]);
+  expect(s.body.applied.length === 4, `applied ${s.body.applied.length}: ${JSON.stringify(s.body.rejected)}`);
+  const j = await job();
+  expect(j.communications.length === 2 && j.communications[0].direction === 'inbound',
+    `communications ${JSON.stringify(j.communications)}`);
+  return `job ${jobId} at document_review with ${j.communications.length} communications on record`;
+});
+
+await step('stage 3: RFI with a list of gaps, the answer, and back to document review', async () => {
+  const s = await sync([
+    ev('communication.record', { jobId, direction: 'outbound', medium: 'email', party: 'Jesh Chandra',
+      summary: 'Request for further information', body: 'Current SDS for Abamectin\nEmergency response plan' }),
+    ev('job.transition', { jobId, toStage: 'rfi', reason: 'RFI issued' }),
+  ]);
+  expect(s.body.rejected.length === 0, JSON.stringify(s.body.rejected));
+  let j = await job();
+  expect(j.stage === 'rfi' && JSON.stringify(j.allowedNext) === JSON.stringify(['document_review']),
+    `rfi allows ${JSON.stringify(j.allowedNext)}`);
+  const s2 = await sync([
+    ev('communication.record', { jobId, direction: 'inbound', medium: 'email', party: 'Jesh Chandra',
+      summary: 'SDS and ERP received' }),
+    ev('job.transition', { jobId, toStage: 'document_review', reason: 'RFI answered' }),
     ev('job.transition', { jobId, toStage: 'site_inspection' }),
     ev('inspection.open', { jobId, hsLocationId, equipmentUsed: 'iPad and tape measure',
       templateCodes: ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'] }),
   ]);
-  expect(s.body.applied.length === 4, `applied ${s.body.applied.length}: ${JSON.stringify(s.body.rejected)}`);
-  inspectionId = s.body.applied[3].result.inspectionId;
-  return `job ${jobId}, allowedNext from site_inspection: ${(await job()).allowedNext.join(', ')}`;
+  expect(s2.body.rejected.length === 0, JSON.stringify(s2.body.rejected));
+  inspectionId = s2.body.applied[3].result.inspectionId;
+  j = await job();
+  const rfi = j.communications.find((c) => c.summary === 'Request for further information');
+  expect(rfi && rfi.body.includes('Emergency response plan'), 'the gap list is not on record');
+  expect(j.transitions.some((t) => t.to_stage === 'rfi' && t.reason === 'RFI issued'), 'RFI move not in history');
+  return `${j.communications.length} communications, stage ${j.stage}`;
 });
 
 await step('record one non-compliance and mark every other item compliant', async () => {

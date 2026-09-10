@@ -239,6 +239,8 @@ computes from the same `job_stage_allowed()` the trigger enforces.
 | Process flow | Screen element | Wire | Guard |
 |---|---|---|---|
 | 1–8 stage, loops (RFI, gap closure) | Process flow card, numbered as in the document | `GET /api/jobs/:id` → `stage`, `allowedNext` | `job_stage_allowed` |
+| §1–2 enquiry, application pack, acceptance (email templates 1 and 2) | Communications card → Record communication, template prefills | `communication.record {jobId, direction, medium, party, summary, body}` | IPS 21(2)(a): direction/medium CHECKs, `occurred_at` required |
+| §3 RFI with a clear list of gaps; answer returns to review | Request further information → gap list; Information received | `communication.record` + `job.transition rfi` in one batch; inbound + `job.transition document_review` | `document_review ⇄ rfi` only |
 | Move between stages, with reason | Move to … buttons → reason dialog | `job.transition {jobId, toStage, reason}` | trigger + `job_stage_transition` (who, when, why) |
 | §5 prioritise gaps critical / major / minor, actions list | Non-compliances card → Add action | `corrective_action.raise {findingId, severity, description, dueDate}` | severity CHECK |
 | §5–6 client remediates, certifier re-verifies | Resolved / Verify buttons | `corrective_action.update {correctiveActionId, status}` | `verified_needs_verifier` (reg 6.24): verifier = authenticated user |
