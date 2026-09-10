@@ -148,6 +148,11 @@ void main() {
     expect(find.textContaining('4 · Site inspection'), findsOneWidget);
     expect(find.text('Continue the inspection: 2 of 54 items assessed'), findsOneWidget);
     expect(find.textContaining('2/54'), findsOneWidget);
+    // Loop 1: what needs attention, and who did what, above the cards.
+    expect(find.byKey(const ValueKey('attention')), findsOneWidget);
+    expect(find.textContaining('Corrective action due 2026-09-15'), findsOneWidget);
+    expect(find.byKey(const ValueKey('activity')), findsOneWidget);
+    expect(find.textContaining('signed the declaration'), findsOneWidget);
   });
 
   testWidgets('board → hub → check sheet, with verbatim section titles', (tester) async {
@@ -186,5 +191,10 @@ void main() {
           'Verify that compliant signage is positioned at all required entrances'),
       findsOneWidget,
     );
+
+    // The logo goes home from three screens deep.
+    await tester.tap(find.byKey(const ValueKey('logo-home')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('job-7')), findsOneWidget);
   });
 }

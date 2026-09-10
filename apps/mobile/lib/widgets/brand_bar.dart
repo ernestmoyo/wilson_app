@@ -61,13 +61,19 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                     )
                   else
                     const SizedBox(width: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Image.asset(
-                      'assets/brand/logo-white.png',
-                      height: 36,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  // The logo goes home from anywhere: the jobs board is the
+                  // first route, so pop to it.
+                  InkWell(
+                    key: const ValueKey('logo-home'),
+                    onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Image.asset(
+                        'assets/brand/logo-white.png',
+                        height: 36,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),

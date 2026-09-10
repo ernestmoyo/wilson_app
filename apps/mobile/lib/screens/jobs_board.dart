@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../auth/session.dart';
 import '../bootstrap.dart';
+import '../models/dashboard.dart';
 import '../models/job.dart';
 import '../sync/api_client.dart';
 import '../sync/sync_service.dart';
@@ -33,6 +34,8 @@ class JobsBoard extends StatefulWidget {
 
 class _JobsBoardState extends State<JobsBoard> {
   List<JobSummary>? _jobs;
+  DashboardData? _dash;
+  List<SheetSet>? _sets;
   bool _busy = false;
   String? _error;
 
@@ -57,9 +60,16 @@ class _JobsBoardState extends State<JobsBoard> {
     setState(() => _busy = true);
     try {
       final rows = (await widget.api.getJson('/api/jobs') as List).cast<Map<String, dynamic>>();
+      DashboardData? dash;
+      try {
+        dash = await widget.api.dashboard();
+      } catch (_) {
+        dash = null;
+      }
       if (!mounted) return;
       setState(() {
         _jobs = rows.map(JobSummary.fromJson).toList();
+        _dash = dash;
         _error = null;
       });
     } on ApiException catch (e) {
@@ -96,6 +106,11 @@ class _JobsBoardState extends State<JobsBoard> {
   }
 
   Future<void> _newJob() async {
+    _sets ??= await widget.api.sheetSets().catchError((_) => <SheetSet>[]);
+    final sets = (_sets ?? const <SheetSet>[]).isEmpty
+        ? const [SheetSet(key: 'class_6_8', name: 'Location: classes 6 or 8', templates: [], authorised: true)]
+        : _sets!;
+    if (!mounted) return;
     final legal = TextEditingController();
     final trading = TextEditingController();
     final address = TextEditingController();
@@ -116,13 +131,24 @@ class _JobsBoardState extends State<JobsBoard> {
               TextField(controller: location, key: const ValueKey('nj-location'), decoration: const InputDecoration(labelText: 'Hazardous substance location, e.g. G2 Chiller')),
               DropdownButtonFormField<String>(
                 initialValue: classKey,
-                decoration: const InputDecoration(labelText: 'Class sheet'),
-                items: const [
-                  DropdownMenuItem(value: 'class_6_8', child: Text('Class 6.1A, 6.1B, 6.1C, 8.2A, 8')),
-                  DropdownMenuItem(value: 'class_2_3', child: Text('Class 2 and 3.1 substances')),
+                decoration: const InputDecoration(labelText: 'Check sheets'),
+                items: [
+                  for (final x in sets)
+                    DropdownMenuItem(
+                      value: x.key,
+                      enabled: x.authorised,
+                      child: Text(x.authorised ? x.name : '${x.name} (outside authorisation)',
+                          style: TextStyle(color: x.authorised ? null : Colors.black38)),
+                    ),
                 ],
                 onChanged: (v) => setD(() => classKey = v ?? classKey),
               ),
+              if (sets.any((x) => x.key == classKey && x.regulation != null))
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(sets.firstWhere((x) => x.key == classKey).regulation!,
+                      style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                ),
               TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)')),
               TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)')),
             ]),
@@ -194,6 +220,8 @@ class _JobsBoardState extends State<JobsBoard> {
           children: [
             _headerRow(jobs),
             if (_busy) const LinearProgressIndicator(minHeight: 2),
+            if (_dash != null && _dash!.reminders.isNotEmpty) _attention(_dash!),
+            if (_dash != null && _dash!.activity.isNotEmpty) _activity(_dash!),
             if (_error != null)
               Card(
                 color: const Color(0xFFFDECEA),
@@ -254,6 +282,70 @@ class _JobsBoardState extends State<JobsBoard> {
       ]),
     );
   }
+
+  static IconData _reminderIcon(String kind) => switch (kind) {
+        'renewal' => Icons.event_repeat,
+        'rfi' => Icons.hourglass_bottom,
+        'action' => Icons.build_outlined,
+        _ => Icons.pause_circle_outline,
+      };
+
+  /// What needs attention: renewals, RFIs waiting, actions due, idle inspections.
+  Widget _attention(DashboardData d) => Card(
+        key: const ValueKey('attention'),
+        margin: const EdgeInsets.only(bottom: 10),
+        color: const Color(0xFFFFF6E5),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Needs attention', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Brand.conditional)),
+            const SizedBox(height: 4),
+            for (final r in d.reminders.take(6))
+              InkWell(
+                onTap: _busy ? null : () => _open(r.jobId),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Icon(_reminderIcon(r.kind), size: 16, color: Brand.conditional),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(TextSpan(children: [
+                        TextSpan(text: '${r.client} · ${r.location}: ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        TextSpan(text: r.text),
+                      ]), style: const TextStyle(fontSize: 12.5)),
+                    ),
+                  ]),
+                ),
+              ),
+          ]),
+        ),
+      );
+
+  /// Who did what, most recent first, across every job.
+  Widget _activity(DashboardData d) => Card(
+        key: const ValueKey('activity'),
+        margin: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Recent activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Brand.tealDark)),
+            const SizedBox(height: 4),
+            for (final a in d.activity.take(8))
+              InkWell(
+                onTap: _busy || a.jobId == null ? null : () => _open(a.jobId!),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Text.rich(TextSpan(children: [
+                    TextSpan(text: a.userName ?? 'Someone', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    TextSpan(text: ' ${a.verb}'),
+                    if (a.location != null) TextSpan(text: ' · ${a.location}', style: const TextStyle(color: Colors.black54)),
+                    TextSpan(text: '  ${_ago(a.at)}', style: const TextStyle(color: Colors.black45, fontSize: 11)),
+                  ]), style: const TextStyle(fontSize: 12.5)),
+                ),
+              ),
+          ]),
+        ),
+      );
 
   Widget _empty() => Card(
         child: Padding(

@@ -214,7 +214,7 @@ class _JobScreenState extends State<JobScreen> {
                 icon: const Icon(Icons.fact_check_outlined, size: 18),
                 label: Text(sheetLabel),
               ),
-            if (canIssue)
+            if (canIssue && CurrentUser.canDecide)
               FilledButton.icon(
                 onPressed: _busy ? null : _issue,
                 icon: const Icon(Icons.verified_outlined, size: 18),
@@ -555,6 +555,8 @@ class _JobScreenState extends State<JobScreen> {
               Text(j.conflictFound == true ? 'Conflict declared' : 'No conflict of interest declared',
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ])
+          else if (!CurrentUser.canDecide)
+            const Text('Answered by the compliance certifier.', style: TextStyle(fontSize: 12.5, color: Colors.black54))
           else
             Wrap(spacing: 8, runSpacing: 8, children: [
               FilledButton(
@@ -640,21 +642,60 @@ class _JobScreenState extends State<JobScreen> {
                               : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'resolved'}),
                           child: const Text('Resolved', style: TextStyle(fontSize: 12)),
                         ),
-                      TextButton(
-                        key: ValueKey('verify-${ca.id}'),
-                        onPressed: _busy
-                            ? null
-                            : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'verified'}),
-                        child: const Text('Verify', style: TextStyle(fontSize: 12)),
-                      ),
+                      if (CurrentUser.canDecide)
+                        TextButton(
+                          key: ValueKey('verify-${ca.id}'),
+                          onPressed: _busy
+                              ? null
+                              : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'verified'}),
+                          child: const Text('Verify', style: TextStyle(fontSize: 12)),
+                        ),
                     ],
                   ],
                 ),
               ),
             const Divider(height: 16),
           ],
+        if (nc.isNotEmpty)
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              key: const ValueKey('nc-report'),
+              onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/non-compliance.html'), mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.print_outlined, size: 16),
+              label: const Text('Non-compliance report', style: TextStyle(fontSize: 12)),
+            ),
+            if (CurrentUser.canRecord)
+              OutlinedButton.icon(
+                key: const ValueKey('nc-send'),
+                onPressed: _busy ? null : () => _sendDocument('non_compliance', 'the non-compliance report'),
+                icon: const Icon(Icons.mail_outline, size: 16),
+                label: const Text('Email to client', style: TextStyle(fontSize: 12)),
+              ),
+          ]),
       ],
     );
+  }
+
+  /// Email a rendered document to the client; the server records it.
+  Future<void> _sendDocument(String document, String label) async {
+    final to = await _askText(
+      title: 'Email $label',
+      label: 'Recipient email',
+      hint: _job?.managerEmail ?? 'name@client.co.nz',
+      initial: _job?.managerEmail,
+    );
+    if (to == null || to.isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      final r = await api.sendDocument(widget.jobId, document: document, to: to);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${r['summary'] ?? 'Recorded'}')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      await _reload();
+    }
   }
 
   static Color _severityColor(String s) => switch (s) {
@@ -776,7 +817,9 @@ class _JobScreenState extends State<JobScreen> {
       'Certificate',
       subtitle: 'Stage 7. Issued from the job record in the workbook layout; retention set on issue (IPS 21(6)).',
       [
-        if (c == null) ...[
+        if (c == null && !CurrentUser.canDecide)
+          const Text('Issued by the compliance certifier.', style: TextStyle(fontSize: 12.5, color: Colors.black54))
+        else if (c == null) ...[
           FilledButton.icon(
             key: const ValueKey('issue-certificate'),
             onPressed: _busy || j.stage != 'final_validation' ? null : _issue,
@@ -801,12 +844,21 @@ class _JobScreenState extends State<JobScreen> {
           _kv('WorkSafe register due', _d(c.worksafeRegisterDue)),
           _kv('Retain records until', _d(j.retainUntil)),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            key: const ValueKey('open-certificate'),
-            onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
-            icon: const Icon(Icons.open_in_new, size: 16),
-            label: const Text('Open certificate'),
-          ),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              key: const ValueKey('open-certificate'),
+              onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Open certificate'),
+            ),
+            if (CurrentUser.canDecide)
+              OutlinedButton.icon(
+                key: const ValueKey('cert-send'),
+                onPressed: _busy ? null : () => _sendDocument('certificate', 'the certificate'),
+                icon: const Icon(Icons.mail_outline, size: 16),
+                label: const Text('Email to client'),
+              ),
+          ]),
         ],
       ],
     );
@@ -897,23 +949,44 @@ class _JobScreenState extends State<JobScreen> {
 
   // ── History: every move, who and when ────────────────────────────────────
 
-  Widget _historyCard(JobRecord j) => _card('History', [
-        if (j.transitions.isEmpty)
-          const Text('No moves recorded yet.', style: TextStyle(fontSize: 13))
-        else
-          for (final t in j.transitions)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Text(
-                '${_d(t.at)}  ${t.from == null ? '' : '${ProcessStage.label(t.from!)} → '}${ProcessStage.label(t.to)}'
-                '${(t.reason ?? '').isEmpty ? '' : '  (${t.reason})'}',
-                style: const TextStyle(fontSize: 12),
+  /// IPS 22: who did what on this job, newest first, refusals included.
+  Widget _historyCard(JobRecord j) => _card(
+        'History',
+        subtitle: 'Every record on this job, by person. Refusals stay on the record with their clause.',
+        [
+          if (j.events.isEmpty && j.transitions.isEmpty)
+            const Text('Nothing recorded yet.', style: TextStyle(fontSize: 13))
+          else if (j.events.isEmpty)
+            for (final t in j.transitions)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '${_d(t.at)}  ${t.from == null ? '' : '${ProcessStage.label(t.from!)} → '}${ProcessStage.label(t.to)}'
+                  '${(t.reason ?? '').isEmpty ? '' : '  (${t.reason})'}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              )
+          else
+            for (final e in j.events.take(40))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: '${_d(e.at)}  ', style: const TextStyle(color: Colors.black54)),
+                    TextSpan(text: e.userName ?? 'Unknown device', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    TextSpan(text: ' ${e.verb}'),
+                    if (e.outcome == 'rejected')
+                      TextSpan(text: '  refused${e.clause != null ? ' (${e.clause})' : ''}',
+                          style: const TextStyle(color: Brand.nonCompliant, fontWeight: FontWeight.w700)),
+                  ]),
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
-            ),
-      ]);
+        ],
+      );
 
-  Future<String?> _askText({required String title, required String label, String? hint, int lines = 2}) async {
-    final c = TextEditingController();
+  Future<String?> _askText({required String title, required String label, String? hint, int lines = 2, String? initial}) async {
+    final c = TextEditingController(text: initial ?? '');
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

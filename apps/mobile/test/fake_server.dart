@@ -13,6 +13,8 @@ class FakeServer {
   String stage = 'final_validation';
   bool requireLogin = false;
   String? token;
+  String role = 'certifier';
+  final List<Map<String, dynamic>> sent = [];
   final List<Map<String, dynamic>> events = [];
   final List<Map<String, dynamic>> findings = [
     {
@@ -110,7 +112,7 @@ class FakeServer {
         'certificate': null,
         'retention': null,
         'contacts': [
-          {'id': 1, 'name': 'Jesh Chandra', 'role': 'Site manager', 'phone': '0226787761', 'is_site_manager': true}
+          {'id': 1, 'name': 'Jesh Chandra', 'role': 'Site manager', 'phone': '0226787761', 'email': 'jesh@argenta.example', 'is_site_manager': true}
         ],
         'substances': [
           {'id': 1, 'name': 'Abamectin', 'hazard_class': '6.1B'}
@@ -121,6 +123,56 @@ class FakeServer {
                 ? ['compliance_evaluation']
                 : ['gap_closure', 'site_inspection', 'certificate_issued'],
         'communications': comms,
+        'events': [
+          for (final e in events.reversed)
+            {
+              'type': e['type'],
+              'payload': e['payload'],
+              'occurred_at': '2026-09-10T00:00:00Z',
+              'outcome': 'applied',
+              'reject_clause': null,
+              'user_name': role == 'certifier' ? 'Bryan Wilson' : 'Document reviewer',
+              'user_role': role,
+            },
+          {
+            'type': 'inspection.sign',
+            'payload': {'inspectionId': 3, 'which': 'declaration'},
+            'occurred_at': '2026-09-09T00:00:00Z',
+            'outcome': 'applied',
+            'reject_clause': null,
+            'user_name': 'Bryan Wilson',
+            'user_role': 'certifier',
+          },
+          {
+            'type': 'inspection.sign',
+            'payload': {'inspectionId': 3, 'which': 'declaration'},
+            'occurred_at': '2026-09-08T00:00:00Z',
+            'outcome': 'rejected',
+            'reject_clause': 'Role',
+            'user_name': 'Document reviewer',
+            'user_role': 'reviewer',
+          },
+        ],
+      };
+
+  Map<String, dynamic> dashboard() => {
+        'reminders': [
+          {'kind': 'action', 'jobId': 7, 'client': client['legalName'], 'location': location['name'], 'when': '2026-09-15', 'text': 'Corrective action due 2026-09-15: Install compliant signage'},
+        ],
+        'activity': [
+          {'type': 'inspection.sign', 'occurred_at': '2026-09-09T00:00:00Z', 'payload': {'inspectionId': 3, 'which': 'declaration'}, 'user_name': 'Bryan Wilson', 'job_id': 7, 'client': client['legalName'], 'location': location['name']},
+          {'type': 'finding.upsert', 'occurred_at': '2026-09-09T00:00:00Z', 'payload': {'sectionOrdinal': 4, 'itemOrdinal': 4, 'status': 'non_compliant'}, 'user_name': 'Document reviewer', 'job_id': 7, 'client': client['legalName'], 'location': location['name']},
+        ],
+        'mailConfigured': false,
+      };
+
+  Map<String, dynamic> sheetSets() => {
+        'sets': [
+          {'key': 'class_6_8', 'name': 'Location: classes 6 or 8', 'templates': ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 13.38'}},
+          {'key': 'class_2_3', 'name': 'Location: classes 2 and 3.1', 'templates': ['wks17-general', 'wks17-class-2-and-3-1-substances'], 'authorised': false, 'authorisationEntry': null},
+        ],
+        'planned': [],
+        'certifier': {'number': 'TST100250'},
       };
 
   Map<String, dynamic> check() => {
@@ -177,7 +229,7 @@ class FakeServer {
               jsonEncode({
                 'token': token,
                 'expiresAt': '2026-10-10T00:00:00Z',
-                'user': {'id': 1, 'fullName': 'Bryan Wilson', 'occupation': 'Compliance certifier', 'email': b['email'], 'authorisationNumber': 'TST100250'},
+                'user': {'id': 1, 'fullName': role == 'certifier' ? 'Bryan Wilson' : 'Document reviewer', 'occupation': 'Compliance certifier', 'email': b['email'], 'authorisationNumber': 'TST100250', 'role': role},
               }),
               200);
         }
@@ -190,6 +242,14 @@ class FakeServer {
         if (path == '/api/jobs/7') return http.Response(jsonEncode(job()), 200);
         if (path == '/api/jobs/7/issuance-check') return http.Response(jsonEncode(check()), 200);
         if (path == '/api/jobs/7/site-block') return http.Response('{"ok":true}', 200);
+        if (path == '/api/dashboard') return http.Response(jsonEncode(dashboard()), 200);
+        if (path == '/api/sheet-sets') return http.Response(jsonEncode(sheetSets()), 200);
+        if (path == '/api/jobs/7/send') {
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          sent.add(b);
+          comms.add({'id': comms.length + 1, 'direction': 'outbound', 'medium': 'email', 'party': b['to'], 'summary': 'Prepared the ${b['document'] == 'certificate' ? 'certificate' : 'non-compliance report'} for ${b['to']} (email not sent: SMTP_URL not configured)', 'occurred_at': '2026-09-10T00:00:00Z'});
+          return http.Response(jsonEncode({'sent': false, 'reason': 'SMTP_URL not configured', 'summary': 'Prepared for ${b['to']}'}), 200);
+        }
         if (path == '/api/sync') {
           final body = jsonDecode(req.body) as Map<String, dynamic>;
           final applied = <Map<String, dynamic>>[];

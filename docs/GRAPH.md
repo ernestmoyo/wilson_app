@@ -264,6 +264,36 @@ the same item (the local version is about to win on the server anyway), and
 the screen says "N items updated from another device". Start on the phone,
 finish on the laptop, or the reverse.
 
+### 3a′. Loops 1–4 from the 10 September call
+
+```
+                       WorkSafe register (TST100250)          authorisation.json
+                                  │ permits
+                                  ▼
+ Person ──role──► may do ──►  SheetSet  ──inspects with──► templates   sheet-sets.json
+ (certifier /                     │
+  reviewer /                      ▼
+  viewer)      Client ─► Job ─► Inspection ─► Finding ─► CorrectiveAction
+    │                    │                        │
+    │ every event        │ stage                  │ non-compliant
+    ▼                    ▼                        ▼
+ Event log ◄──── who did what ◄────────── Non-compliance report ──► Communication ──► client
+ (sync_event.user_id)                     Certificate ────────────►   (send, recorded)
+    │
+    ▼
+ Dashboard = reminders (expiry −180 d, RFI > 7 d, action due ≤ 14 d, idle 14 d) + recent events
+```
+
+| Node / edge | Where | Guard |
+|---|---|---|
+| Person.role | `app_user.role` (migration 008); `Session.role` in the app | `roles.mjs`: sign, interests, verify, issue need certifier; viewer reads only; per-event, clause `Role` |
+| Event → Person | `sync_event.user_id`; `GET /api/jobs/:id` → `events`; hub History | refusals stay on the record with their clause (IPS 22) |
+| SheetSet → Authorisation | `GET /api/sheet-sets`, `GET /api/authorisation`; New job picker | a set with no authorisation entry cannot be chosen |
+| Report → Communication → Client | `GET /api/jobs/:id/non-compliance.html`; `POST /api/jobs/:id/send` | certificate send needs certifier; every send recorded (IPS 21(2)(a)); SMTP_URL optional |
+| Workbook → Job | `POST /api/jobs/import`; `tools/import-job.mjs` | certifier only; findings become events by that person |
+| Dashboard | `GET /api/dashboard`; board strips | derived, never stored |
+| Logo → home | `BrandBar` | pops to the first route |
+
 ### 3b. The process flow on screen
 
 Stage 4 is the check sheet screen. Every other stage of the document is the

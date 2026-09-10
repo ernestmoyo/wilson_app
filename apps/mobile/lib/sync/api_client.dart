@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../auth/session.dart';
+import '../models/dashboard.dart';
 import 'outbox.dart';
 
 /// The wire to the server. One method per endpoint the app uses; nothing
@@ -162,6 +163,22 @@ class ApiClient {
   /// back with its clause in the message.
   Future<Map<String, dynamic>> issueCertificate(int jobId, Map<String, dynamic> body) async =>
       (await postJson('/api/jobs/$jobId/certificate', body)) as Map<String, dynamic>;
+
+  /// GET /api/dashboard — reminders and recent activity, server-computed.
+  Future<DashboardData> dashboard() async =>
+      DashboardData.fromJson((await getJson('/api/dashboard')) as Map<String, dynamic>);
+
+  /// GET /api/sheet-sets — what a job can inspect against, and whether the
+  /// certifier's authorisation covers it.
+  Future<List<SheetSet>> sheetSets() async {
+    final j = (await getJson('/api/sheet-sets')) as Map<String, dynamic>;
+    return [for (final x in (j['sets'] as List?) ?? const []) SheetSet.fromJson((x as Map).cast<String, dynamic>())];
+  }
+
+  /// POST /api/jobs/:id/send — email a document to the client; the server
+  /// records the communication whether or not mail is configured.
+  Future<Map<String, dynamic>> sendDocument(int jobId, {required String document, required String to}) async =>
+      (await postJson('/api/jobs/$jobId/send', {'document': document, 'to': to})) as Map<String, dynamic>;
 
   Future<dynamic> getJson(String path) async {
     final res = await _http.get(_u(path), headers: _headers);

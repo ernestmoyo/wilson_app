@@ -7,6 +7,8 @@
 /// the job is re-read; the screen never guesses at what the server decided.
 library;
 
+import 'dashboard.dart' show describeEvent;
+
 /// node-postgres hands int8 over as strings; accept either.
 int _int(Object? v) => v is int ? v : int.parse("$v");
 
@@ -242,6 +244,20 @@ class Communication {
   });
 }
 
+/// One line of the audit trail: who did what, when, and whether the server
+/// took it (IPS 22).
+class JobEvent {
+  final String type;
+  final DateTime? at;
+  final String? userName;
+  final String? userRole;
+  final String outcome;
+  final String? clause;
+  final Map<String, dynamic> payload;
+  const JobEvent({required this.type, this.at, this.userName, this.userRole, required this.outcome, this.clause, this.payload = const {}});
+  String get verb => describeEvent(type, payload);
+}
+
 class StageTransition {
   final String? from;
   final String to;
@@ -288,6 +304,8 @@ class JobRecord {
   final List<CorrectiveAction> correctiveActions;
   final List<StageTransition> transitions;
   final List<Communication> communications;
+  final List<JobEvent> events;
+  final String? managerEmail;
   final bool interestDeclared;
   final bool? conflictFound;
   final JobCertificate? certificate;
@@ -306,6 +324,8 @@ class JobRecord {
     this.correctiveActions = const [],
     this.transitions = const [],
     this.communications = const [],
+    this.events = const [],
+    this.managerEmail,
     this.interestDeclared = false,
     this.conflictFound,
     this.certificate,
@@ -387,6 +407,26 @@ class JobRecord {
             at: _d(c['occurred_at']),
           ),
       ],
+      events: [
+        for (final e in (j['events'] as List?) ?? const [])
+          JobEvent(
+            type: e['type'] as String,
+            at: _d(e['occurred_at']),
+            userName: e['user_name'] as String?,
+            userRole: e['user_role'] as String?,
+            outcome: e['outcome'] as String? ?? 'applied',
+            clause: e['reject_clause'] as String?,
+            payload: (e['payload'] as Map?)?.cast<String, dynamic>() ?? const {},
+          ),
+      ],
+      managerEmail: (() {
+        final contacts = (j['contacts'] as List?) ?? const [];
+        for (final c in contacts) {
+          final email = (c as Map)['email'];
+          if (email != null && '$email'.isNotEmpty) return '$email';
+        }
+        return null;
+      })(),
       interestDeclared: interests.isNotEmpty,
       conflictFound: interests.isEmpty ? null : (interests.first as Map)['conflict_found'] == true,
       certificate: cert == null

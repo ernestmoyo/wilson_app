@@ -8,6 +8,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:assure_field/auth/session.dart';
+import 'package:assure_field/bootstrap.dart';
 import 'package:assure_field/models/job.dart';
 import 'package:assure_field/screens/job_screen.dart';
 import 'package:assure_field/sync/api_client.dart';
@@ -126,6 +128,41 @@ void main() {
     expect(find.byKey(const ValueKey('rfi-answered')), findsOneWidget);
     expect(find.byKey(const ValueKey('send-rfi')), findsNothing);
     expect(find.text('Request for further information'), findsWidgets);
+  });
+
+  testWidgets('history names the person on every event and keeps refusals', (t) async {
+    await pump(t);
+    expect(find.textContaining('Bryan Wilson'), findsWidgets);
+    expect(find.textContaining('signed the declaration'), findsWidgets);
+    expect(find.textContaining('refused (Role)'), findsOneWidget);
+  });
+
+  testWidgets('emailing the non-compliance report records a communication', (t) async {
+    await pump(t);
+    expect(find.byKey(const ValueKey('nc-report')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('nc-send')));
+    await t.pumpAndSettle();
+    // The recipient is prefilled with the site manager's email.
+    expect(find.text('jesh@argenta.example'), findsWidgets); // initial value and hint
+    await t.tap(find.byKey(const ValueKey('ask-ok')));
+    await t.pumpAndSettle();
+    expect(server.sent.single['document'], 'non_compliance');
+    expect(server.sent.single['to'], 'jesh@argenta.example');
+    expect(find.textContaining('Prepared the non-compliance report for jesh@argenta.example'), findsOneWidget);
+  });
+
+  testWidgets('a reviewer sees no decide buttons: no interests, no verify, no issue', (t) async {
+    CurrentUser.apply(const Session(token: 't', userId: 2, fullName: 'Document reviewer', occupation: 'Reviewer', role: 'reviewer'));
+    addTearDown(() => CurrentUser.apply(const Session(token: 't', userId: 1, fullName: 'Bryan Wilson', occupation: 'Compliance certifier', role: 'certifier')));
+    await pump(t);
+    expect(find.byKey(const ValueKey('declare-none')), findsNothing);
+    expect(find.text('Answered by the compliance certifier.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('verify-1')), findsNothing);
+    expect(find.byKey(const ValueKey('issue-certificate')), findsNothing);
+    expect(find.text('Issued by the compliance certifier.'), findsOneWidget);
+    // Recording is still theirs: raise an action, record a communication.
+    expect(find.byKey(const ValueKey('raise-11')), findsOneWidget);
+    expect(find.byKey(const ValueKey('record-communication')), findsOneWidget);
   });
 
   testWidgets('moving the job asks for a reason and sends job.transition', (t) async {

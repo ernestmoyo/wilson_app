@@ -549,7 +549,7 @@ class _SheetViewState extends State<SheetView> {
     return Align(
       alignment: Alignment.centerLeft,
       child: FilledButton.tonalIcon(
-        onPressed: enabled ? onSign : null,
+        onPressed: enabled && CurrentUser.canDecide ? onSign : null,
         icon: const Icon(Icons.draw_outlined, size: 16),
         label: Text(label, style: const TextStyle(fontSize: 12)),
       ),

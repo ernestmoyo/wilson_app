@@ -14,6 +14,9 @@ class CurrentUser {
   static String name = 'Bryan Wilson';
   static String occupation = 'Compliance certifier';
   static String authorisationNumber = 'TST100250';
+  static String role = 'certifier';
+  static bool get canDecide => role == 'certifier' || role == 'admin';
+  static bool get canRecord => role != 'viewer';
 
   /// After login the server's description of the person replaces the
   /// defaults; the defaults only matter to a server not enforcing sign-in.
@@ -22,6 +25,7 @@ class CurrentUser {
     name = s.fullName;
     occupation = s.occupation;
     if (s.authorisationNumber != null) authorisationNumber = s.authorisationNumber!;
+    role = s.role;
   }
 }
 
