@@ -151,6 +151,7 @@ class _JobScreenState extends State<JobScreen> {
                 if (_error != null) _errorBanner(),
                 _nowCard(j),
                 _stageCard(j),
+                if (j.substances.isNotEmpty) _substancesCard(j),
                 _communicationsCard(j),
                 _interestCard(j),
                 _correctiveActionsCard(j),
@@ -192,6 +193,18 @@ class _JobScreenState extends State<JobScreen> {
             ],
           ),
         ),
+      );
+
+  /// HSLocation → Substance, as entered on New job: the names print on the
+  /// site block (row 13) and, for a handler, on the certificate's table.
+  Widget _substancesCard(JobRecord j) => _card(
+        'Substances',
+        [for (final x in j.substances) _kv(x.name, [x.hazardClass, if ((x.lifecycles ?? '').isNotEmpty) x.lifecycles!].join('  ·  '))],
+        subtitle: switch (j.kind) {
+          'handler' => 'What the applicant is certified to handle: class and lifecycles',
+          'cylinder' => 'Gas in the cylinders',
+          _ => 'Hazardous substances at this location',
+        },
       );
 
   // ── Now: the one thing this job needs, and the button that does it ───────

@@ -273,10 +273,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       for (const sb of Array.isArray(b.substances) ? b.substances : []) {
         if (!sb?.name || !sb?.hazardClass) continue;
         await tx.query(
-          `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval)
-           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval, lifecycles)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
           [l.rows[0].id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
-           sb.unNumber ?? null, sb.hsnoApproval ?? null]);
+           sb.unNumber ?? null, sb.hsnoApproval ?? null, sb.lifecycles ?? null]);
       }
       if (b.subject && typeof b.subject === 'object') {
         await tx.query(`UPDATE job SET subject = $2::jsonb WHERE id = $1`, [j.rows[0].id, JSON.stringify(b.subject)]);
@@ -326,11 +326,11 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
         for (const sb of Array.isArray(b.substances) ? b.substances : []) {
           if (!sb?.name || !sb?.hazardClass) continue;
           const r = await tx.query(
-            `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval)
-             SELECT $1,$2,$3,$4,$5,$6,$7
+            `INSERT INTO substance (hs_location_id, name, hazard_class, quantity, unit, un_number, hsno_approval, lifecycles)
+             SELECT $1,$2,$3,$4,$5,$6,$7,$8
              WHERE NOT EXISTS (SELECT 1 FROM substance WHERE hs_location_id = $1 AND lower(name) = lower($2))`,
             [hs_location_id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
-             sb.unNumber ?? null, sb.hsnoApproval ?? null]);
+             sb.unNumber ?? null, sb.hsnoApproval ?? null, sb.lifecycles ?? null]);
           substances += r.rowCount ?? 0;
         }
       }
@@ -395,7 +395,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 FROM contact ct JOIN job j ON j.client_id = ct.client_id
                 WHERE j.id = $1 ORDER BY ct.is_site_manager DESC, ct.id`, [id]),
       // Site block row 13: Hazardous substance name(s) at this location.
-      db.query(`SELECT s.id, s.name, s.hazard_class, s.quantity, s.unit, s.un_number, s.hsno_approval
+      db.query(`SELECT s.id, s.name, s.hazard_class, s.quantity, s.unit, s.un_number, s.hsno_approval, s.lifecycles
                 FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id
                 WHERE j.id = $1 ORDER BY s.name`, [id]),
       // Process flow stage 5: corrective actions keyed the way the app keys findings.
@@ -591,7 +591,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 WHERE code = $1 AND status = 'current' LIMIT 1`, [set.templates[0]]),
       db.query(`SELECT ordinal, fields FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [id]),
       db.query(`SELECT u.full_name, u.authorisation_number, u.email FROM certificate c JOIN app_user u ON u.id = c.certifier_id WHERE c.job_id = $1`, [id]),
-      db.query(`SELECT s.name, s.hazard_class FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id WHERE j.id = $1 ORDER BY s.id`, [id]),
+      db.query(`SELECT s.name, s.hazard_class, s.lifecycles FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id WHERE j.id = $1 ORDER BY s.id`, [id]),
     ]);
     if (!cert.rows.length) return null;
     const certificateTemplate = tpl.rows[0]?.certificate;

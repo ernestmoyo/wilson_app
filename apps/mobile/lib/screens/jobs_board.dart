@@ -114,6 +114,10 @@ class _JobsBoardState extends State<JobsBoard> {
     final location = TextEditingController();
     final manager = TextEditingController();
     final phone = TextEditingController();
+    // One row per substance: name, hazard class, lifecycles (handler only).
+    final substances = <(TextEditingController, TextEditingController, TextEditingController)>[
+      (TextEditingController(), TextEditingController(), TextEditingController()),
+    ];
     var classKey = 'class_6_8';
     String kindOf(String key) => sets.firstWhere((x) => x.key == key, orElse: () => sets.first).kind;
     final ok = await showDialog<bool>(
@@ -157,6 +161,55 @@ class _JobsBoardState extends State<JobsBoard> {
                   },
                 ),
               ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  switch (kindOf(classKey)) {
+                    'handler' => 'Substances the applicant will handle',
+                    'cylinder' => 'Gas in the cylinders (optional)',
+                    _ => 'Hazardous substances at the location',
+                  },
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.black54),
+                ),
+              ),
+              for (var k = 0; k < substances.length; k++) ...[
+                Row(children: [
+                  Expanded(
+                    flex: 5,
+                    child: TextField(
+                      controller: substances[k].$1,
+                      key: ValueKey('nj-sub-$k-name'),
+                      decoration: const InputDecoration(labelText: 'Substance'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      controller: substances[k].$2,
+                      key: ValueKey('nj-sub-$k-class'),
+                      decoration: const InputDecoration(labelText: 'Class, e.g. 6.1B'),
+                    ),
+                  ),
+                ]),
+                if (kindOf(classKey) == 'handler')
+                  TextField(
+                    controller: substances[k].$3,
+                    key: ValueKey('nj-sub-$k-lifecycles'),
+                    decoration: const InputDecoration(labelText: 'Lifecycles, e.g. use, storage'),
+                  ),
+              ],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('nj-add-substance'),
+                  onPressed: () => setD(() => substances.add((TextEditingController(), TextEditingController(), TextEditingController()))),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add substance'),
+                ),
+              ),
+              const SizedBox(height: 6),
               TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)')),
               TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)')),
             ]),
@@ -189,6 +242,16 @@ class _JobsBoardState extends State<JobsBoard> {
           'contacts': [
             {'name': manager.text.trim(), 'role': 'Site manager', 'phone': phone.text.trim(), 'isSiteManager': true}
           ],
+        // HSLocation → Substance: a row counts when it has a name and a class.
+        'substances': [
+          for (final x in substances)
+            if (x.$1.text.trim().isNotEmpty && x.$2.text.trim().isNotEmpty)
+              {
+                'name': x.$1.text.trim(),
+                'hazardClass': x.$2.text.trim(),
+                if (x.$3.text.trim().isNotEmpty) 'lifecycles': x.$3.text.trim(),
+              },
+        ],
       }) as Map<String, dynamic>;
       await _reload();
       if (mounted) await _open(toInt(created['jobId']));

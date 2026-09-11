@@ -327,6 +327,10 @@ class JobRecord {
   final JobCertificate? certificate;
   final DateTime? retainUntil;
 
+  /// HSLocation → Substance: what is at the location, or what the applicant
+  /// handles. Feeds site block row 13 and the handler certificate's table.
+  final List<JobSubstance> substances;
+
   const JobRecord({
     required this.id,
     required this.stage,
@@ -348,6 +352,7 @@ class JobRecord {
     this.conflictFound,
     this.certificate,
     this.retainUntil,
+    this.substances = const [],
   });
 
   List<JobFinding> get nonCompliances => findings.where((f) => f.status == 'non_compliant').toList();
@@ -370,6 +375,14 @@ class JobRecord {
     final ret = (j['retention'] as Map?)?.cast<String, dynamic>();
     return JobRecord(
       id: _int(j['id']),
+      substances: [
+        for (final x in ((j['substances'] as List?) ?? const []).cast<Map>())
+          JobSubstance(
+            name: '${x['name'] ?? ''}',
+            hazardClass: '${x['hazard_class'] ?? ''}',
+            lifecycles: x['lifecycles'] == null ? null : '${x['lifecycles']}',
+          ),
+      ],
       stage: j['stage'] as String,
       classKey: j['class_key'] as String?,
       kind: j['kind'] as String? ?? 'location',
@@ -466,4 +479,15 @@ class JobRecord {
       retainUntil: _d(ret?['retain_until']),
     );
   }
+}
+
+/// One substance at the location or in the applicant's scope.
+class JobSubstance {
+  final String name;
+  final String hazardClass;
+  final String? lifecycles;
+  const JobSubstance({required this.name, required this.hazardClass, this.lifecycles});
+
+  /// "Abamectin · 6.1B · Use, storage"
+  String get line => [name, hazardClass, if ((lifecycles ?? '').isNotEmpty) lifecycles!].join(' · ');
 }

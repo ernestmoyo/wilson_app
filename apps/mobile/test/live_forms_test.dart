@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:assure_field/bootstrap.dart';
 import 'package:assure_field/models/finding.dart';
+import 'package:assure_field/models/job.dart';
 import 'package:assure_field/sync/api_client.dart';
 import 'package:assure_field/sync/outbox.dart';
 import 'package:assure_field/sync/sync_service.dart';
@@ -71,6 +72,10 @@ void main() {
       'location': {'name': 'Test Applicant'},
       'classKey': 'handler_6',
       'subject': {'Name': 'Test Applicant', 'Company': 'Example Training Limited', 'Address': '1 Example Road, Auckland'},
+      // HSLocation → Substance, from the New job form's rows.
+      'substances': [
+        {'name': 'Test toxic compound', 'hazardClass': '6.1B', 'lifecycles': 'Use, storage'},
+      ],
     }) as Map<String, dynamic>;
     final jobId = created['jobId'] as int;
 
@@ -158,6 +163,11 @@ void main() {
     expect(res.body, contains('Example Training Limited'));
     expect(res.body, contains('TST100250-CH-LIVE'));
     expect(res.body, contains('Class 6.1 toxic substances'));
+    // The Substances table: Name | Classes | Lifecycles, from the job's substance rows.
+    expect(res.body, contains('Test toxic compound'));
+    expect(res.body, contains('Use, storage'));
+    final rec = JobRecord.fromJson(job);
+    expect(rec.substances.single.line, 'Test toxic compound · 6.1B · Use, storage');
   });
 
   test('cylinder importation: units added, filled, removed; the survivor keeps its ordinal on both sides', () async {

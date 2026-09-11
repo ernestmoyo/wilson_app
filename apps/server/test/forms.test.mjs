@@ -48,7 +48,7 @@ await step('a certified-handler job: the applicant is the subject, recorded by l
     client: { legalName: 'Test Chemicals Ltd' }, site: { address: '1 Test Road, Auckland' },
     location: { name: 'Handler assessment: A. Applicant' }, classKey: 'handler_6',
     subject: { 'Name': 'A. Applicant', 'Company': 'Test Chemicals Ltd', 'Application type': 'New Applicant' },
-    substances: [{ name: 'Test toxic compound', hazardClass: '6.1B' }],
+    substances: [{ name: 'Test toxic compound', hazardClass: '6.1B', lifecycles: 'Use, storage' }],
   });
   expect(r.status === 201, `${r.status} ${r.text}`);
   hJob = r.body.jobId;
@@ -91,7 +91,7 @@ await step('findings against Performance Standard clauses, then the certified-ha
   expect(html.text.includes('Certified Handler'), 'title wording');
   expect(html.text.includes('A. Applicant'), 'subject name');
   expect(html.text.includes('TST100250-CH-0001'), 'certificate number');
-  expect(html.text.includes('Test toxic compound') && html.text.includes('6.1B'), 'the Substances table lists the job substances');
+  expect(html.text.includes('Test toxic compound') && html.text.includes('6.1B') && html.text.includes('Use, storage'), 'the Substances table lists the job substances with lifecycles');
   expect(html.text.includes('This Certificate is limited to activities'), 'scope wording from the template');
   return `${events.length - 4} findings, certificate rendered (${html.text.length} bytes)`;
 });

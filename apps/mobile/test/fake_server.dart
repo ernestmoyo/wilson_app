@@ -91,6 +91,14 @@ class FakeServer {
         },
       ];
 
+  /// Bodies posted to /api/jobs, in order.
+  final List<Map<String, dynamic>> created = [];
+
+  /// Substance rows as the server returns them (the G2 job's one by default).
+  final List<Map<String, dynamic>> substances = [
+    {'id': 1, 'name': 'Abamectin', 'hazard_class': '6.1B'},
+  ];
+
   /// Subject and units as the server keeps them (form sheets).
   final Map<String, dynamic> subject = {};
   final List<Map<String, dynamic>> units = [];
@@ -102,6 +110,7 @@ class FakeServer {
         'kind': kind,
         'subject': subject,
         'units': units,
+        'substances': substances,
         'client': client,
         'location': location,
         'inspections': [
@@ -129,9 +138,6 @@ class FakeServer {
         'retention': null,
         'contacts': [
           {'id': 1, 'name': 'Jesh Chandra', 'role': 'Site manager', 'phone': '0226787761', 'email': 'jesh@argenta.example', 'is_site_manager': true}
-        ],
-        'substances': [
-          {'id': 1, 'name': 'Abamectin', 'hazard_class': '6.1B'}
         ],
         'allowedNext': stage == 'document_review'
             ? ['rfi', 'site_inspection']
@@ -267,6 +273,14 @@ class FakeServer {
           return http.Response('{"error":"login required"}', 401);
         }
         if (path == '/api/jobs' && req.method == 'GET') return http.Response(jsonEncode(board()), 200);
+        if (path == '/api/jobs' && req.method == 'POST') {
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          created.add(b);
+          for (final x in (b['substances'] as List?) ?? const []) {
+            substances.add({'name': x['name'], 'hazard_class': x['hazardClass'], 'lifecycles': x['lifecycles']});
+          }
+          return http.Response(jsonEncode({'jobId': 7, 'clientId': 1, 'siteId': 1, 'hsLocationId': 1, 'stage': 'enquiry'}), 201);
+        }
         if (path == '/api/jobs/7') return http.Response(jsonEncode(job()), 200);
         if (path == '/api/jobs/7/issuance-check') return http.Response(jsonEncode(check()), 200);
         if (path == '/api/jobs/7/site-block') return http.Response('{"ok":true}', 200);

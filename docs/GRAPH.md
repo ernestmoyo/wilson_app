@@ -105,6 +105,13 @@ HSLocation                 site_id, name, summary
                              IPS 21(1)(a): "unique identification or description
                              of any item or location inquired into"
 
+Substance                  hs_location_id, name, hazard_class, quantity, unit,
+                           un_number, hsno_approval, lifecycles (migration 010)
+                           ← entered on New job, one row per substance. Read by
+                             site block row 13 (names) and by the certified
+                             handler certificate's table Name | Classes |
+                             Lifecycles. The hub lists them as a card.
+
 Job                        client_id, hs_location_id, type, stage, opened_at
                            subject jsonb            ← label → value for a form sheet
                              (the applicant, the PCBU); merged, never replaced,
