@@ -52,19 +52,30 @@ class _ItemScreenState extends State<ItemScreen> {
 
   @override
   void dispose() {
+    // Leaving the screen commits whatever was typed.
+    _saveIfChanged();
     _comment.dispose();
     _verification.dispose();
     _reason.dispose();
     super.dispose();
   }
 
-  void _save() {
-    widget.inspection.update(widget.finding, (f) {
-      f.comment = _comment.text;
-      f.verificationMethod = _verification.text;
-      f.failureReason = _reason.text;
+  void _save() => _saveIfChanged();
+
+  /// One event per field left, not one per keystroke (each event is an
+  /// audit row on the server). Nothing is written when nothing changed.
+  void _saveIfChanged() {
+    if (!CurrentUser.canRecord) return;
+    final f = widget.finding;
+    if (f.comment == _comment.text && f.verificationMethod == _verification.text && f.failureReason == _reason.text) return;
+    widget.inspection.update(f, (x) {
+      x.comment = _comment.text;
+      x.verificationMethod = _verification.text;
+      x.failureReason = _reason.text;
     });
   }
+
+  Widget _onBlur(Widget field) => Focus(onFocusChange: (has) { if (!has) setState(_saveIfChanged); }, child: field);
 
   @override
   Widget build(BuildContext context) {
@@ -142,9 +153,11 @@ class _ItemScreenState extends State<ItemScreen> {
                   label: Text(s.label),
                   selected: f.status == s,
                   showCheckmark: false,
-                  onSelected: (_) => setState(() {
-                    widget.inspection.update(f, (x) => x.status = s);
-                  }),
+                  onSelected: !CurrentUser.canRecord
+                      ? null
+                      : (_) => setState(() {
+                            widget.inspection.update(f, (x) => x.status = s);
+                          }),
                   labelStyle: TextStyle(
                     color: f.status == s ? Colors.white : Colors.black87,
                     fontWeight: FontWeight.w600,
@@ -159,22 +172,22 @@ class _ItemScreenState extends State<ItemScreen> {
           const SizedBox(height: 20),
 
           _label('Comments', 'What was observed'),
-          TextField(
+          _onBlur(TextField(
             controller: _comment,
             maxLines: 4,
-            onChanged: (_) => _save(),
+            readOnly: !CurrentUser.canRecord,
             decoration: const InputDecoration(hintText: 'Observation recorded on site…'),
-          ),
+          )),
           const SizedBox(height: 20),
 
           _label('How was this verified?', 'IPS cl. 21(1)(e)'),
-          TextField(
+          _onBlur(TextField(
             controller: _verification,
             maxLines: 2,
-            onChanged: (_) => _save(),
+            readOnly: !CurrentUser.canRecord,
             decoration: const InputDecoration(
                 hintText: 'e.g. measured with tape, sighted certificate, interviewed handler'),
-          ),
+          )),
 
           if (f.status == FindingStatus.nonCompliant) ...[
             const SizedBox(height: 20),
@@ -182,7 +195,8 @@ class _ItemScreenState extends State<ItemScreen> {
             TextField(
               controller: _reason,
               maxLines: 3,
-              onChanged: (_) => setState(_save),
+              readOnly: !CurrentUser.canRecord,
+              onChanged: (_) => setState(_saveIfChanged),
               decoration: InputDecoration(
                 hintText: 'Why the requirement is not met…',
                 errorText: f.isIncomplete ? 'Required for a non-compliant finding' : null,

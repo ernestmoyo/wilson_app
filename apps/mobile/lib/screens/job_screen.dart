@@ -89,6 +89,10 @@ class _JobScreenState extends State<JobScreen> {
     setState(() => _busy = true);
     final ev = await widget.sync.outbox.enqueue(type, payload);
     await widget.sync.flush();
+    if (widget.sync.lastError != null && mounted) {
+      // Offline or the server errored: the event is queued, say so.
+      setState(() => _error = 'Not sent yet: ${widget.sync.lastError}. It will go with the next sync.');
+    }
     final rejected = widget.sync.rejected.where((r) => r.id == ev.id).toList();
     if (rejected.isNotEmpty) {
       final o = rejected.first.outcome;
@@ -439,6 +443,7 @@ class _JobScreenState extends State<JobScreen> {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Template (optional)'),
                 items: [
                   for (final e in _templates.entries) DropdownMenuItem(value: e.key, child: Text(e.key, style: const TextStyle(fontSize: 13))),
@@ -452,6 +457,7 @@ class _JobScreenState extends State<JobScreen> {
                 },
               ),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: direction,
                 decoration: const InputDecoration(labelText: 'Direction'),
                 items: const [
@@ -461,6 +467,7 @@ class _JobScreenState extends State<JobScreen> {
                 onChanged: (v) => setD(() => direction = v ?? direction),
               ),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: medium,
                 decoration: const InputDecoration(labelText: 'Medium'),
                 items: const [
@@ -647,7 +654,7 @@ class _JobScreenState extends State<JobScreen> {
                           [
                             'Status: ${ca.status.replaceAll('_', ' ')}',
                             if (ca.dueDate != null) 'due ${_d(ca.dueDate)}',
-                            if (ca.isVerified) 'verified ${_d(ca.reverifiedAt)} by ${CurrentUser.name}',
+                            if (ca.isVerified) 'verified ${_d(ca.reverifiedAt)} by ${ca.reverifiedByName ?? 'compliance certifier'}',
                           ].join(' · '),
                           style: const TextStyle(fontSize: 11, color: Colors.black54),
                         ),
@@ -740,6 +747,7 @@ class _JobScreenState extends State<JobScreen> {
           title: Text('Corrective action for ${f.ref}'),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             DropdownButtonFormField<String>(
+                isExpanded: true,
               initialValue: severity,
               decoration: const InputDecoration(labelText: 'Severity (process flow stage 5)'),
               items: const [
@@ -912,6 +920,7 @@ class _JobScreenState extends State<JobScreen> {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: decision,
                 decoration: const InputDecoration(labelText: 'Decision'),
                 items: const [

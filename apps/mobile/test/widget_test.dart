@@ -29,7 +29,7 @@ void main() {
       expect(general.sections.length, 8);
       expect(general.itemCount, 36);
       expect(kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!.itemCount, 18);
-      expect(kTemplatesByCode['wks17-class-2-and-3-1-substances']!.itemCount, 44);
+      expect(kTemplatesByCode['wks17-class-2-and-3-1-substances']!.itemCount, 43);
     });
 
     test('item text is the verbatim Performance Standard wording', () {

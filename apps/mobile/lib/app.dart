@@ -73,6 +73,12 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    // Send what this person queued while they still hold the token; whatever
+    // cannot go is dropped, never sent under the next sign-in.
+    try {
+      await sync.flush();
+    } catch (_) {}
+    await sync.outbox.clear();
     await api.logout();
     await store.clear();
     inspections.clear();

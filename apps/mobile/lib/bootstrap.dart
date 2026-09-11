@@ -248,11 +248,13 @@ Future<Inspection> openInspectionForJob(ApiClient api, SyncService sync, int job
     templates: templatesFor(job.classKey ?? 'class_6_8'),
   )..jobId = job.jobId;
 
+  // Opening the sheet from "Start site inspection" walks the job to stage 4.
+  // Only someone who records may move it; a viewer just looks.
   const path = ['application', 'document_review', 'site_inspection'];
-  if (job.stage == 'enquiry' || job.stage == 'application' || job.stage == 'document_review') {
+  if (CurrentUser.canRecord && (job.stage == 'enquiry' || job.stage == 'application' || job.stage == 'document_review')) {
     final start = job.stage == 'enquiry' ? 0 : path.indexOf(job.stage) + 1;
     for (final stage in path.sublist(start)) {
-      await sync.outbox.enqueue('job.transition', {'jobId': job.jobId, 'toStage': stage});
+      await sync.outbox.enqueue('job.transition', {'jobId': job.jobId, 'toStage': stage, 'reason': 'Site inspection started from the check sheet'});
     }
     await sync.flush();
   }
@@ -318,10 +320,11 @@ void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal
   if (si != null) {
     insp.declarationSignedAt =
         si['declaration_signed_at'] == null ? null : DateTime.tryParse('${si['declaration_signed_at']}');
-    insp.declarationSignedBy = si['declaration_signed_by'] == null ? null : CurrentUser.name;
+    // The name of whoever signed, from the server: never the person looking.
+    insp.declarationSignedBy = si['declaration_signed_by'] == null ? null : '${si['declaration_signed_by_name'] ?? 'Compliance certifier'}';
     insp.scopeConfirmedAt =
         si['scope_confirmed_at'] == null ? null : DateTime.tryParse('${si['scope_confirmed_at']}');
-    insp.scopeConfirmedBy = si['scope_confirmed_by'] == null ? null : CurrentUser.name;
+    insp.scopeConfirmedBy = si['scope_confirmed_by'] == null ? null : '${si['scope_confirmed_by_name'] ?? 'Compliance certifier'}';
   }
   final cert = job.raw['certificate'];
   if (cert is Map) {

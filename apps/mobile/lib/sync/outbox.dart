@@ -121,9 +121,25 @@ class Outbox {
   int get pendingCount => pending.length;
   int get rejectedCount => rejected.length;
 
+  /// What an event is about, so a corrected event can replace a rejected one.
+  static String _target(String type, Map<String, dynamic> p) => switch (type) {
+        'finding.upsert' => 'f:${p['inspectionId']}/${p['templateCode']}/${p['sectionOrdinal']}/${p['itemOrdinal']}',
+        'job.subject.set' => 's:${p['jobId']}',
+        'job.unit.upsert' || 'job.unit.remove' => 'u:${p['jobId']}/${p['ordinal']}',
+        'inspection.sign' => 'g:${p['inspectionId']}/${p['which']}',
+        'job.transition' => 't:${p['jobId']}/${p['toStage']}',
+        _ => '',
+      };
+
   Future<SyncEvent> enqueue(String type, Map<String, dynamic> payload) async {
     await load();
     final ev = SyncEvent(type: type, payload: payload);
+    // A rejected event about the same thing is now superseded: the server
+    // re-rejecting it would only repeat the clause the person has acted on.
+    final target = _target(type, payload);
+    if (target.isNotEmpty) {
+      _events.removeWhere((e) => (e.outcome?.isRejected ?? false) && e.type == type && _target(e.type, e.payload) == target);
+    }
     _events.add(ev);
     await _persist();
     return ev;
@@ -136,6 +152,13 @@ class Outbox {
       if (o != null) ev.outcome = o;
     }
     _events.removeWhere((e) => e.outcome?.isSettled ?? false);
+    await _persist();
+  }
+
+  /// Everything queued for a person who is signing out. Whatever could not be
+  /// sent is gone with them; nothing may be sent under the next sign-in.
+  Future<void> clear() async {
+    _events.clear();
     await _persist();
   }
 

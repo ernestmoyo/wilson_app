@@ -137,13 +137,15 @@ class SyncService extends ChangeNotifier {
   Future<int> pull(Inspection insp) async {
     if (insp.jobId == null) return 0;
     await outbox.load();
+    final before = {for (final f in insp.findings) f.key: _fingerprint(f)};
+    final job = await fetchJob(api, insp.jobId!);
+    // Decide what to keep AFTER the fetch: an edit made while the request
+    // was in flight is pending now, and must not be overwritten.
     final subjectPending = outbox.pending.any((e) => e.type == 'job.subject.set' || e.type.startsWith('job.unit.'));
     final keepLocal = outbox.pending
         .where((e) => e.type == 'finding.upsert')
         .map((e) => '${e.payload['templateCode']}/${e.payload['sectionOrdinal']}/${e.payload['itemOrdinal']}')
         .toSet();
-    final before = {for (final f in insp.findings) f.key: _fingerprint(f)};
-    final job = await fetchJob(api, insp.jobId!);
     applyJobToInspection(insp, job, keepLocal: keepLocal, keepSubject: subjectPending);
     var changed = 0;
     for (final f in insp.findings) {

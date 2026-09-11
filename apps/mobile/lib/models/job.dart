@@ -222,6 +222,7 @@ class CorrectiveAction {
   final DateTime? dueDate;
   final String status;
   final int? reverifiedBy;
+  final String? reverifiedByName;
   final DateTime? reverifiedAt;
   const CorrectiveAction({
     required this.id,
@@ -231,6 +232,7 @@ class CorrectiveAction {
     this.dueDate,
     required this.status,
     this.reverifiedBy,
+    this.reverifiedByName,
     this.reverifiedAt,
   });
 
@@ -416,6 +418,7 @@ class JobRecord {
             dueDate: _d(c['due_date']),
             status: c['status'] as String,
             reverifiedBy: c['reverified_by'] == null ? null : _int(c['reverified_by']),
+            reverifiedByName: c['reverified_by_name'] as String?,
             reverifiedAt: _d(c['reverified_at']),
           ),
       ],

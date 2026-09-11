@@ -13,7 +13,7 @@
  */
 
 import { explain, isClientError } from './errors.mjs';
-import { checkEventRole } from '../roles.mjs';
+import { canDecide, checkEventRole } from '../roles.mjs';
 
 /**
  * An inspection is pinned to the template revisions it was opened against
@@ -23,6 +23,13 @@ import { checkEventRole } from '../roles.mjs';
  * landed. An inspection with no pin for the code falls back to the current
  * revision.
  */
+/** A rejection the client can fix: recorded, not thrown up as a 500. */
+function reject(reason, code = '22P02') {
+  const e = new Error(reason);
+  e.code = code;
+  return e;
+}
+
 async function resolveItemId(db, inspectionId, templateCode, sectionOrdinal, itemOrdinal) {
   const r = await db.query(
     `SELECT i.id
@@ -39,9 +46,26 @@ async function resolveItemId(db, inspectionId, templateCode, sectionOrdinal, ite
   return r.rows[0]?.id ?? null;
 }
 
+const isPlainObject = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
+
+// Ids in a payload must be positive integers, so history queries can cast
+// them and a typo cannot poison every job's history (review finding).
+const ID_FIELDS = ['jobId', 'inspectionId', 'correctiveActionId', 'findingId', 'hsLocationId', 'itemId', 'ordinal', 'evidenceId'];
+function badIdField(p) {
+  for (const k of ID_FIELDS) {
+    const v = p?.[k];
+    if (v === undefined || v === null) continue;
+    if (!(Number.isInteger(v) && v > 0) && !(typeof v === 'string' && /^[1-9][0-9]{0,17}$/.test(v))) return k;
+  }
+  return null;
+}
+const validWhen = (v) => (v == null ? null : Number.isNaN(Date.parse(String(v))) ? undefined : String(v));
+
 const handlers = {
   /** Open an inspection against a location, pinned to named template codes. */
   async 'inspection.open'(db, p, ctx) {
+    const own = await db.query(`SELECT 1 FROM job WHERE id = $1 AND hs_location_id = $2`, [p.jobId, p.hsLocationId]);
+    if (!own.rows.length) throw reject(`hsLocationId ${p.hsLocationId} is not the location of job ${p.jobId}`);
     const r = await db.query(
       `INSERT INTO inspection
          (job_id, hs_location_id, certifier_id, conducted_by_id, supervised,
@@ -68,7 +92,18 @@ const handlers = {
 
   /** Record or update the result against one item. IPS 21(1)(c),(e),(f). */
   async 'finding.upsert'(db, p, ctx) {
-    const itemId = p.itemId ?? (await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal));
+    let itemId = null;
+    if (p.templateCode) {
+      itemId = await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal);
+    } else if (p.itemId) {
+      // A bare item id must belong to a template this inspection is pinned to,
+      // or a finding could land on another sheet's item.
+      const ok = await db.query(
+        `SELECT i.id FROM checksheet_item i JOIN checksheet_section s ON s.id = i.section_id
+         JOIN inspection_template p ON p.template_id = s.template_id AND p.inspection_id = $1
+         WHERE i.id = $2`, [p.inspectionId, p.itemId]);
+      itemId = ok.rows[0]?.id ?? null;
+    }
     if (!itemId) {
       const e = new Error(`no check sheet item for ${p.templateCode} s${p.sectionOrdinal}/i${p.itemOrdinal}`);
       e.code = '22P02';
@@ -97,6 +132,18 @@ const handlers = {
 
   /** Attach captured evidence. IPS 21(4) provenance is enforced by the schema. */
   async 'evidence.attach'(db, p, ctx) {
+    if (p.inspectionId) {
+      const own = await db.query(`SELECT job_id FROM inspection WHERE id = $1`, [p.inspectionId]);
+      if (!own.rows.length) throw reject(`inspection ${p.inspectionId} not found`);
+      if (p.jobId == null) p.jobId = own.rows[0].job_id;
+      else if (Number(own.rows[0].job_id) !== Number(p.jobId)) throw reject(`inspection ${p.inspectionId} is not part of job ${p.jobId}`);
+    }
+    if (p.findingId) {
+      const own = await db.query(`SELECT i.job_id, f.inspection_id FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE f.id = $1`, [p.findingId]);
+      if (!own.rows.length) throw reject(`finding ${p.findingId} not found`);
+      if (Number(own.rows[0].job_id) !== Number(p.jobId)) throw reject(`finding ${p.findingId} is not part of job ${p.jobId}`);
+      if (p.inspectionId && Number(own.rows[0].inspection_id) !== Number(p.inspectionId)) throw reject(`finding ${p.findingId} is not in inspection ${p.inspectionId}`);
+    }
     let findingId = p.findingId ?? null;
     if (!findingId && p.templateCode && p.inspectionId) {
       const itemId = await resolveItemId(db, p.inspectionId, p.templateCode, p.sectionOrdinal, p.itemOrdinal);
@@ -127,14 +174,14 @@ const handlers = {
 
   /** Move a job through the process flow. The DB trigger enforces legality. */
   async 'job.transition'(db, p, ctx) {
-    await db.query(`UPDATE job SET stage = $2 WHERE id = $1`, [p.jobId, p.toStage]);
-    if (p.reason || ctx.userId) {
-      await db.query(
-        `UPDATE job_stage_transition SET actor_id = $2, reason = $3
-         WHERE id = (SELECT max(id) FROM job_stage_transition WHERE job_id = $1)`,
-        [p.jobId, ctx.userId ?? null, p.reason ?? null]
-      );
-    }
+    const moved = await db.query(`UPDATE job SET stage = $2 WHERE id = $1 AND stage IS DISTINCT FROM $2 RETURNING id`, [p.jobId, p.toStage]);
+    if (!moved.rows.length) throw reject(`job ${p.jobId} not found or already at ${p.toStage}`);
+    await db.query(
+      `UPDATE job_stage_transition
+         SET actor_id = $2, reason = $3, occurred_at = COALESCE($4::timestamptz, occurred_at)
+       WHERE id = (SELECT max(id) FROM job_stage_transition WHERE job_id = $1)`,
+      [p.jobId, ctx.userId ?? null, p.reason ?? null, ctx.occurredAt ?? null]
+    );
     return { jobId: p.jobId, stage: p.toStage };
   },
 
@@ -218,6 +265,11 @@ const handlers = {
    */
   async 'corrective_action.update'(db, p, ctx) {
     const status = p.status;
+    const cur = await db.query(`SELECT status FROM corrective_action WHERE id = $1`, [p.correctiveActionId]);
+    if (!cur.rows.length) throw reject(`corrective action ${p.correctiveActionId} not found`);
+    if (cur.rows[0].status === 'verified' && status !== 'verified' && !canDecide(ctx.role)) {
+      throw reject(`Role: reopening a verified corrective action needs a compliance certifier; signed in as ${ctx.role}`, 'P0001');
+    }
     if (status === 'verified' && !ctx.userId) {
       const e = new Error('reg 6.24: verifying a corrective action needs an authenticated verifier');
       e.code = 'P0001';
@@ -248,6 +300,7 @@ const handlers = {
    * merged so a device that edited one field does not blank the others.
    */
   async 'job.subject.set'(db, p, ctx) {
+    if (!isPlainObject(p.fields)) throw reject('fields must be an object of label → value');
     const r = await db.query(
       `UPDATE job SET subject = subject || $2::jsonb WHERE id = $1 RETURNING subject`,
       [p.jobId, JSON.stringify(p.fields ?? {})]
@@ -258,6 +311,7 @@ const handlers = {
 
   /** One unit of a job (a cylinder batch), by ordinal; fields label → value. */
   async 'job.unit.upsert'(db, p, ctx) {
+    if (p.fields != null && !isPlainObject(p.fields)) throw reject('fields must be an object of label → value');
     const r = await db.query(
       `INSERT INTO job_unit (job_id, ordinal, fields) VALUES ($1,$2,$3::jsonb)
        ON CONFLICT (job_id, ordinal) DO UPDATE SET fields = job_unit.fields || EXCLUDED.fields, updated_at = now()
@@ -276,7 +330,7 @@ const handlers = {
     const r = await db.query(`DELETE FROM job_unit WHERE job_id = $1 AND ordinal = $2`, [p.jobId, p.ordinal]);
     await db.query(`UPDATE job_unit SET ordinal = -ordinal WHERE job_id = $1 AND ordinal > $2`, [p.jobId, p.ordinal]);
     await db.query(`UPDATE job_unit SET ordinal = -ordinal - 1, updated_at = now() WHERE job_id = $1 AND ordinal < 0`, [p.jobId]);
-    return { jobId: p.jobId, ordinal: p.ordinal, removed: r.rowCount };
+    return { jobId: p.jobId, ordinal: p.ordinal, removed: r.rowCount ?? r.affectedRows ?? 0 };
   },
 
   /** IPS 21(2)(a): a communication with the applicant is a statutory record. */
@@ -315,7 +369,7 @@ export async function applyEvents(db, ctx, events) {
   for (const ev of events) {
     // Idempotency: the client UUID is the primary key. A replay is a no-op.
     const seen = await db.query(
-      `SELECT outcome, reject_clause, reject_reason FROM sync_event WHERE id = $1`, [ev.id]);
+      `SELECT outcome, reject_clause, reject_reason, result FROM sync_event WHERE id = $1`, [ev.id]);
     if (seen.rows.length) {
       const s = seen.rows[0];
       // A replay of a rejected event is still rejected, and the app still
@@ -324,7 +378,19 @@ export async function applyEvents(db, ctx, events) {
         id: ev.id,
         previousOutcome: s.outcome,
         ...(s.outcome === 'rejected' ? { clause: s.reject_clause, reason: s.reject_reason } : {}),
+        ...(s.outcome === 'applied' && s.result != null ? { result: s.result } : {}),
       });
+      continue;
+    }
+
+    // Shape first: a payload the history queries cannot read is rejected
+    // before anything is written, with a reason the device can act on.
+    const badId = badIdField(ev.payload);
+    const when = validWhen(ev.occurredAt);
+    if (badId || when === undefined) {
+      const reason = badId ? `${badId} must be a positive integer` : `occurredAt "${ev.occurredAt}" is not a date`;
+      rejected.push({ id: ev.id, type: ev.type, clause: null, reason });
+      await recordSync(db, { ...ev, occurredAt: when ?? null }, ctx, 'rejected', null, reason);
       continue;
     }
 
@@ -339,9 +405,9 @@ export async function applyEvents(db, ctx, events) {
     try {
       // Role first: a reviewer's signature must never reach the database.
       checkEventRole(ev.type, ev.payload ?? {}, ctx.role);
-      const result = await handler(db, ev.payload ?? {}, ctx);
+      const result = await handler(db, ev.payload ?? {}, { ...ctx, occurredAt: when });
       await db.query('RELEASE SAVEPOINT ev');
-      await recordSync(db, ev, ctx, 'applied');
+      await recordSync(db, ev, ctx, 'applied', null, null, result);
       applied.push({ id: ev.id, type: ev.type, result });
     } catch (err) {
       await db.query('ROLLBACK TO SAVEPOINT ev');
@@ -358,12 +424,13 @@ export async function applyEvents(db, ctx, events) {
   return { applied, rejected, duplicate };
 }
 
-async function recordSync(db, ev, ctx, outcome, clause = null, reason = null) {
+async function recordSync(db, ev, ctx, outcome, clause = null, reason = null, result = null) {
+  const when = validWhen(ev.occurredAt) ?? new Date().toISOString();
   await db.query(
-    `INSERT INTO sync_event (id, device_id, user_id, type, payload, occurred_at, outcome, reject_clause, reject_reason)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO sync_event (id, device_id, user_id, type, payload, occurred_at, outcome, reject_clause, reject_reason, result)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
      ON CONFLICT (id) DO NOTHING`,
     [ev.id, ctx.deviceId, ctx.userId ?? null, ev.type, JSON.stringify(ev.payload ?? {}),
-     ev.occurredAt ?? new Date().toISOString(), outcome, clause, reason]
+     when, outcome, clause, reason, result == null ? null : JSON.stringify(result)]
   );
 }

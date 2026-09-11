@@ -128,6 +128,7 @@ class _JobsBoardState extends State<JobsBoard> {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: classKey,
                 decoration: const InputDecoration(labelText: 'Check sheets'),
                 items: [

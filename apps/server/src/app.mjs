@@ -133,6 +133,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     next();
   })().catch(next));
 
+  // A route id that is not a positive integer is "not found", not a cast error.
+  app.param('id', (req, res, next, v) => (/^[1-9][0-9]{0,17}$/.test(v) ? next() : res.status(404).json({ error: 'not found' })));
+
   // ── auth ─────────────────────────────────────────────────────────────────
   app.post('/api/auth/login', wrap(async (req, res) => {
     const b = req.body ?? {};
@@ -299,6 +302,11 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot create a job', clause: 'Role' });
     if (!b.client?.legalName || !b.site?.address || !b.location?.name)
       return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
+    const set = SHEET_SETS.sets.find((x) => x.key === (b.classKey ?? 'class_6_8'));
+    if (!set) return res.status(400).json({ error: `unknown check sheet set "${b.classKey}"` });
+    if (!set.authorisation || !AUTHORISATION.authorisations.some((a) => a.key === set.authorisation)) {
+      return res.status(400).json({ error: `"${set.name}" is outside the certifier's WorkSafe authorisation`, clause: 'IPS 8' });
+    }
     const out = await db.withTx((tx) => createJob(tx, b));
     res.status(201).json(out);
   }));
@@ -310,6 +318,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
    * because jobs created before these were captured have blank rows 10–13.
    */
   app.post('/api/jobs/:id/site-block', wrap(async (req, res) => {
+    if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot record', clause: 'Role' });
     const id = Number(req.params.id);
     const b = req.body ?? {};
     const out = await db.withTx(async (tx) => {
@@ -324,7 +333,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
            SELECT $1,$2,$3,$4,$5,$6
            WHERE NOT EXISTS (SELECT 1 FROM contact WHERE client_id = $1 AND lower(name) = lower($2))`,
           [client_id, ct.name, ct.role ?? null, ct.phone ?? null, ct.email ?? null, !!ct.isSiteManager]);
-        contacts += r.rowCount ?? 0;
+        contacts += (r.rowCount ?? r.affectedRows ?? 0);
       }
       if (hs_location_id) {
         for (const sb of Array.isArray(b.substances) ? b.substances : []) {
@@ -335,7 +344,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
              WHERE NOT EXISTS (SELECT 1 FROM substance WHERE hs_location_id = $1 AND lower(name) = lower($2))`,
             [hs_location_id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
              sb.unNumber ?? null, sb.hsnoApproval ?? null, sb.lifecycles ?? null]);
-          substances += r.rowCount ?? 0;
+          substances += (r.rowCount ?? r.affectedRows ?? 0);
         }
       }
       return { jobId: id, contactsAdded: contacts, substancesAdded: substances };
@@ -367,6 +376,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
+                       (SELECT full_name FROM app_user WHERE id = i.declaration_signed_by) AS declaration_signed_by_name,
+                       (SELECT full_name FROM app_user WHERE id = i.scope_confirmed_by) AS scope_confirmed_by_name,
                        i.scope_confirmed_at, i.scope_confirmed_by,
                        array_agg(t.code ORDER BY t.code) FILTER (WHERE t.code IS NOT NULL) AS template_codes
                 FROM inspection i
@@ -405,6 +416,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       // Process flow stage 5: corrective actions keyed the way the app keys findings.
       db.query(`SELECT ca.id, ca.finding_id, ca.severity, ca.description, ca.due_date, ca.status,
                        ca.reverified_by, ca.reverified_at, ca.created_at,
+                       (SELECT full_name FROM app_user WHERE id = ca.reverified_by) AS reverified_by_name,
                        f.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal, i.ordinal AS item_ordinal
                 FROM corrective_action ca
                 JOIN finding f ON f.id = ca.finding_id
@@ -431,9 +443,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                        u.full_name AS user_name, u.role AS user_role, e.device_id
                 FROM sync_event e
                 LEFT JOIN app_user u ON u.id = e.user_id
-                WHERE NULLIF(e.payload->>'jobId','')::bigint = $1
-                   OR NULLIF(e.payload->>'inspectionId','')::bigint IN (SELECT id FROM inspection WHERE job_id = $1)
-                   OR NULLIF(e.payload->>'correctiveActionId','')::bigint IN (
+                WHERE int_or_null(e.payload->>'jobId') = $1
+                   OR int_or_null(e.payload->>'inspectionId') IN (SELECT id FROM inspection WHERE job_id = $1)
+                   OR int_or_null(e.payload->>'correctiveActionId') IN (
                         SELECT ca.id FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id
                         JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = $1)
                 ORDER BY e.occurred_at DESC, e.received_at DESC LIMIT 100`, [id]),
@@ -467,6 +479,17 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
    * the app's "Can grant / Cannot grant" pill server-authoritative rather than
    * a local guess — the same PL/pgSQL that will block the real transition.
    */
+  /** Non-compliant findings with no verified corrective action. */
+  async function unresolvedNonCompliances(jobId) {
+    const nc = await db.query(`
+      SELECT count(*)::int AS n
+      FROM finding f JOIN inspection i ON i.id = f.inspection_id
+      LEFT JOIN corrective_action ca ON ca.finding_id = f.id
+      WHERE i.job_id = $1 AND f.status = 'non_compliant'
+        AND (ca.id IS NULL OR ca.status <> 'verified')`, [jobId]);
+    return nc.rows[0].n;
+  }
+
   app.get('/api/jobs/:id/issuance-check', wrap(async (req, res) => {
     const id = Number(req.params.id);
     const blockers = [];
@@ -502,6 +525,19 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!canDecide(req.ctx.role)) {
       return res.status(403).json({ error: 'issuing a certificate needs a compliance certifier', clause: 'Role' });
     }
+    if (b.inspectionId != null) {
+      const own = await db.query(`SELECT 1 FROM inspection WHERE id = $1 AND job_id = $2`, [b.inspectionId, id]);
+      if (!own.rows.length) return res.status(400).json({ error: `inspection ${b.inspectionId} is not part of job ${id}` });
+    }
+    if (b.decision === 'granted') {
+      const open = await unresolvedNonCompliances(id);
+      if (open > 0) {
+        return res.status(422).json({
+          error: `${open} non-compliance${open === 1 ? '' : 's'} not yet verified as closed: a certificate can be conditional or refused, not granted`,
+          clause: 'reg 13.39',
+        });
+      }
+    }
     const out = await db.withTx(async (tx) => {
       await tx.query(`UPDATE job SET stage = 'certificate_issued' WHERE id = $1`, [id]);
       const r = await tx.query(
@@ -512,7 +548,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
          RETURNING id, worksafe_register_due`,
         [id, b.inspectionId ?? null, b.decision, b.registerNumber ?? null, b.certificateNumber ?? null,
-         b.certifierId ?? req.ctx.userId, b.issuedTo, b.appliesTo, b.issueDate,
+         req.ctx.userId ?? b.certifierId ?? null, b.issuedTo, b.appliesTo, b.issueDate,
          b.inForceDate ?? b.issueDate, b.expiryDate ?? null, b.details ?? null,
          b.requirementsNotMet ?? [], b.conditions ?? [], b.signedAt ?? new Date().toISOString()]);
       const rc = await tx.query(`SELECT retain_until FROM retention_clock WHERE job_id = $1`, [id]);
@@ -668,6 +704,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'changing a person needs a compliance certifier', clause: 'Role' });
     const id = Number(req.params.id);
     const b = req.body ?? {};
+    for (const k of ['fullName', 'occupation', 'email', 'role', 'authorisationNumber']) {
+      if (b[k] !== undefined && b[k] !== null && typeof b[k] !== 'string') return res.status(400).json({ error: `${k} must be text` });
+    }
     if (b.role !== undefined && !ROLES.includes(b.role)) return res.status(400).json({ error: `role must be one of ${ROLES.join(', ')}` });
     if (b.active === false && id === req.ctx.userId) return res.status(400).json({ error: 'you cannot deactivate yourself' });
     if (b.email !== undefined) {
@@ -725,15 +764,15 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 LEFT JOIN LATERAL (SELECT max(f.updated_at) AS last_at FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = j.id) fc ON true
                 WHERE j.stage = 'site_inspection' AND COALESCE(fc.last_at, j.opened_at) < now() - interval '14 days'`),
       db.query(`SELECT e.type, e.occurred_at, e.payload, u.full_name AS user_name,
-                       COALESCE(NULLIF(e.payload->>'jobId','')::bigint, i.job_id, ci.job_id) AS job_id,
+                       COALESCE(int_or_null(e.payload->>'jobId'), i.job_id, ci.job_id) AS job_id,
                        cl.legal_name AS client, l.name AS location
                 FROM sync_event e
                 LEFT JOIN app_user u ON u.id = e.user_id
-                LEFT JOIN inspection i ON i.id = NULLIF(e.payload->>'inspectionId','')::bigint
-                LEFT JOIN corrective_action ca ON ca.id = NULLIF(e.payload->>'correctiveActionId','')::bigint
+                LEFT JOIN inspection i ON i.id = int_or_null(e.payload->>'inspectionId')
+                LEFT JOIN corrective_action ca ON ca.id = int_or_null(e.payload->>'correctiveActionId')
                 LEFT JOIN finding cf ON cf.id = ca.finding_id
                 LEFT JOIN inspection ci ON ci.id = cf.inspection_id
-                LEFT JOIN job j ON j.id = COALESCE(NULLIF(e.payload->>'jobId','')::bigint, i.job_id, ci.job_id)
+                LEFT JOIN job j ON j.id = COALESCE(int_or_null(e.payload->>'jobId'), i.job_id, ci.job_id)
                 LEFT JOIN client cl ON cl.id = j.client_id
                 LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE e.outcome = 'applied'
@@ -854,6 +893,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const target = b.stage ?? 'site_inspection';
     const path = ['application', 'document_review', 'site_inspection', 'compliance_evaluation', 'final_validation'];
     const stop = path.indexOf(target);
+    if (stop < 0) return res.status(400).json({ error: `stage must be one of ${path.join(', ')}` });
     const ev = (type, payload) => ({ id: randomUUID(), type, payload, occurredAt: b.inspection?.inspectedAt ?? new Date().toISOString() });
     const events = [
       ...path.slice(0, Math.max(0, Math.min(stop, 2)) + 1).map((st) => ev('job.transition', { jobId: created.jobId, toStage: st, reason: 'imported from workbook' })),
@@ -883,6 +923,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // hash on receipt, and the object is stored under it. The evidence.attach
   // sync event then references the sha256 — same key on both sides.
   app.post('/api/evidence/upload', express.raw({ type: '*/*', limit: '4mb' }), wrap(async (req, res) => {
+    if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot upload evidence', clause: 'Role' });
     const buf = req.body;
     if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'empty body' });
     const mime = req.header('content-type') ?? 'application/octet-stream';
@@ -901,6 +942,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   }));
 
   app.get('/api/evidence/:key', wrap(async (req, res) => {
+    if (!/^[0-9a-f]{64}\.[a-z0-9]{1,4}$/.test(req.params.key)) return res.status(404).json({ error: 'not found' });
     const found = await readEvidence(req.params.key);
     if (!found) return res.status(404).json({ error: 'not found' });
     const ext = req.params.key.split('.').pop();
@@ -929,6 +971,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
 
   // ── errors ───────────────────────────────────────────────────────────────
   app.use((err, _req, res, _next) => {
+    if (err?.type === 'entity.parse.failed' || err?.type === 'entity.too.large') {
+      return res.status(err.status ?? 400).json({ error: err.type === 'entity.too.large' ? 'body too large' : 'malformed JSON body' });
+    }
     const why = explain(err.cause ?? err);
     const status = isClientError(err.cause ?? err) ? 422 : 500;
     if (status === 500) console.error(err);

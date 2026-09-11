@@ -62,7 +62,7 @@ let jobId, hsLocationId, inspectionId;
 console.log('BOOT');
 await step('health reports the template layer', async () => {
   const r = await api.get('/api/health');
-  expect(r.status === 200 && r.body.templateItems === 150, JSON.stringify(r.body));
+  expect(r.status === 200 && r.body.templateItems === 149, JSON.stringify(r.body));
   return `db=${r.body.db}, ${r.body.templateItems} template items`;
 });
 
@@ -246,7 +246,9 @@ await step('POST certificate is refused with the clause, and the stage does not 
     issuedTo: cert.issuedTo.name, appliesTo: 'G2 Chiller', issueDate: cert.issueDate, expiryDate: cert.expiryDate,
   });
   expect(r.status === 422, `status ${r.status}: ${JSON.stringify(r.body)}`);
-  expect(r.body.clause === 'IPS 23(1)', JSON.stringify(r.body));
+  // Two blockers stand here (no declaration of interests; open non-compliances);
+  // whichever the server names first, the refusal must carry its clause.
+  expect(['IPS 23(1)', 'reg 13.39'].includes(r.body.clause), JSON.stringify(r.body));
   const stage = await db.query('SELECT stage FROM job WHERE id=$1', [jobId]);
   expect(stage.rows[0].stage === 'final_validation', 'failed issuance leaked a stage change');
   return `422 ${r.body.clause} — transaction rolled back`;

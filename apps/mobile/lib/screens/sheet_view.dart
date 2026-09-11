@@ -93,8 +93,15 @@ class _SheetViewState extends State<SheetView> {
     super.dispose();
   }
 
-  TextEditingController _ctl(Map<String, TextEditingController> m, String key, String text) =>
-      m.putIfAbsent(key, () => TextEditingController(text: text));
+  /// Which inline fields have the caret: those keep what is being typed; the
+  /// rest follow the model, so a change pulled from another device shows.
+  final Set<String> _focused = {};
+
+  TextEditingController _ctl(Map<String, TextEditingController> m, String key, String text) {
+    final ctl = m.putIfAbsent(key, () => TextEditingController(text: text));
+    if (!_focused.contains(key) && ctl.text != text) ctl.text = text;
+    return ctl;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +127,7 @@ class _SheetViewState extends State<SheetView> {
               final findings = s.items.map((i) => insp.findingFor(t, s, i)).toList();
               final done = findings.where((f) => f.status != FindingStatus.pending).length;
               final nc = findings.any((f) => f.status == FindingStatus.nonCompliant);
-              final complete = done == s.items.length;
+              final complete = s.items.isNotEmpty && done == s.items.length;
               return ActionChip(
                 key: ValueKey('jump-${s.ordinal}'),
                 onPressed: () => _jumpTo(s),
@@ -417,6 +424,8 @@ class _SheetViewState extends State<SheetView> {
                   commentCtl,
                   hint: '', // the workbook cell is blank; the column header says Comments
                   color: nc ? Brand.nonCompliant : Colors.black87,
+                  current: f.comment,
+                  fieldKey: 'c:${f.key}',
                   onCommit: (v) => insp.update(f, (x) => x.comment = v),
                 ),
                 if (nc) ...[
@@ -460,11 +469,13 @@ class _SheetViewState extends State<SheetView> {
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Brand.forStatus(s))),
               ),
           ],
-          onChanged: (s) {
-            if (s == null) return;
-            insp.update(f, (x) => x.status = s);
-            setState(() {});
-          },
+          onChanged: !CurrentUser.canRecord
+              ? null
+              : (s) {
+                  if (s == null) return;
+                  insp.update(f, (x) => x.status = s);
+                  setState(() {});
+                },
         ),
       );
 
@@ -474,13 +485,19 @@ class _SheetViewState extends State<SheetView> {
     required Color color,
     required void Function(String) onCommit,
     bool error = false,
+    String? current,
+    String? fieldKey,
   }) =>
       Focus(
         onFocusChange: (has) {
-          if (!has) onCommit(ctl.text);
+          if (fieldKey != null) has ? _focused.add(fieldKey) : _focused.remove(fieldKey);
+          // Commit on leaving, and only what actually changed: the field must
+          // never write an old value back over one pulled from another device.
+          if (!has && CurrentUser.canRecord && (current == null || ctl.text != current)) onCommit(ctl.text);
         },
         child: TextField(
           controller: ctl,
+          readOnly: !CurrentUser.canRecord,
           minLines: 1,
           maxLines: 8,
           style: TextStyle(fontSize: 12.5, color: color, height: 1.35),

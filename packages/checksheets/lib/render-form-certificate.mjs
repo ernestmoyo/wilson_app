@@ -8,11 +8,13 @@
  * scope text, dates, and the certifier's block.
  */
 
-import { COMPANY, contactBlock } from './render-certificate.mjs';
+import { COMPANY, contactBlock, nzDate } from './render-certificate.mjs';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const nl = (s) => esc(s).replace(/\n/g, '<br>');
-const d = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
+// Dates print as dd/mm/yyyy like the location certificate; a date column
+// arrives as text (see db.mjs), so no timezone can shift it.
+const d = (v) => nzDate(v);
 
 // The Certificate tab words its unit labels more tersely than the checklist
 // ("Water Capacity" for "Water Capacity (L)", "Charging Pressure" for
@@ -31,7 +33,7 @@ function unitValue(fields, label) {
   const keys = Object.keys(fields);
   const exact = keys.find((k) => norm(k) === want);
   if (exact) return fields[exact];
-  const within = keys.find((k) => norm(k).startsWith(want) || norm(k).includes(want));
+  const within = keys.find((k) => norm(k).startsWith(want));
   return within ? fields[within] : '';
 }
 

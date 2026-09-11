@@ -52,6 +52,9 @@ export async function connect({
     // (Found by the live test against Neon — every `(id as num)` in the app
     // threw on strings.)
     pg.types.setTypeParser(20, (v) => (v === null ? null : Number.parseInt(v, 10)));
+    // DATE (1082) as the 'yyyy-mm-dd' text it is: a JS Date at local midnight
+    // would print the previous day on a server west of UTC.
+    pg.types.setTypeParser(1082, (v) => v);
     const pool = new pg.Pool({
       connectionString: url,
       max: 4,

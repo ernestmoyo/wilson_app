@@ -76,6 +76,9 @@ class ApiClient {
         status: wasRejected ? 'rejected' : 'duplicate',
         clause: m['clause'] as String?,
         reason: m['reason'] as String?,
+        // A lost response, then a replay: the server hands back what the
+        // original application returned (e.g. the inspection id).
+        result: m['result'] == null ? null : Map<String, dynamic>.from(m['result'] as Map),
       );
     }
     return out;

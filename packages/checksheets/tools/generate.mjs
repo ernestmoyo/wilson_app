@@ -72,6 +72,8 @@ const pascal = (s) => s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
 const sheetOf = (t) => ({
   title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
   declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+  kind: 'location', subjectBlockTitle: null, subjectBlock: [], unitBlockTitle: null, unitBlock: null,
+  authorisation: null, certificate: null,
   ...(t.sheet ?? {}),
 });
 

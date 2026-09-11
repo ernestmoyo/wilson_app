@@ -20,7 +20,8 @@ const esc = (s) =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 export const nzDate = (iso) => {
   if (!iso) return '';

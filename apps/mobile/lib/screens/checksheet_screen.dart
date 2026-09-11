@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
 import '../widgets/subject_editor.dart';
+import '../bootstrap.dart' show CurrentUser;
 import 'item_screen.dart';
 import 'sheet_view.dart';
 
@@ -126,9 +127,9 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
                         Card(
                           margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                           child: Column(children: [
-                            SubjectEditor(inspection: insp, sheet: template.sheetFor(insp.classKey)),
+                            SubjectEditor(inspection: insp, sheet: template.sheetFor(insp.classKey), readOnly: !CurrentUser.canRecord),
                             if (template.sheetFor(insp.classKey).hasUnits)
-                              UnitsEditor(inspection: insp, sheet: template.sheetFor(insp.classKey)),
+                              UnitsEditor(inspection: insp, sheet: template.sheetFor(insp.classKey), readOnly: !CurrentUser.canRecord),
                           ]),
                         ),
                       for (final section in template.sections) ..._section(section),

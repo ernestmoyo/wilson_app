@@ -30,6 +30,12 @@
         "from": null,
         "to": "Section 2/2",
         "reason": "sheet 2 of 2 in this workbook"
+      },
+      {
+        "where": "Separation of class 2.1.2 aerosols, items 1 and 1",
+        "from": "Establish the quantity of aerosols present and | Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply",
+        "to": "Establish the quantity of aerosols present and confirm the aggregate water capacity exceeds 3,000 L. Determine the nature of any neighbouring property and verify the separation distance. Determine which subclauses apply",
+        "reason": "one requirement split across two rows in the workbook, both numbered 1; merged, references combined"
       }
     ]
   },
@@ -293,23 +299,12 @@
           "ordinal": 1,
           "number": "1",
           "regulationRefs": [
-            "11.8"
+            "11.8",
+            "11.23"
           ],
           "regulationRaw": "11.8",
           "guidanceUrl": null,
-          "action": "Establish the quantity of aerosols present and",
-          "records": "A record of the quantities and separation distances",
-          "evidenceRequired": false
-        },
-        {
-          "ordinal": 2,
-          "number": "1",
-          "regulationRefs": [
-            "11.23"
-          ],
-          "regulationRaw": "11.23",
-          "guidanceUrl": null,
-          "action": "Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply",
+          "action": "Establish the quantity of aerosols present and confirm the aggregate water capacity exceeds 3,000 L. Determine the nature of any neighbouring property and verify the separation distance. Determine which subclauses apply",
           "records": "A record of the quantities and separation distances",
           "evidenceRequired": false
         }

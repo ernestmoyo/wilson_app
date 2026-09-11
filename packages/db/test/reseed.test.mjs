@@ -84,7 +84,7 @@ await check('apply the current seed: new revisions, old ones superseded, no merg
     JOIN checksheet_section s ON s.id = i.section_id
     JOIN checksheet_template t ON t.id = s.template_id WHERE t.status = 'current'`);
   // 98 location items plus the three form sheets (40 + 6 + 6).
-  if (current !== 150) throw new Error(`current items ${current}, expected 150`);
+  if (current !== 149) throw new Error(`current items ${current}, expected 149`);
   const revs = await db.query(`SELECT code, revision, status FROM checksheet_template ORDER BY code, revision`);
   const superseded = revs.rows.filter((r) => r.status === 'superseded').length;
   const cur = revs.rows.filter((r) => r.status === 'current').length;

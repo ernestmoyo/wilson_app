@@ -157,7 +157,7 @@ Evidence                   finding_id?, inspection_id, kind (photo|video|documen
                            sha256                  computed AT CAPTURE, not at upload
                            c2pa_manifest           signed provenance, travels with the file
                            captured_by_name        ← IPS 21(4)(a)
-                           captured_by_occupation  ← IPS 21(4)(a) — currently missing everywhere
+                           captured_by_occupation  ← IPS 21(4)(a), from the person's record
                            captured_at             ← IPS 21(4)(b)
                            captured_where          ← IPS 21(4)(c) human-readable place
                            gps_lat, gps_lon        supporting, not a substitute for the above
@@ -348,7 +348,9 @@ finish on the laptop, or the reverse.
  (sync_event.user_id)                     Certificate ────────────►   (send, recorded)
     │
     ▼
- Dashboard = reminders (expiry −180 d, RFI > 7 d, action due ≤ 14 d, idle 14 d) + recent events
+ Dashboard = reminders (expiry −180 d, RFI > 7 d, action due ≤ 14 d or overdue,
+             idle 14 d, non-compliance with no action, enquiry untouched 2 d,
+             final validation waiting a decision) + recent events
 ```
 
 | Node / edge | Where | Guard |
@@ -463,15 +465,16 @@ The JSON is the artifact under version control and review. Every consumer is gen
 
 ---
 
-## 6. Modules the regulation requires that nothing currently implements
+## 6. Modules the regulation requires, and where each now lives
 
-| Gap | Clause |
-|---|---|
-| Register of interests | IPS 23(2)–(3) |
-| Communications log as a retained record | IPS 21(2)(a) |
-| Retention/disposal clock keyed to certificate expiry | IPS 21(6) |
-| Photographer **occupation** on every photo | IPS 21(4)(a) |
-| Dual signature — certifier **and** the person who inspected | IPS 21(5) |
-| Equipment used, recorded per inspection | IPS 21(1)(d) |
-| Verification method recorded per item | IPS 21(1)(e) |
-| Certificate number prefixed with authorisation number | IPS 8(1)(c)(ii) |
+| Requirement | Clause | Where |
+|---|---|---|
+| Register of interests | IPS 23(2)–(3) | `interest.declare`, interest_declaration; issuance blocked without it |
+| Communications log as a retained record | IPS 21(2)(a) | `communication.record`, communication; every send is recorded |
+| Retention/disposal clock keyed to certificate expiry | IPS 21(6) | retention_clock, set when a certificate is issued |
+| Photographer occupation on every photo | IPS 21(4)(a) | evidence.captured_by_occupation, from app_user.occupation |
+| Dual signature — certifier and the person who inspected | IPS 21(5) | `inspection.sign` (declaration, scope), certifier only |
+| Equipment used, recorded per inspection | IPS 21(1)(d) | inspection.equipment_used |
+| Verification method recorded per item | IPS 21(1)(e) | finding.verification_method |
+| Certificate number prefixed with authorisation number | IPS 8(1)(c)(ii) | trigger on certificate insert |
+| A certificate is granted only with every non-compliance closed | reg 13.39 | `POST /api/jobs/:id/certificate` refuses "granted" while any non-compliance lacks a verified action |

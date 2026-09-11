@@ -143,12 +143,11 @@ class _PeopleScreenState extends State<PeopleScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
+                Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
                   Text(p.fullName, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: p.active ? Colors.black87 : Colors.black38)),
-                  const SizedBox(width: 8),
                   _chip(roleNames[p.role] ?? p.role, p.active ? Brand.tealDark : Colors.black38),
-                  if (!p.active) ...[const SizedBox(width: 6), _chip('Inactive', Colors.black38)],
-                  if (p.id == CurrentUser.id) ...[const SizedBox(width: 6), _chip('You', Brand.conditional)],
+                  if (!p.active) _chip('Inactive', Colors.black38),
+                  if (p.id == CurrentUser.id) _chip('You', Brand.conditional),
                 ]),
                 const SizedBox(height: 2),
                 Text(
@@ -211,6 +210,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
               ),
               TextField(controller: email, key: const ValueKey('p-email'), decoration: const InputDecoration(labelText: 'Sign-in email')),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 key: const ValueKey('p-role'),
                 initialValue: role,
                 decoration: const InputDecoration(labelText: 'Role'),

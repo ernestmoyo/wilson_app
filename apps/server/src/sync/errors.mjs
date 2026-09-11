@@ -108,5 +108,7 @@ export function explain(err) {
 export function isClientError(err) {
   const code = err?.code ?? '';
   // 23xxx integrity violations, P0001 raise_exception from our guards
-  return code.startsWith('23') || code === 'P0001' || code === '22P02';
+  // 22xxx data exceptions (bad text/number/date input), 23xxx integrity
+  // violations, P0001 raise_exception from our guards.
+  return code.startsWith('22') || code.startsWith('23') || code === 'P0001';
 }

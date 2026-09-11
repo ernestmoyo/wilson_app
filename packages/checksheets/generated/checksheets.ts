@@ -153,6 +153,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           "label": "Assessment of answers"
         }
       ],
+      "unitBlockTitle": null,
       "unitBlock": null,
       "authorisation": "handler-class-6",
       "certificate": {
@@ -1069,7 +1070,14 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
       },
       "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-      "footer": "Section 2/2"
+      "footer": "Section 2/2",
+      "kind": "location",
+      "subjectBlockTitle": null,
+      "subjectBlock": [],
+      "unitBlockTitle": null,
+      "unitBlock": null,
+      "authorisation": null,
+      "certificate": null
     },
     "sections": [
       {
@@ -1303,23 +1311,12 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "ordinal": 1,
             "number": "1",
             "regulationRefs": [
-              "11.8"
+              "11.8",
+              "11.23"
             ],
             "regulationRaw": "11.8",
             "guidanceUrl": null,
-            "action": "Establish the quantity of aerosols present and",
-            "records": "A record of the quantities and separation distances",
-            "evidenceRequired": false
-          },
-          {
-            "ordinal": 2,
-            "number": "1",
-            "regulationRefs": [
-              "11.23"
-            ],
-            "regulationRaw": "11.23",
-            "guidanceUrl": null,
-            "action": "Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply",
+            "action": "Establish the quantity of aerosols present and confirm the aggregate water capacity exceeds 3,000 L. Determine the nature of any neighbouring property and verify the separation distance. Determine which subclauses apply",
             "records": "A record of the quantities and separation distances",
             "evidenceRequired": false
           }
@@ -1803,7 +1800,14 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
       },
       "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
-      "footer": "Section 2/2"
+      "footer": "Section 2/2",
+      "kind": "location",
+      "subjectBlockTitle": null,
+      "subjectBlock": [],
+      "unitBlockTitle": null,
+      "unitBlock": null,
+      "authorisation": null,
+      "certificate": null
     },
     "sections": [
       {
@@ -2114,7 +2118,14 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       "documentControl": null,
       "scopeOfAuthorisation": null,
       "reference": null,
-      "footer": "Section 1/2"
+      "footer": "Section 1/2",
+      "kind": "location",
+      "subjectBlockTitle": null,
+      "subjectBlock": [],
+      "unitBlockTitle": null,
+      "unitBlock": null,
+      "authorisation": null,
+      "certificate": null
     },
     "sheetByClass": {
       "class_6_8": {
