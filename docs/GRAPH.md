@@ -111,7 +111,9 @@ Job                        client_id, hs_location_id, type, stage, opened_at
                              so two devices editing different fields both land
 JobUnit                    job_id, ordinal, fields jsonb
                            ← one per cylinder batch; the workbook's columns.
-                             migration 009; events job.subject.set,
+                             migration 009; a remove closes the gap (units
+                             after it move up one, as in the app's list);
+                             events job.subject.set,
                              job.unit.upsert, job.unit.remove
                            ← one certification engagement; walks the 8-stage flow
 

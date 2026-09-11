@@ -60,13 +60,22 @@ class FakeServer {
         'nzbn': '9429033971360',
       };
 
+  /// Which sheet set the job uses; the board and job carry its kind.
+  String classKey = 'class_6_8';
+  String get kind => switch (classKey) { 'handler_6' => 'handler', 'cylinder_fern' || 'cylinder_un' => 'cylinder', _ => 'location' };
+
   Map<String, dynamic> get location => {'id': 1, 'name': 'G2 Chiller', 'address': '2 Sterling Avenue, Manurewa East, Auckland 2102', 'summary': 'Cool room'};
 
-  List<Map<String, dynamic>> board() => [
+  /// A server with nothing on it yet.
+  bool noJobs = false;
+
+  List<Map<String, dynamic>> board() => noJobs ? [] : [
         {
           'id': 7,
           'stage': stage,
-          'class_key': 'class_6_8',
+          'class_key': classKey,
+          'kind': kind,
+          'subject': subject,
           'opened_at': '2026-09-01T00:00:00Z',
           'client': client['legalName'],
           'trading_name': client['tradingName'],
@@ -89,8 +98,8 @@ class FakeServer {
   Map<String, dynamic> job() => {
         'id': 7,
         'stage': stage,
-        'class_key': 'class_6_8',
-        'kind': 'location',
+        'class_key': classKey,
+        'kind': kind,
         'subject': subject,
         'units': units,
         'client': client,

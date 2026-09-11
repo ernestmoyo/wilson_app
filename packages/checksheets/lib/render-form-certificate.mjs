@@ -19,11 +19,12 @@ const d = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
  * @param {object} p.certificateTemplate  template.sheet.certificate (documentTitle, certifiesThat, fields, unitTitle, unitFields, tables, scopeHeading, scopeText, dateLabels, signature, issuerStatement)
  * @param {object} p.subject              label → value, as recorded on the sheet
  * @param {object[]} p.units              [{ ordinal, fields: label → value }]
+ * @param {object[]} p.substances         the job's substance rows (name, hazard_class), for a Substances table
  * @param {object} p.cert                 the certificate row (register_number, certificate_number, decision, issue_date, in_force_date, expiry_date, conditions, requirements_not_met)
  * @param {object} p.certifier            { fullName, authorisationNumber, email }
  * @param {object} [p.letterhead]
  */
-export function renderFormCertificate({ certificateTemplate: t, subject = {}, units = [], cert, certifier, letterhead = null }) {
+export function renderFormCertificate({ certificateTemplate: t, subject = {}, units = [], substances = [], cert, certifier, letterhead = null }) {
   const head = letterhead
     ? `<div class="letterhead">
       ${letterhead.logo ? `<img class="lh-logo" src="${letterhead.logo}" alt="Assure Safety">` : '<span></span>'}
@@ -57,7 +58,12 @@ export function renderFormCertificate({ certificateTemplate: t, subject = {}, un
   let tables = '';
   for (const tb of t.tables ?? []) {
     // e.g. the handler certificate's substances table: Name | Classes | Lifecycles.
-    const rows = (subject[tb.title] && Array.isArray(subject[tb.title])) ? subject[tb.title] : [];
+    // Rows come from the subject when the sheet recorded them by the table's
+    // title, else from the job's substances (Name | Classes | Lifecycles).
+    let rows = (subject[tb.title] && Array.isArray(subject[tb.title])) ? subject[tb.title] : [];
+    if (!rows.length && /substance/i.test(tb.title) && substances.length) {
+      rows = substances.map((x) => ({ Name: x.name ?? '', Classes: x.hazard_class ?? '', Lifecycles: x.lifecycles ?? '' }));
+    }
     tables += `<div class="block">${esc(tb.title)}</div>
     <table class="units"><thead><tr>${tb.columns.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>
     <tbody>${rows.length ? rows.map((r) => `<tr>${tb.columns.map((c) => `<td>${esc(r[c] ?? '')}</td>`).join('')}</tr>`).join('') : `<tr>${tb.columns.map(() => '<td>&nbsp;</td>').join('')}</tr>`}</tbody></table>`;

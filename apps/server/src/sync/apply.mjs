@@ -267,8 +267,15 @@ const handlers = {
     return { unitId: r.rows[0].id, ordinal: r.rows[0].ordinal };
   },
 
+  /**
+   * Removing a unit closes the gap: the units after it move up one, as they
+   * do in the app's list, so the next edit to "unit 2" lands on the same
+   * batch on both sides. Two steps because (job_id, ordinal) is unique.
+   */
   async 'job.unit.remove'(db, p, ctx) {
     const r = await db.query(`DELETE FROM job_unit WHERE job_id = $1 AND ordinal = $2`, [p.jobId, p.ordinal]);
+    await db.query(`UPDATE job_unit SET ordinal = -ordinal WHERE job_id = $1 AND ordinal > $2`, [p.jobId, p.ordinal]);
+    await db.query(`UPDATE job_unit SET ordinal = -ordinal - 1, updated_at = now() WHERE job_id = $1 AND ordinal < 0`, [p.jobId]);
     return { jobId: p.jobId, ordinal: p.ordinal, removed: r.rowCount };
   },
 

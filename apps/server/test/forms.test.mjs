@@ -48,6 +48,7 @@ await step('a certified-handler job: the applicant is the subject, recorded by l
     client: { legalName: 'Test Chemicals Ltd' }, site: { address: '1 Test Road, Auckland' },
     location: { name: 'Handler assessment: A. Applicant' }, classKey: 'handler_6',
     subject: { 'Name': 'A. Applicant', 'Company': 'Test Chemicals Ltd', 'Application type': 'New Applicant' },
+    substances: [{ name: 'Test toxic compound', hazardClass: '6.1B' }],
   });
   expect(r.status === 201, `${r.status} ${r.text}`);
   hJob = r.body.jobId;
@@ -90,6 +91,7 @@ await step('findings against Performance Standard clauses, then the certified-ha
   expect(html.text.includes('Certified Handler'), 'title wording');
   expect(html.text.includes('A. Applicant'), 'subject name');
   expect(html.text.includes('TST100250-CH-0001'), 'certificate number');
+  expect(html.text.includes('Test toxic compound') && html.text.includes('6.1B'), 'the Substances table lists the job substances');
   expect(html.text.includes('This Certificate is limited to activities'), 'scope wording from the template');
   return `${events.length - 4} findings, certificate rendered (${html.text.length} bytes)`;
 });
@@ -112,10 +114,11 @@ await step('a cylinder importation job: two batches as units, each by its labels
   const j = (await api.get(`/api/jobs/${cJob}`).set(H)).body;
   expect(j.kind === 'cylinder' && j.units.length === 2, `units ${JSON.stringify(j.units)}`);
   expect(j.units[0].fields['FERN'] === 'TEST-0001' && j.units[0].fields['Design Standard'] === 'AS/NZS 1841.5-2003', 'merge kept the first fields');
-  const rm = await sync([ev('job.unit.remove', { jobId: cJob, ordinal: 2 })]);
+  // Removing the first batch moves the second up to ordinal 1, as the app's list does.
+  const rm = await sync([ev('job.unit.remove', { jobId: cJob, ordinal: 1 })]);
   expect(rm.body.applied.length === 1, 'remove');
   const j2 = (await api.get(`/api/jobs/${cJob}`).set(H)).body;
-  expect(j2.units.length === 1, 'one unit left');
+  expect(j2.units.length === 1 && j2.units[0].ordinal === 1 && j2.units[0].fields['FERN'] === 'TEST-0002', `renumbered: ${JSON.stringify(j2.units)}`);
   return `job ${cJob}`;
 });
 

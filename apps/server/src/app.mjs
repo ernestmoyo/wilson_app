@@ -585,19 +585,20 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   /** Certified handler and cylinder importation certificates. */
   async function fetchFormCertificateHtml(id, job) {
     const set = sheetSetFor(job.class_key);
-    const [cert, tpl, units, user] = await Promise.all([
+    const [cert, tpl, units, user, subs] = await Promise.all([
       db.query(`SELECT * FROM certificate WHERE job_id = $1`, [id]),
       db.query(`SELECT meta->'sheet'->'certificate' AS certificate FROM checksheet_template
                 WHERE code = $1 AND status = 'current' LIMIT 1`, [set.templates[0]]),
       db.query(`SELECT ordinal, fields FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [id]),
       db.query(`SELECT u.full_name, u.authorisation_number, u.email FROM certificate c JOIN app_user u ON u.id = c.certifier_id WHERE c.job_id = $1`, [id]),
+      db.query(`SELECT s.name, s.hazard_class FROM substance s JOIN job j ON j.hs_location_id = s.hs_location_id WHERE j.id = $1 ORDER BY s.id`, [id]),
     ]);
     if (!cert.rows.length) return null;
     const certificateTemplate = tpl.rows[0]?.certificate;
     if (!certificateTemplate) return null;
     const u = user.rows[0] ?? {};
     return renderFormCertificate({
-      certificateTemplate, subject: job.subject ?? {}, units: units.rows, cert: cert.rows[0],
+      certificateTemplate, subject: job.subject ?? {}, units: units.rows, substances: subs.rows, cert: cert.rows[0],
       certifier: { fullName: u.full_name, authorisationNumber: u.authorisation_number, email: u.email },
       letterhead: letterheadImages(),
     });
