@@ -62,7 +62,7 @@ void main() {
   test('server is reachable and holds the template layer', () async {
     expect(await api.health(), isTrue, reason: 'no server at $liveApi');
     final t = await api.getJson('/api/templates') as List;
-    expect(t.length, 3);
+    expect(t.length, 6);
   });
 
   test('open the G2 job, record findings, and read them back from the server', () async {

@@ -1,0 +1,218 @@
+{
+  "code": "ci-unrtdg-cylinder-importation",
+  "title": "Compliance Certifier Checklist — Un Cylinder Importation",
+  "psReference": "Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)",
+  "classScope": [],
+  "revision": 1,
+  "effectiveFrom": null,
+  "supersededBy": null,
+  "status": "draft",
+  "source": {
+    "workbook": "UNRTDG CYLINDERS Template (1).xlsx",
+    "sheet": "Checklist",
+    "extractedAt": "2026-09-11T08:45:27.845Z",
+    "extractorVersion": "forms-1",
+    "corrections": [
+      {
+        "where": "A3",
+        "from": "Detaills of PCBU",
+        "to": "Details of PCBU",
+        "reason": "spelling"
+      },
+      {
+        "where": "A32",
+        "from": "Wall thckness:",
+        "to": "Wall thickness:",
+        "reason": "spelling"
+      }
+    ],
+    "note": "Template only: the workbook values (people, companies, cylinders) were not extracted."
+  },
+  "sheet": {
+    "kind": "cylinder",
+    "title": "Compliance Certifier Checklist — Un Cylinder Importation",
+    "columnHeaders": [
+      "Item",
+      "Check",
+      "Records",
+      "Comments",
+      "Evidence"
+    ],
+    "subjectBlockTitle": "Details of PCBU",
+    "subjectBlock": [
+      {
+        "label": "Company/Legal Entity"
+      },
+      {
+        "label": "Postal Address"
+      },
+      {
+        "label": "Physical Address"
+      },
+      {
+        "label": "Business Contact Number"
+      },
+      {
+        "label": "NZBN"
+      },
+      {
+        "label": "Full Name of PCBU"
+      },
+      {
+        "label": "Email Address"
+      },
+      {
+        "label": "Contact"
+      }
+    ],
+    "unitBlockTitle": "Cylinder Details",
+    "unitBlock": [
+      {
+        "label": "Batch/Serial Number"
+      },
+      {
+        "label": "Country of Manufacturer"
+      },
+      {
+        "label": "Number of Cylinders"
+      },
+      {
+        "label": "Inspection Agency"
+      },
+      {
+        "label": "Water Capacity"
+      },
+      {
+        "label": "Design Standard"
+      },
+      {
+        "label": "Gas Traffic"
+      },
+      {
+        "label": "Test Pressure"
+      },
+      {
+        "label": "Charging Pressure"
+      },
+      {
+        "label": "Wall thickness"
+      },
+      {
+        "label": "Neck Thread"
+      }
+    ],
+    "declaration": null,
+    "documentControl": null,
+    "note": null,
+    "footer": null,
+    "authorisation": "cylinder-importation-un",
+    "certificate": {
+      "documentTitle": "COMPLIANCE CERTIFICATE\nCylinder Importation (FERN)\nIssued in accordance with regulations 6.23 and 15.16(1) of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "certifiesThat": "This certificate certifies that the requirements prescribed in regulation 15(4) and 15(3A) for a cylinder importation (low-pressure fire extinguisher) compliance certificate have been met",
+      "fields": [
+        "Unique Register Number",
+        "Certificate Number",
+        "Company/Legal Entity",
+        "Postal Address",
+        "Physical Address",
+        "Business Contact Number",
+        "NZBN",
+        "Full Name of PCBU",
+        "Email Address",
+        "Contact"
+      ],
+      "unitTitle": "Cylinder Details",
+      "unitFields": [
+        "FERN",
+        "Country of Manufacturer",
+        "Number of Cylinders",
+        "Water Capacity",
+        "Manufacturer",
+        "Design Standard",
+        "Gas Traffic",
+        "Test Pressure",
+        "Charging Pressure",
+        "Wall thckness",
+        "Nozzle Orifice Diameter"
+      ],
+      "dateLabels": [
+        "Issued Date",
+        "Effective From"
+      ],
+      "signature": [
+        "Bryan Wilson",
+        "Worksafe Authorised Compliance Certifier (TST100250)",
+        "Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."
+      ]
+    }
+  },
+  "sections": [
+    {
+      "ordinal": 1,
+      "number": null,
+      "title": "Un Cylinder Importation",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Photo evidence of compliance to marking requirements in clause 6.2.2.7.1 to 5 of UNRTDG Model regulations",
+          "records": "Photographs",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 2,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Visual inspection",
+          "records": "",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Repaired Cylinders",
+          "records": "",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Standard applying to the design",
+          "records": "",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Manufacturing certificate from a recognised inspection agency",
+          "records": "Issuing agency : Date of Issue:",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 6,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Visual Inspection",
+          "records": "",
+          "evidenceRequired": true
+        }
+      ]
+    }
+  ]
+}

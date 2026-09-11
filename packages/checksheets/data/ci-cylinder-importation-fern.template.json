@@ -1,0 +1,232 @@
+{
+  "code": "ci-cylinder-importation-fern",
+  "title": "Compliance Certifier Checklist — Cylinder Importation",
+  "psReference": "Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.16",
+  "classScope": [],
+  "revision": 1,
+  "effectiveFrom": null,
+  "supersededBy": null,
+  "status": "draft",
+  "source": {
+    "workbook": "FERN Fire extinguishers checklist (1).xlsx",
+    "sheet": "Checklist",
+    "extractedAt": "2026-09-11T08:45:27.835Z",
+    "extractorVersion": "forms-1",
+    "corrections": [
+      {
+        "where": "A3",
+        "from": "Detaills of PCBU",
+        "to": "Details of PCBU",
+        "reason": "spelling"
+      },
+      {
+        "where": "A27",
+        "from": "Charging Pressure at 15 degrees Celcius (Permanent Gas):",
+        "to": "Charging Pressure at 15 degrees Celsius (Permanent Gas):",
+        "reason": "spelling"
+      }
+    ],
+    "note": "Template only: the workbook values (people, companies, cylinders) were not extracted."
+  },
+  "sheet": {
+    "kind": "cylinder",
+    "title": "Compliance Certifier Checklist — Cylinder Importation",
+    "columnHeaders": [
+      "Item",
+      "Check",
+      "Records",
+      "Comments",
+      "Evidence"
+    ],
+    "subjectBlockTitle": "Details of PCBU",
+    "subjectBlock": [
+      {
+        "label": "Company/Legal Entity"
+      },
+      {
+        "label": "Postal Address"
+      },
+      {
+        "label": "Physical Address"
+      },
+      {
+        "label": "Business Contact Number"
+      },
+      {
+        "label": "NZBN"
+      },
+      {
+        "label": "Full Name of PCBU"
+      },
+      {
+        "label": "Email Address"
+      },
+      {
+        "label": "Contact"
+      }
+    ],
+    "unitBlockTitle": "Cylinder Details",
+    "unitBlock": [
+      {
+        "label": "Certificate Number"
+      },
+      {
+        "label": "FERN"
+      },
+      {
+        "label": "Country of Manufacturer"
+      },
+      {
+        "label": "Name of Manufacturer"
+      },
+      {
+        "label": "Charging Pressure at 15 degrees Celsius (Permanent Gas)"
+      },
+      {
+        "label": "Mass of Dry Powder"
+      },
+      {
+        "label": "Gross Weight"
+      },
+      {
+        "label": "Empty Weight"
+      },
+      {
+        "label": "S/N"
+      },
+      {
+        "label": "Number of Cylinders"
+      },
+      {
+        "label": "Water Capacity (L)"
+      },
+      {
+        "label": "Design Standard"
+      },
+      {
+        "label": "Gas Traffic"
+      },
+      {
+        "label": "Working Pressure"
+      },
+      {
+        "label": "Test Pressure"
+      },
+      {
+        "label": "Model Number"
+      }
+    ],
+    "declaration": null,
+    "documentControl": null,
+    "note": null,
+    "footer": null,
+    "authorisation": "cylinder-importation",
+    "certificate": {
+      "documentTitle": "COMPLIANCE CERTIFICATE\nCylinder Importation \nIssued in accordance with regulations 6.23 and 15.16 of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+      "certifiesThat": "This certificate certifies that the requirements prescribed in regulation 15.16 for a cylinder importation compliance certificate have been met",
+      "fields": [
+        "Unique Register Number",
+        "Certificate Number",
+        "Company/Legal Entity",
+        "Postal Address",
+        "Physical Address",
+        "Business Contact Number",
+        "NZBN",
+        "Full Name of PCBU",
+        "Email Address",
+        "Contact"
+      ],
+      "unitTitle": "Cylinder Details",
+      "unitFields": [
+        "FERN",
+        "Country of Manufacturer",
+        "Number of Cylinders",
+        "Water Capacity",
+        "Design Standard",
+        "Gas Traffic",
+        "Test Pressure",
+        "Charging Pressure",
+        "Model",
+        "Mass of Dry Powder"
+      ],
+      "dateLabels": [
+        "Issued Date",
+        "Effective From"
+      ],
+      "signature": [
+        "Bryan Wilson",
+        "Worksafe Authorised Compliance Certifier (TST100250)",
+        "Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."
+      ]
+    }
+  },
+  "sections": [
+    {
+      "ordinal": 1,
+      "number": null,
+      "title": "Cylinder Importation",
+      "items": [
+        {
+          "ordinal": 1,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Photo evidence of compliance",
+          "records": "Photographs",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 2,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Visual inspection",
+          "records": "",
+          "evidenceRequired": true
+        },
+        {
+          "ordinal": 3,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Repaired Cylinders",
+          "records": "",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 4,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Standard applying to the design",
+          "records": "",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 5,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Manufacturing certificate from a recognised inspection agency",
+          "records": "Issuing agency : Date of Issue:",
+          "evidenceRequired": false
+        },
+        {
+          "ordinal": 6,
+          "number": null,
+          "regulationRefs": [],
+          "regulationRaw": null,
+          "guidanceUrl": null,
+          "action": "Visual Inspection",
+          "records": "",
+          "evidenceRequired": true
+        }
+      ]
+    }
+  ]
+}

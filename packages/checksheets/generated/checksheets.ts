@@ -35,6 +35,17 @@ export interface ChecksheetSheet {
   scopeOfAuthorisation: { heading: string | null; text: string | null; confirmation: string | null } | null;
   reference: string | null;
   footer: string | null;
+  /** location | handler | cylinder: what the sheet is about. */
+  kind: 'location' | 'handler' | 'cylinder';
+  subjectBlockTitle: string | null;
+  /** The labels of the block above the items (site block, applicant, PCBU), verbatim. */
+  subjectBlock: readonly { label: string; options?: readonly string[] }[];
+  unitBlockTitle: string | null;
+  /** Per-unit labels (a cylinder batch); null when the sheet has no units. */
+  unitBlock: readonly { label: string }[] | null;
+  authorisation: string | null;
+  /** The certificate tab's wording for this kind; null for the location sheets (they share render-certificate). */
+  certificate: Record<string, unknown> | null;
 }
 
 export interface ChecksheetTemplate {
@@ -53,6 +64,8 @@ export interface ChecksheetTemplate {
 const EMPTY_SHEET: ChecksheetSheet = {
   title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
   declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+  kind: 'location', subjectBlockTitle: null, subjectBlock: [], unitBlockTitle: null, unitBlock: null,
+  authorisation: null, certificate: null,
 };
 
 /** Sheet nodes for a class family: the overlay's non-null fields over the base. */
@@ -66,6 +79,963 @@ export function sheetFor(t: ChecksheetTemplate, classKey?: string): ChecksheetSh
 }
 
 export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
+  {
+    "code": "ch-class-6-handler-assessment",
+    "title": "HANDLER ASSESSMENT CHECKSHEET",
+    "psReference": "Health and Safety at Work (Hazardous Substances—Certified Handler Compliance Certification) Performance Standard",
+    "classScope": [],
+    "revision": 1,
+    "status": "draft",
+    "sheet": {
+      "title": "HANDLER ASSESSMENT CHECKSHEET",
+      "evidenceColumnLabel": null,
+      "banner": null,
+      "columnHeaders": [
+        "Performance Standard Ref",
+        "Competence Requirement",
+        "Certifier Comments"
+      ],
+      "note": null,
+      "declaration": "I hereby attest to having thoroughly examined the evidence and conducted a meticulous compliance assessment in strict adherence to Regulation 4.1, 6.23, and Regulation 9.3, 13.9, or 14.3 outlined in the Health and Safety at Work (Hazardous Substances) Regulations 2017. It is affirmed that all photographic documentation referenced within the assessment was captured by myself, serving as the compliance certifier, during the site visit indicated at the specified address, unless stated otherwise within the report (IPS Clause 21(4)). Furthermore, it is duly noted that appropriate Personal Protective Equipment (PPE) was consistently utilized on-site, in accordance with IPS Clause 21(1)(d). The issuance of the certificate has been rigorously verified through a comprehensive inquiry, inspection, assessment, or examination, as comprehensively detailed within this assessment report. I can confidently declare the absence of any conflicts of interest in the execution of my responsibilities as a compliance certifier, as stipulated by IPS Clause 23(1).",
+      "documentControl": {
+        "Version": "3",
+        "Owner": "BW",
+        "Updated": "19/08/2023"
+      },
+      "scopeOfAuthorisation": null,
+      "reference": null,
+      "footer": null,
+      "kind": "handler",
+      "subjectBlockTitle": "Applicant Details",
+      "subjectBlock": [
+        {
+          "label": "Name"
+        },
+        {
+          "label": "Company"
+        },
+        {
+          "label": "Address"
+        },
+        {
+          "label": "Duration of Assessment"
+        },
+        {
+          "label": "Phone number"
+        },
+        {
+          "label": "Email Address"
+        },
+        {
+          "label": "DOB"
+        },
+        {
+          "label": "Home Address"
+        },
+        {
+          "label": "Application type",
+          "options": [
+            "New Applicant",
+            "Renewal",
+            "Change of scope"
+          ]
+        },
+        {
+          "label": "Scope of Certification"
+        },
+        {
+          "label": "Date and time of the written assessment"
+        },
+        {
+          "label": "Subject Area Covered"
+        },
+        {
+          "label": "Assessment of answers"
+        }
+      ],
+      "unitBlock": null,
+      "authorisation": "handler-class-6",
+      "certificate": {
+        "documentTitle": "COMPLIANCE CERTIFICATE\nCertified Handler\nIssued in accordance with regulations 4.1 and 6.23 and regulation 9.3, 13.9 or 14.3 of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+        "certifiesThat": "This certificate certifies that the requirements for a Certified Handler Certificate have been met",
+        "fields": [
+          "Unique Register Number",
+          "Certificate Number",
+          "Company/Legal Entity",
+          "Full Name",
+          "Date of Birth",
+          "Email Address",
+          "Home Address",
+          "Postal Address"
+        ],
+        "tables": [
+          {
+            "title": "Substances",
+            "columns": [
+              "Name",
+              "Classes",
+              "Lifecycles"
+            ]
+          }
+        ],
+        "scopeHeading": "Scope of Certification",
+        "scopeText": "This Certificate is limited to activities undertaken by the PCBU for the Toxic substance listed above.",
+        "dateLabels": [
+          "Issued Date",
+          "Effective From",
+          "Expiry date"
+        ],
+        "signature": [
+          "Bryan Wilson (CMEng, Beng, MBA)",
+          "Worksafe Authorised Compliance Certifier (TST100250)",
+          "compliancecertifier@assuresafety.co.nz"
+        ],
+        "issuerStatement": "This certificate is issued by Bryan Wilson, being an individual compliance certifier authorised by WorkSafe New Zealand under regulation 6.8 of the Health and Safety at Work (Hazardous Substances) Regulations 2017, in accordance with regulation 6.8(2)(a) to (d) of those regulations."
+      }
+    },
+    "sections": [
+      {
+        "ordinal": 1,
+        "number": "5",
+        "title": "Performance Standard clause 5",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "5(1)(a)",
+            "regulationRefs": [],
+            "regulationRaw": "5(1)(a)",
+            "guidanceUrl": null,
+            "action": "Verification of full legal name of the applicant",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "5(1)(b)",
+            "regulationRefs": [],
+            "regulationRaw": "5(1)(b)",
+            "guidanceUrl": null,
+            "action": "Document provided for the purpose of demonstrating compliance with the competency requirements relates to the applicant",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "5(1)(c)",
+            "regulationRefs": [],
+            "regulationRaw": "5(1)(c)",
+            "guidanceUrl": null,
+            "action": "Lifecycle phase to be considered",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "5(2)",
+            "regulationRefs": [],
+            "regulationRaw": "5(2)",
+            "guidanceUrl": null,
+            "action": "Qualifications provided",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": "5(2)(a)",
+            "regulationRefs": [],
+            "regulationRaw": "5(2)(a)",
+            "guidanceUrl": null,
+            "action": "Method of Further assessment if applicable",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": "5(2)(b)",
+            "regulationRefs": [],
+            "regulationRaw": "5(2)(b)",
+            "guidanceUrl": null,
+            "action": "Competence requirements covered by further assessment",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 7,
+            "number": "5(3)",
+            "regulationRefs": [],
+            "regulationRaw": "5(3)",
+            "guidanceUrl": null,
+            "action": "Evidence of Practical Knowledge",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 8,
+            "number": "5(4)",
+            "regulationRefs": [],
+            "regulationRaw": "5(4)",
+            "guidanceUrl": null,
+            "action": "Third party assessment provided\nCarried out by person of sufficient Knowledge\nMethod used for the assessment\nSatisfied with the results of the assessment",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 9,
+            "number": "5(7)",
+            "regulationRefs": [],
+            "regulationRaw": "5(7)",
+            "guidanceUrl": null,
+            "action": "Request for further Information",
+            "records": "",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "number": "6",
+        "title": "Performance Standard clause 6",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "6(2)(a)",
+            "regulationRefs": [],
+            "regulationRaw": "6(2)(a)",
+            "guidanceUrl": null,
+            "action": "Knowledge of hazard classification numbering system set out in the Hazardous Substances (Classification) Notice 2017",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "6(2)(v)",
+            "regulationRefs": [],
+            "regulationRaw": "6(2)(v)",
+            "guidanceUrl": null,
+            "action": "The classifications of the substance, including its subsidiary properties, such as flammability; and",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of the relevant parts of the UN Model Regulations",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of requirements regarding the storage and transport of the substance",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of signage requirements",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of requirements imposed under the HSNO Act on the substance, whether by a hazardous substance notice issued by the EPA or as controls applying to the relevant individual approvals or imposed on the relevant group standards, as applicable.",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 7,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of the symptoms of poisoning by the substance",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 8,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of the exposure routes, pathways and risk management of the substance",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 9,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Good understanding of the mode of action, symptoms of poisoning and appropriate first aid; and",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 10,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of equipment handling techniques",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 11,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of equipment calibration and maintenance, where applicable",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 12,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Knowledge of material handling techniques for the correct use and disposal of the substance",
+            "records": "",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "number": "7",
+        "title": "Performance Standard clause 7",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "7 (2)(a)",
+            "regulationRefs": [],
+            "regulationRaw": "7 (2)(a)",
+            "guidanceUrl": null,
+            "action": "Sufficient knowledge of controlled substance licence requirements",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "7(2)(b)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(b)",
+            "guidanceUrl": null,
+            "action": "Tracking requirements for the substance (through all relevant life cycle phases), including the requirement to retain records",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "7(2)(d)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(d)",
+            "guidanceUrl": null,
+            "action": "Documentation and information requirements (for example, requirements related to labelling and safety data sheets);",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "7(2)(e)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(e)",
+            "guidanceUrl": null,
+            "action": "Personal protective equipment requirements",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": "7(2)(f)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(f)",
+            "guidanceUrl": null,
+            "action": "Knowledge of controls relating to equipment and locations under the personal control of a certified handler, if applicable",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": "7(2)(g)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(g)",
+            "guidanceUrl": null,
+            "action": "Knowledge requirements related to the segregation of incompatible substances and materials",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 7,
+            "number": "7(2)(h)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(h)",
+            "guidanceUrl": null,
+            "action": "Knowledge of requirements relating to certified handler activities imposed by any hazardous substances notice issued by the EPA",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 8,
+            "number": "7(2)(j)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(j)",
+            "guidanceUrl": null,
+            "action": "Knowledge of the prescribed exposure standards applying to the substance",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 9,
+            "number": "7(2)(k)",
+            "regulationRefs": [],
+            "regulationRaw": "7(2)(k)",
+            "guidanceUrl": null,
+            "action": "Knowledge of packaging requirements",
+            "records": "",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "number": "8",
+        "title": "Performance Standard clause 8",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "8(1)(a)(i)",
+            "regulationRefs": [],
+            "regulationRaw": "8(1)(a)(i)",
+            "guidanceUrl": null,
+            "action": "Knowledge of the precautions required to prevent injury or illness to any person at the workplace caused by the substance; and",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "8(1)(a)(ii)",
+            "regulationRefs": [],
+            "regulationRaw": "8(1)(a)(ii)",
+            "guidanceUrl": null,
+            "action": "Knowledge in the procedures to adopt in an emergency involving the substance",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "8(1)(b)",
+            "regulationRefs": [],
+            "regulationRaw": "8(1)(b)",
+            "guidanceUrl": null,
+            "action": "Knowledge in the procedures to adopt in an emergency involving the substance; and working knowledge of, the procedures and plant (including personal protective equipment) necessary to manage the substance at the workplace for which the applicant is to be a certified handler",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "8(2)(a)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(a)",
+            "guidanceUrl": null,
+            "action": "Knowledge in the appropriate risk management process to be followed, including the hierarchy of controls",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": "8(2)(b)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(b)",
+            "guidanceUrl": null,
+            "action": "The correct use of personal protective equipment",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": "8(2)(c)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(c)",
+            "guidanceUrl": null,
+            "action": "Knowledge in the requirement to control adverse effects",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 7,
+            "number": "8(2)(d)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(d)",
+            "guidanceUrl": null,
+            "action": "Provisions of the emergency response plan including any emergency procedures and response measures",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 8,
+            "number": "8(2)(e)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(e)",
+            "guidanceUrl": null,
+            "action": "If the Regulations do not require an emergency response plan at the workplace for which the applicant is to be a certified handler, the layout of the workplace including assembly points, the list of actions to be carried out and the key personnel to contact in case of an emergency; and",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 9,
+            "number": "8(2)(f)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(f)",
+            "guidanceUrl": null,
+            "action": "First aid measures",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 10,
+            "number": "8(2)(g)",
+            "regulationRefs": [],
+            "regulationRaw": "8(2)(g)",
+            "guidanceUrl": null,
+            "action": "Precautions and safety considerations",
+            "records": "",
+            "evidenceRequired": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "ci-cylinder-importation-fern",
+    "title": "Compliance Certifier Checklist — Cylinder Importation",
+    "psReference": "Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.16",
+    "classScope": [],
+    "revision": 1,
+    "status": "draft",
+    "sheet": {
+      "title": "Compliance Certifier Checklist — Cylinder Importation",
+      "evidenceColumnLabel": null,
+      "banner": null,
+      "columnHeaders": [
+        "Item",
+        "Check",
+        "Records",
+        "Comments",
+        "Evidence"
+      ],
+      "note": null,
+      "declaration": null,
+      "documentControl": null,
+      "scopeOfAuthorisation": null,
+      "reference": null,
+      "footer": null,
+      "kind": "cylinder",
+      "subjectBlockTitle": "Details of PCBU",
+      "subjectBlock": [
+        {
+          "label": "Company/Legal Entity"
+        },
+        {
+          "label": "Postal Address"
+        },
+        {
+          "label": "Physical Address"
+        },
+        {
+          "label": "Business Contact Number"
+        },
+        {
+          "label": "NZBN"
+        },
+        {
+          "label": "Full Name of PCBU"
+        },
+        {
+          "label": "Email Address"
+        },
+        {
+          "label": "Contact"
+        }
+      ],
+      "unitBlockTitle": "Cylinder Details",
+      "unitBlock": [
+        {
+          "label": "Certificate Number"
+        },
+        {
+          "label": "FERN"
+        },
+        {
+          "label": "Country of Manufacturer"
+        },
+        {
+          "label": "Name of Manufacturer"
+        },
+        {
+          "label": "Charging Pressure at 15 degrees Celsius (Permanent Gas)"
+        },
+        {
+          "label": "Mass of Dry Powder"
+        },
+        {
+          "label": "Gross Weight"
+        },
+        {
+          "label": "Empty Weight"
+        },
+        {
+          "label": "S/N"
+        },
+        {
+          "label": "Number of Cylinders"
+        },
+        {
+          "label": "Water Capacity (L)"
+        },
+        {
+          "label": "Design Standard"
+        },
+        {
+          "label": "Gas Traffic"
+        },
+        {
+          "label": "Working Pressure"
+        },
+        {
+          "label": "Test Pressure"
+        },
+        {
+          "label": "Model Number"
+        }
+      ],
+      "authorisation": "cylinder-importation",
+      "certificate": {
+        "documentTitle": "COMPLIANCE CERTIFICATE\nCylinder Importation \nIssued in accordance with regulations 6.23 and 15.16 of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+        "certifiesThat": "This certificate certifies that the requirements prescribed in regulation 15.16 for a cylinder importation compliance certificate have been met",
+        "fields": [
+          "Unique Register Number",
+          "Certificate Number",
+          "Company/Legal Entity",
+          "Postal Address",
+          "Physical Address",
+          "Business Contact Number",
+          "NZBN",
+          "Full Name of PCBU",
+          "Email Address",
+          "Contact"
+        ],
+        "unitTitle": "Cylinder Details",
+        "unitFields": [
+          "FERN",
+          "Country of Manufacturer",
+          "Number of Cylinders",
+          "Water Capacity",
+          "Design Standard",
+          "Gas Traffic",
+          "Test Pressure",
+          "Charging Pressure",
+          "Model",
+          "Mass of Dry Powder"
+        ],
+        "dateLabels": [
+          "Issued Date",
+          "Effective From"
+        ],
+        "signature": [
+          "Bryan Wilson",
+          "Worksafe Authorised Compliance Certifier (TST100250)",
+          "Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."
+        ]
+      }
+    },
+    "sections": [
+      {
+        "ordinal": 1,
+        "number": null,
+        "title": "Cylinder Importation",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Photo evidence of compliance",
+            "records": "Photographs",
+            "evidenceRequired": true
+          },
+          {
+            "ordinal": 2,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Visual inspection",
+            "records": "",
+            "evidenceRequired": true
+          },
+          {
+            "ordinal": 3,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Repaired Cylinders",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Standard applying to the design",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Manufacturing certificate from a recognised inspection agency",
+            "records": "Issuing agency : Date of Issue:",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Visual Inspection",
+            "records": "",
+            "evidenceRequired": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "ci-unrtdg-cylinder-importation",
+    "title": "Compliance Certifier Checklist — Un Cylinder Importation",
+    "psReference": "Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)",
+    "classScope": [],
+    "revision": 1,
+    "status": "draft",
+    "sheet": {
+      "title": "Compliance Certifier Checklist — Un Cylinder Importation",
+      "evidenceColumnLabel": null,
+      "banner": null,
+      "columnHeaders": [
+        "Item",
+        "Check",
+        "Records",
+        "Comments",
+        "Evidence"
+      ],
+      "note": null,
+      "declaration": null,
+      "documentControl": null,
+      "scopeOfAuthorisation": null,
+      "reference": null,
+      "footer": null,
+      "kind": "cylinder",
+      "subjectBlockTitle": "Details of PCBU",
+      "subjectBlock": [
+        {
+          "label": "Company/Legal Entity"
+        },
+        {
+          "label": "Postal Address"
+        },
+        {
+          "label": "Physical Address"
+        },
+        {
+          "label": "Business Contact Number"
+        },
+        {
+          "label": "NZBN"
+        },
+        {
+          "label": "Full Name of PCBU"
+        },
+        {
+          "label": "Email Address"
+        },
+        {
+          "label": "Contact"
+        }
+      ],
+      "unitBlockTitle": "Cylinder Details",
+      "unitBlock": [
+        {
+          "label": "Batch/Serial Number"
+        },
+        {
+          "label": "Country of Manufacturer"
+        },
+        {
+          "label": "Number of Cylinders"
+        },
+        {
+          "label": "Inspection Agency"
+        },
+        {
+          "label": "Water Capacity"
+        },
+        {
+          "label": "Design Standard"
+        },
+        {
+          "label": "Gas Traffic"
+        },
+        {
+          "label": "Test Pressure"
+        },
+        {
+          "label": "Charging Pressure"
+        },
+        {
+          "label": "Wall thickness"
+        },
+        {
+          "label": "Neck Thread"
+        }
+      ],
+      "authorisation": "cylinder-importation-un",
+      "certificate": {
+        "documentTitle": "COMPLIANCE CERTIFICATE\nCylinder Importation (FERN)\nIssued in accordance with regulations 6.23 and 15.16(1) of the Health and Safety at Work (Hazardous Substances) Regulations 2017",
+        "certifiesThat": "This certificate certifies that the requirements prescribed in regulation 15(4) and 15(3A) for a cylinder importation (low-pressure fire extinguisher) compliance certificate have been met",
+        "fields": [
+          "Unique Register Number",
+          "Certificate Number",
+          "Company/Legal Entity",
+          "Postal Address",
+          "Physical Address",
+          "Business Contact Number",
+          "NZBN",
+          "Full Name of PCBU",
+          "Email Address",
+          "Contact"
+        ],
+        "unitTitle": "Cylinder Details",
+        "unitFields": [
+          "FERN",
+          "Country of Manufacturer",
+          "Number of Cylinders",
+          "Water Capacity",
+          "Manufacturer",
+          "Design Standard",
+          "Gas Traffic",
+          "Test Pressure",
+          "Charging Pressure",
+          "Wall thckness",
+          "Nozzle Orifice Diameter"
+        ],
+        "dateLabels": [
+          "Issued Date",
+          "Effective From"
+        ],
+        "signature": [
+          "Bryan Wilson",
+          "Worksafe Authorised Compliance Certifier (TST100250)",
+          "Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."
+        ]
+      }
+    },
+    "sections": [
+      {
+        "ordinal": 1,
+        "number": null,
+        "title": "Un Cylinder Importation",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Photo evidence of compliance to marking requirements in clause 6.2.2.7.1 to 5 of UNRTDG Model regulations",
+            "records": "Photographs",
+            "evidenceRequired": true
+          },
+          {
+            "ordinal": 2,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Visual inspection",
+            "records": "",
+            "evidenceRequired": true
+          },
+          {
+            "ordinal": 3,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Repaired Cylinders",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Standard applying to the design",
+            "records": "",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Manufacturing certificate from a recognised inspection agency",
+            "records": "Issuing agency : Date of Issue:",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": null,
+            "regulationRefs": [],
+            "regulationRaw": null,
+            "guidanceUrl": null,
+            "action": "Visual Inspection",
+            "records": "",
+            "evidenceRequired": true
+          }
+        ]
+      }
+    ]
+  },
   {
     "code": "wks17-class-2-and-3-1-substances",
     "title": "Check sheet Location Class 2 and 3.1 substances",

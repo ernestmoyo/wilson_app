@@ -83,11 +83,13 @@ await check('apply the current seed: new revisions, old ones superseded, no merg
     SELECT count(i.id)::int n FROM checksheet_item i
     JOIN checksheet_section s ON s.id = i.section_id
     JOIN checksheet_template t ON t.id = s.template_id WHERE t.status = 'current'`);
-  if (current !== 98) throw new Error(`current items ${current}, expected 98`);
+  // 98 location items plus the three form sheets (40 + 6 + 6).
+  if (current !== 150) throw new Error(`current items ${current}, expected 150`);
   const revs = await db.query(`SELECT code, revision, status FROM checksheet_template ORDER BY code, revision`);
   const superseded = revs.rows.filter((r) => r.status === 'superseded').length;
   const cur = revs.rows.filter((r) => r.status === 'current').length;
-  if (cur !== 3) throw new Error(`current revisions ${cur}, expected 3`);
+  // Three location sheets re-seeded as rev 2, plus the three form sheets.
+  if (cur !== 6) throw new Error(`current revisions ${cur}, expected 6`);
   if (superseded !== 3) throw new Error(`superseded revisions ${superseded}, expected 3`);
   return revs.rows.map((r) => `${r.code}@${r.revision}:${r.status}`).join('  ');
 });

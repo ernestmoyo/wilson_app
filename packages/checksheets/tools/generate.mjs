@@ -56,7 +56,7 @@ const banner = (comment) =>
 const dartStr = (s) =>
   s === null || s === undefined
     ? 'null'
-    : "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\$/g, '\\$') + "'";
+    : "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\$/g, '\\$').replace(/\r/g, '').replace(/\n/g, '\\n') + "'";
 
 /** Postgres literal: double the single quotes. */
 const sqlStr = (s) =>
@@ -110,6 +110,17 @@ export interface ChecksheetSheet {
   scopeOfAuthorisation: { heading: string | null; text: string | null; confirmation: string | null } | null;
   reference: string | null;
   footer: string | null;
+  /** location | handler | cylinder: what the sheet is about. */
+  kind: 'location' | 'handler' | 'cylinder';
+  subjectBlockTitle: string | null;
+  /** The labels of the block above the items (site block, applicant, PCBU), verbatim. */
+  subjectBlock: readonly { label: string; options?: readonly string[] }[];
+  unitBlockTitle: string | null;
+  /** Per-unit labels (a cylinder batch); null when the sheet has no units. */
+  unitBlock: readonly { label: string }[] | null;
+  authorisation: string | null;
+  /** The certificate tab's wording for this kind; null for the location sheets (they share render-certificate). */
+  certificate: Record<string, unknown> | null;
 }
 
 export interface ChecksheetTemplate {
@@ -128,6 +139,8 @@ export interface ChecksheetTemplate {
 const EMPTY_SHEET: ChecksheetSheet = {
   title: null, evidenceColumnLabel: null, banner: null, columnHeaders: [], note: null,
   declaration: null, documentControl: null, scopeOfAuthorisation: null, reference: null, footer: null,
+  kind: 'location', subjectBlockTitle: null, subjectBlock: [], unitBlockTitle: null, unitBlock: null,
+  authorisation: null, certificate: null,
 };
 
 /** Sheet nodes for a class family: the overlay's non-null fields over the base. */
@@ -242,6 +255,13 @@ class ChecksheetSection {
   });
 }
 
+/// One label of a subject or unit block, with the options a choice row offers.
+class SubjectLabel {
+  final String label;
+  final List<String> options;
+  const SubjectLabel(this.label, {this.options = const []});
+}
+
 class ScopeOfAuthorisation {
   final String? heading;
   final String? text;
@@ -264,6 +284,21 @@ class SheetMeta {
   final String? reference;
   final String? footer;
 
+  /// location | handler | cylinder: what the sheet is about.
+  final String kind;
+  final String? subjectBlockTitle;
+
+  /// Labels of the block above the items, verbatim; options for a choice row.
+  final List<SubjectLabel> subjectBlock;
+  final String? unitBlockTitle;
+
+  /// Per-unit labels (a cylinder batch); null when the sheet has no units.
+  final List<SubjectLabel>? unitBlock;
+  final String? authorisation;
+
+  /// The certificate tab's wording, as extracted; null for location sheets.
+  final Map<String, dynamic>? certificate;
+
   const SheetMeta({
     this.title,
     this.evidenceColumnLabel,
@@ -275,7 +310,17 @@ class SheetMeta {
     this.scopeOfAuthorisation,
     this.reference,
     this.footer,
+    this.kind = 'location',
+    this.subjectBlockTitle,
+    this.subjectBlock = const [],
+    this.unitBlockTitle,
+    this.unitBlock,
+    this.authorisation,
+    this.certificate,
   });
+
+  bool get isLocation => kind == 'location';
+  bool get hasUnits => unitBlock != null && unitBlock!.isNotEmpty;
 
   /// Overlay: non-null fields of [o] win over this.
   SheetMeta merge(SheetMeta? o) => o == null
@@ -291,6 +336,13 @@ class SheetMeta {
           scopeOfAuthorisation: o.scopeOfAuthorisation ?? scopeOfAuthorisation,
           reference: o.reference ?? reference,
           footer: o.footer ?? footer,
+          kind: kind,
+          subjectBlockTitle: o.subjectBlockTitle ?? subjectBlockTitle,
+          subjectBlock: o.subjectBlock.isNotEmpty ? o.subjectBlock : subjectBlock,
+          unitBlockTitle: o.unitBlockTitle ?? unitBlockTitle,
+          unitBlock: o.unitBlock ?? unitBlock,
+          authorisation: o.authorisation ?? authorisation,
+          certificate: o.certificate ?? certificate,
         );
 }
 
@@ -337,6 +389,17 @@ class ChecksheetTemplate {
     m
       ? '{' + Object.entries(m).map(([k, v]) => `${dartStr(k)}: ${dartStr(v)}`).join(', ') + '}'
       : 'null';
+  const dartLabels = (xs) =>
+    !xs || !xs.length
+      ? '[]'
+      : '[' + xs.map((x) => `SubjectLabel(${dartStr(x.label)}${x.options?.length ? `, options: ${dartList(x.options)}` : ''})`).join(', ') + ']';
+  // Nested JSON as a Dart literal: strings, numbers, booleans, lists, maps.
+  const dartJson = (v) =>
+    v === null || v === undefined ? 'null'
+    : typeof v === 'string' ? dartStr(v)
+    : typeof v === 'number' || typeof v === 'boolean' ? String(v)
+    : Array.isArray(v) ? '[' + v.map(dartJson).join(', ') + ']'
+    : '{' + Object.entries(v).map(([k, x]) => `${dartStr(k)}: ${dartJson(x)}`).join(', ') + '}';
   const dartScope = (s) =>
     s
       ? `ScopeOfAuthorisation(heading: ${dartStr(s.heading)}, text: ${dartStr(s.text)}, confirmation: ${dartStr(s.confirmation)})`
@@ -355,6 +418,13 @@ ${indent}  documentControl: ${dartStrMap(s.documentControl)},
 ${indent}  scopeOfAuthorisation: ${dartScope(s.scopeOfAuthorisation)},
 ${indent}  reference: ${dartStr(s.reference)},
 ${indent}  footer: ${dartStr(s.footer)},
+${indent}  kind: ${dartStr(s.kind ?? 'location')},
+${indent}  subjectBlockTitle: ${dartStr(s.subjectBlockTitle)},
+${indent}  subjectBlock: ${dartLabels(s.subjectBlock)},
+${indent}  unitBlockTitle: ${dartStr(s.unitBlockTitle)},
+${indent}  unitBlock: ${s.unitBlock ? dartLabels(s.unitBlock) : 'null'},
+${indent}  authorisation: ${dartStr(s.authorisation)},
+${indent}  certificate: ${s.certificate ? dartJson(s.certificate) : 'null'},
 ${indent})`;
   const dartSheetByClass = (m) =>
     m

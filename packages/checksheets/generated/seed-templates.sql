@@ -61,6 +61,390 @@ CREATE INDEX IF NOT EXISTS idx_checksheet_item_refs
 
 BEGIN;
 
+-- ch-class-6-handler-assessment — 4 sections, 40 items — content d5fbdf9215b0
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+SELECT 'ch-class-6-handler-assessment',
+       COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment'), 0) + 1,
+       'HANDLER ASSESSMENT CHECKSHEET', 'Health and Safety at Work (Hazardous Substances—Certified Handler Compliance Certification) Performance Standard', '{}', 'current', '{"contentHash":"d5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002","sheet":{"title":"HANDLER ASSESSMENT CHECKSHEET","evidenceColumnLabel":null,"banner":null,"columnHeaders":["Performance Standard Ref","Competence Requirement","Certifier Comments"],"note":null,"declaration":"I hereby attest to having thoroughly examined the evidence and conducted a meticulous compliance assessment in strict adherence to Regulation 4.1, 6.23, and Regulation 9.3, 13.9, or 14.3 outlined in the Health and Safety at Work (Hazardous Substances) Regulations 2017. It is affirmed that all photographic documentation referenced within the assessment was captured by myself, serving as the compliance certifier, during the site visit indicated at the specified address, unless stated otherwise within the report (IPS Clause 21(4)). Furthermore, it is duly noted that appropriate Personal Protective Equipment (PPE) was consistently utilized on-site, in accordance with IPS Clause 21(1)(d). The issuance of the certificate has been rigorously verified through a comprehensive inquiry, inspection, assessment, or examination, as comprehensively detailed within this assessment report. I can confidently declare the absence of any conflicts of interest in the execution of my responsibilities as a compliance certifier, as stipulated by IPS Clause 23(1).","documentControl":{"Version":"3","Owner":"BW","Updated":"19/08/2023"},"scopeOfAuthorisation":null,"reference":null,"footer":null,"kind":"handler","subjectBlockTitle":"Applicant Details","subjectBlock":[{"label":"Name"},{"label":"Company"},{"label":"Address"},{"label":"Duration of Assessment"},{"label":"Phone number"},{"label":"Email Address"},{"label":"DOB"},{"label":"Home Address"},{"label":"Application type","options":["New Applicant","Renewal","Change of scope"]},{"label":"Scope of Certification"},{"label":"Date and time of the written assessment"},{"label":"Subject Area Covered"},{"label":"Assessment of answers"}],"unitBlock":null,"authorisation":"handler-class-6","certificate":{"documentTitle":"COMPLIANCE CERTIFICATE\nCertified Handler\nIssued in accordance with regulations 4.1 and 6.23 and regulation 9.3, 13.9 or 14.3 of the Health and Safety at Work (Hazardous Substances) Regulations 2017","certifiesThat":"This certificate certifies that the requirements for a Certified Handler Certificate have been met","fields":["Unique Register Number","Certificate Number","Company/Legal Entity","Full Name","Date of Birth","Email Address","Home Address","Postal Address"],"tables":[{"title":"Substances","columns":["Name","Classes","Lifecycles"]}],"scopeHeading":"Scope of Certification","scopeText":"This Certificate is limited to activities undertaken by the PCBU for the Toxic substance listed above.","dateLabels":["Issued Date","Effective From","Expiry date"],"signature":["Bryan Wilson (CMEng, Beng, MBA)","Worksafe Authorised Compliance Certifier (TST100250)","compliancecertifier@assuresafety.co.nz"],"issuerStatement":"This certificate is issued by Bryan Wilson, being an individual compliance certifier authorised by WorkSafe New Zealand under regulation 6.8 of the Health and Safety at Work (Hazardous Substances) Regulations 2017, in accordance with regulation 6.8(2)(a) to (d) of those regulations."}},"sheetByClass":null}'::jsonb
+WHERE NOT EXISTS (
+  SELECT 1 FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002'
+);
+UPDATE checksheet_template
+   SET status = 'superseded',
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002')
+ WHERE code = 'ch-class-6-handler-assessment' AND (meta->>'contentHash') IS DISTINCT FROM 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND status <> 'superseded';
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 1, '5', 'Performance Standard clause 5'
+FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, '5(1)(a)', '{}', NULL, '5(1)(a)', NULL, 'Verification of full legal name of the applicant', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, '5(1)(b)', '{}', NULL, '5(1)(b)', NULL, 'Document provided for the purpose of demonstrating compliance with the competency requirements relates to the applicant', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, '5(1)(c)', '{}', NULL, '5(1)(c)', NULL, 'Lifecycle phase to be considered', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, '5(2)', '{}', NULL, '5(2)', NULL, 'Qualifications provided', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, '5(2)(a)', '{}', NULL, '5(2)(a)', NULL, 'Method of Further assessment if applicable', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, '5(2)(b)', '{}', NULL, '5(2)(b)', NULL, 'Competence requirements covered by further assessment', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 7, '5(3)', '{}', NULL, '5(3)', NULL, 'Evidence of Practical Knowledge', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 8, '5(4)', '{}', NULL, '5(4)', NULL, 'Third party assessment provided
+Carried out by person of sufficient Knowledge
+Method used for the assessment
+Satisfied with the results of the assessment', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 9, '5(7)', '{}', NULL, '5(7)', NULL, 'Request for further Information', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 2, '6', 'Performance Standard clause 6'
+FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, '6(2)(a)', '{}', NULL, '6(2)(a)', NULL, 'Knowledge of hazard classification numbering system set out in the Hazardous Substances (Classification) Notice 2017', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, '6(2)(v)', '{}', NULL, '6(2)(v)', NULL, 'The classifications of the substance, including its subsidiary properties, such as flammability; and', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, NULL, '{}', NULL, NULL, NULL, 'Knowledge of the relevant parts of the UN Model Regulations', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, NULL, '{}', NULL, NULL, NULL, 'Knowledge of requirements regarding the storage and transport of the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, NULL, '{}', NULL, NULL, NULL, 'Knowledge of signage requirements', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, NULL, '{}', NULL, NULL, NULL, 'Knowledge of requirements imposed under the HSNO Act on the substance, whether by a hazardous substance notice issued by the EPA or as controls applying to the relevant individual approvals or imposed on the relevant group standards, as applicable.', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 7, NULL, '{}', NULL, NULL, NULL, 'Knowledge of the symptoms of poisoning by the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 8, NULL, '{}', NULL, NULL, NULL, 'Knowledge of the exposure routes, pathways and risk management of the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 9, NULL, '{}', NULL, NULL, NULL, 'Good understanding of the mode of action, symptoms of poisoning and appropriate first aid; and', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 10, NULL, '{}', NULL, NULL, NULL, 'Knowledge of equipment handling techniques', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 11, NULL, '{}', NULL, NULL, NULL, 'Knowledge of equipment calibration and maintenance, where applicable', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 12, NULL, '{}', NULL, NULL, NULL, 'Knowledge of material handling techniques for the correct use and disposal of the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 2
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 3, '7', 'Performance Standard clause 7'
+FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, '7 (2)(a)', '{}', NULL, '7 (2)(a)', NULL, 'Sufficient knowledge of controlled substance licence requirements', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, '7(2)(b)', '{}', NULL, '7(2)(b)', NULL, 'Tracking requirements for the substance (through all relevant life cycle phases), including the requirement to retain records', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, '7(2)(d)', '{}', NULL, '7(2)(d)', NULL, 'Documentation and information requirements (for example, requirements related to labelling and safety data sheets);', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, '7(2)(e)', '{}', NULL, '7(2)(e)', NULL, 'Personal protective equipment requirements', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, '7(2)(f)', '{}', NULL, '7(2)(f)', NULL, 'Knowledge of controls relating to equipment and locations under the personal control of a certified handler, if applicable', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, '7(2)(g)', '{}', NULL, '7(2)(g)', NULL, 'Knowledge requirements related to the segregation of incompatible substances and materials', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 7, '7(2)(h)', '{}', NULL, '7(2)(h)', NULL, 'Knowledge of requirements relating to certified handler activities imposed by any hazardous substances notice issued by the EPA', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 8, '7(2)(j)', '{}', NULL, '7(2)(j)', NULL, 'Knowledge of the prescribed exposure standards applying to the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 9, '7(2)(k)', '{}', NULL, '7(2)(k)', NULL, 'Knowledge of packaging requirements', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 3
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 4, '8', 'Performance Standard clause 8'
+FROM checksheet_template WHERE code = 'ch-class-6-handler-assessment' AND meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, '8(1)(a)(i)', '{}', NULL, '8(1)(a)(i)', NULL, 'Knowledge of the precautions required to prevent injury or illness to any person at the workplace caused by the substance; and', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, '8(1)(a)(ii)', '{}', NULL, '8(1)(a)(ii)', NULL, 'Knowledge in the procedures to adopt in an emergency involving the substance', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, '8(1)(b)', '{}', NULL, '8(1)(b)', NULL, 'Knowledge in the procedures to adopt in an emergency involving the substance; and working knowledge of, the procedures and plant (including personal protective equipment) necessary to manage the substance at the workplace for which the applicant is to be a certified handler', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, '8(2)(a)', '{}', NULL, '8(2)(a)', NULL, 'Knowledge in the appropriate risk management process to be followed, including the hierarchy of controls', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, '8(2)(b)', '{}', NULL, '8(2)(b)', NULL, 'The correct use of personal protective equipment', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, '8(2)(c)', '{}', NULL, '8(2)(c)', NULL, 'Knowledge in the requirement to control adverse effects', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 7, '8(2)(d)', '{}', NULL, '8(2)(d)', NULL, 'Provisions of the emergency response plan including any emergency procedures and response measures', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 8, '8(2)(e)', '{}', NULL, '8(2)(e)', NULL, 'If the Regulations do not require an emergency response plan at the workplace for which the applicant is to be a certified handler, the layout of the workplace including assembly points, the list of actions to be carried out and the key personnel to contact in case of an emergency; and', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 9, '8(2)(f)', '{}', NULL, '8(2)(f)', NULL, 'First aid measures', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 10, '8(2)(g)', '{}', NULL, '8(2)(g)', NULL, 'Precautions and safety considerations', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ch-class-6-handler-assessment' AND t.meta->>'contentHash' = 'd5fbdf9215b03cb6b74b64c21fa7d2b641d46daa3c3bb5381905150334926002' AND sec.ordinal = 4
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
+-- ci-cylinder-importation-fern — 1 sections, 6 items — content 402b18b69bba
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+SELECT 'ci-cylinder-importation-fern',
+       COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = 'ci-cylinder-importation-fern'), 0) + 1,
+       'Compliance Certifier Checklist — Cylinder Importation', 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.16', '{}', 'current', '{"contentHash":"402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212","sheet":{"title":"Compliance Certifier Checklist — Cylinder Importation","evidenceColumnLabel":null,"banner":null,"columnHeaders":["Item","Check","Records","Comments","Evidence"],"note":null,"declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":null,"kind":"cylinder","subjectBlockTitle":"Details of PCBU","subjectBlock":[{"label":"Company/Legal Entity"},{"label":"Postal Address"},{"label":"Physical Address"},{"label":"Business Contact Number"},{"label":"NZBN"},{"label":"Full Name of PCBU"},{"label":"Email Address"},{"label":"Contact"}],"unitBlockTitle":"Cylinder Details","unitBlock":[{"label":"Certificate Number"},{"label":"FERN"},{"label":"Country of Manufacturer"},{"label":"Name of Manufacturer"},{"label":"Charging Pressure at 15 degrees Celsius (Permanent Gas)"},{"label":"Mass of Dry Powder"},{"label":"Gross Weight"},{"label":"Empty Weight"},{"label":"S/N"},{"label":"Number of Cylinders"},{"label":"Water Capacity (L)"},{"label":"Design Standard"},{"label":"Gas Traffic"},{"label":"Working Pressure"},{"label":"Test Pressure"},{"label":"Model Number"}],"authorisation":"cylinder-importation","certificate":{"documentTitle":"COMPLIANCE CERTIFICATE\nCylinder Importation \nIssued in accordance with regulations 6.23 and 15.16 of the Health and Safety at Work (Hazardous Substances) Regulations 2017","certifiesThat":"This certificate certifies that the requirements prescribed in regulation 15.16 for a cylinder importation compliance certificate have been met","fields":["Unique Register Number","Certificate Number","Company/Legal Entity","Postal Address","Physical Address","Business Contact Number","NZBN","Full Name of PCBU","Email Address","Contact"],"unitTitle":"Cylinder Details","unitFields":["FERN","Country of Manufacturer","Number of Cylinders","Water Capacity","Design Standard","Gas Traffic","Test Pressure","Charging Pressure","Model","Mass of Dry Powder"],"dateLabels":["Issued Date","Effective From"],"signature":["Bryan Wilson","Worksafe Authorised Compliance Certifier (TST100250)","Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."]}},"sheetByClass":null}'::jsonb
+WHERE NOT EXISTS (
+  SELECT 1 FROM checksheet_template WHERE code = 'ci-cylinder-importation-fern' AND meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212'
+);
+UPDATE checksheet_template
+   SET status = 'superseded',
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'ci-cylinder-importation-fern' AND meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212')
+ WHERE code = 'ci-cylinder-importation-fern' AND (meta->>'contentHash') IS DISTINCT FROM '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND status <> 'superseded';
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 1, NULL, 'Cylinder Importation'
+FROM checksheet_template WHERE code = 'ci-cylinder-importation-fern' AND meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, NULL, '{}', NULL, NULL, NULL, 'Photo evidence of compliance', 'Photographs', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, NULL, '{}', NULL, NULL, NULL, 'Visual inspection', '', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, NULL, '{}', NULL, NULL, NULL, 'Repaired Cylinders', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, NULL, '{}', NULL, NULL, NULL, 'Standard applying to the design', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, NULL, '{}', NULL, NULL, NULL, 'Manufacturing certificate from a recognised inspection agency', 'Issuing agency : Date of Issue:', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, NULL, '{}', NULL, NULL, NULL, 'Visual Inspection', '', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
+-- ci-unrtdg-cylinder-importation — 1 sections, 6 items — content 1b0462918522
+INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
+SELECT 'ci-unrtdg-cylinder-importation',
+       COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation'), 0) + 1,
+       'Compliance Certifier Checklist — Un Cylinder Importation', 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)', '{}', 'current', '{"contentHash":"1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb","sheet":{"title":"Compliance Certifier Checklist — Un Cylinder Importation","evidenceColumnLabel":null,"banner":null,"columnHeaders":["Item","Check","Records","Comments","Evidence"],"note":null,"declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":null,"kind":"cylinder","subjectBlockTitle":"Details of PCBU","subjectBlock":[{"label":"Company/Legal Entity"},{"label":"Postal Address"},{"label":"Physical Address"},{"label":"Business Contact Number"},{"label":"NZBN"},{"label":"Full Name of PCBU"},{"label":"Email Address"},{"label":"Contact"}],"unitBlockTitle":"Cylinder Details","unitBlock":[{"label":"Batch/Serial Number"},{"label":"Country of Manufacturer"},{"label":"Number of Cylinders"},{"label":"Inspection Agency"},{"label":"Water Capacity"},{"label":"Design Standard"},{"label":"Gas Traffic"},{"label":"Test Pressure"},{"label":"Charging Pressure"},{"label":"Wall thickness"},{"label":"Neck Thread"}],"authorisation":"cylinder-importation-un","certificate":{"documentTitle":"COMPLIANCE CERTIFICATE\nCylinder Importation (FERN)\nIssued in accordance with regulations 6.23 and 15.16(1) of the Health and Safety at Work (Hazardous Substances) Regulations 2017","certifiesThat":"This certificate certifies that the requirements prescribed in regulation 15(4) and 15(3A) for a cylinder importation (low-pressure fire extinguisher) compliance certificate have been met","fields":["Unique Register Number","Certificate Number","Company/Legal Entity","Postal Address","Physical Address","Business Contact Number","NZBN","Full Name of PCBU","Email Address","Contact"],"unitTitle":"Cylinder Details","unitFields":["FERN","Country of Manufacturer","Number of Cylinders","Water Capacity","Manufacturer","Design Standard","Gas Traffic","Test Pressure","Charging Pressure","Wall thckness","Nozzle Orifice Diameter"],"dateLabels":["Issued Date","Effective From"],"signature":["Bryan Wilson","Worksafe Authorised Compliance Certifier (TST100250)","Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."]}},"sheetByClass":null}'::jsonb
+WHERE NOT EXISTS (
+  SELECT 1 FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb'
+);
+UPDATE checksheet_template
+   SET status = 'superseded',
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb')
+ WHERE code = 'ci-unrtdg-cylinder-importation' AND (meta->>'contentHash') IS DISTINCT FROM '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND status <> 'superseded';
+
+INSERT INTO checksheet_section (template_id, ordinal, number, title)
+SELECT id, 1, NULL, 'Un Cylinder Importation'
+FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb'
+ON CONFLICT (template_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 1, NULL, '{}', NULL, NULL, NULL, 'Photo evidence of compliance to marking requirements in clause 6.2.2.7.1 to 5 of UNRTDG Model regulations', 'Photographs', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 2, NULL, '{}', NULL, NULL, NULL, 'Visual inspection', '', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 3, NULL, '{}', NULL, NULL, NULL, 'Repaired Cylinders', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 4, NULL, '{}', NULL, NULL, NULL, 'Standard applying to the design', '', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 5, NULL, '{}', NULL, NULL, NULL, 'Manufacturing certificate from a recognised inspection agency', 'Issuing agency : Date of Issue:', false
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
+SELECT sec.id, 6, NULL, '{}', NULL, NULL, NULL, 'Visual Inspection', '', true
+FROM checksheet_section sec
+JOIN checksheet_template t ON t.id = sec.template_id
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+ON CONFLICT (section_id, ordinal) DO NOTHING;
+
 -- wks17-class-2-and-3-1-substances — 23 sections, 44 items — content 530b2db794ee
 INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
 SELECT 'wks17-class-2-and-3-1-substances',

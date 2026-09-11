@@ -1,8 +1,9 @@
 {
-  "note": "A sheet set is what a job inspects against: the general sheet plus one class or purpose sheet. Named by what it is, not by a code. `authorisation` points at the WorkSafe register entry that permits it; null means outside the certifier's authorisation and the app will not open a job on it.",
+  "note": "A sheet set is what a job inspects against. Named by what it is, not by a code. `kind` tells the app which subject the sheet is about: a location (client/site/hazardous substance location), a handler (an applicant), or cylinders (a PCBU importing batches). `authorisation` points at the WorkSafe register entry that permits it; null means outside the certifier's authorisation and the app will not open a job on it.",
   "sets": [
     {
       "key": "class_6_8",
+      "kind": "location",
       "name": "Location: classes 6 or 8",
       "detail": "Locations where class 6 or 8 substances are present, in packages up to 5,000 kg or 5,000 L",
       "templates": ["wks17-general", "wks17-class-6-1a-6-1b-6-1c-8-2a-8"],
@@ -10,17 +11,39 @@
     },
     {
       "key": "class_2_3",
+      "kind": "location",
       "name": "Location: classes 2 and 3.1",
       "detail": "Flammable gases and liquids. Extracted from the workbook; not within TST100250's authorisation",
       "templates": ["wks17-general", "wks17-class-2-and-3-1-substances"],
       "authorisation": null
+    },
+    {
+      "key": "handler_6",
+      "kind": "handler",
+      "name": "Certified handler: class 6",
+      "detail": "Handler assessment check sheet: applicant, Performance Standard clauses 5 to 8, declaration, certificate",
+      "templates": ["ch-class-6-handler-assessment"],
+      "authorisation": "handler-class-6"
+    },
+    {
+      "key": "cylinder_fern",
+      "kind": "cylinder",
+      "name": "Cylinder importation: fire extinguishers (FERN)",
+      "detail": "Low-pressure fire extinguisher cylinders, regulation 15.16: PCBU, cylinder batches, checks, certificate",
+      "templates": ["ci-cylinder-importation-fern"],
+      "authorisation": "cylinder-importation"
+    },
+    {
+      "key": "cylinder_un",
+      "kind": "cylinder",
+      "name": "Cylinder importation: UNRTDG",
+      "detail": "UN cylinders, regulation 15.3(3): PCBU, cylinder batches, marking evidence, checks, certificate",
+      "templates": ["ci-unrtdg-cylinder-importation"],
+      "authorisation": "cylinder-importation-un"
     }
   ],
   "planned": [
-    { "name": "Cylinder importation", "authorisation": "cylinder-importation", "status": "awaiting Bryan's check sheets" },
-    { "name": "UNRTDG cylinder importation", "authorisation": "cylinder-importation-un", "status": "awaiting Bryan's check sheets" },
-    { "name": "Certified handler: class 6", "authorisation": "handler-class-6", "status": "awaiting Bryan's check sheets" },
-    { "name": "Certified handler: fumigants", "authorisation": "handler-fumigants", "status": "awaiting Bryan's check sheets" },
-    { "name": "Certified handler: vertebrate toxic agents", "authorisation": "handler-vta", "status": "awaiting Bryan's check sheets" }
+    { "name": "Certified handler: fumigants", "authorisation": "handler-fumigants", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" },
+    { "name": "Certified handler: vertebrate toxic agents", "authorisation": "handler-vta", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" }
   ]
 }

@@ -62,7 +62,7 @@ let jobId, hsLocationId, inspectionId;
 console.log('BOOT');
 await step('health reports the template layer', async () => {
   const r = await api.get('/api/health');
-  expect(r.status === 200 && r.body.templateItems === 98, JSON.stringify(r.body));
+  expect(r.status === 200 && r.body.templateItems === 150, JSON.stringify(r.body));
   return `db=${r.body.db}, ${r.body.templateItems} template items`;
 });
 

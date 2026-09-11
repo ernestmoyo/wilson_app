@@ -31,7 +31,7 @@ const dart = readFileSync(join(genDir, 'checksheets.g.dart'), 'utf8');
 const ts = readFileSync(join(genDir, 'checksheets.ts'), 'utf8');
 const sql = readFileSync(join(genDir, 'seed-templates.sql'), 'utf8');
 
-const dartEscape = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\$/g, '\\$');
+const dartEscape = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\$/g, '\\$').replace(/\r/g, '').replace(/\n/g, '\\n');
 const sqlEscape = (s) => s.replace(/'/g, "''");
 
 let checked = 0;

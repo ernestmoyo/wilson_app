@@ -24,7 +24,7 @@ SessionStore signedIn() => MemorySessionStore()
 void main() {
   group('generated WKS-17 templates', () {
     test('all three templates load with the expected shape', () {
-      expect(kChecksheetTemplates.length, 3);
+      expect(kChecksheetTemplates.length, 6);
       final general = kTemplatesByCode['wks17-general']!;
       expect(general.sections.length, 8);
       expect(general.itemCount, 36);
