@@ -115,6 +115,7 @@ class _JobsBoardState extends State<JobsBoard> {
     final manager = TextEditingController();
     final phone = TextEditingController();
     var classKey = 'class_6_8';
+    String kindOf(String key) => sets.firstWhere((x) => x.key == key, orElse: () => sets.first).kind;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -122,10 +123,6 @@ class _JobsBoardState extends State<JobsBoard> {
           title: const Text('New job'),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: legal, key: const ValueKey('nj-legal'), decoration: const InputDecoration(labelText: 'Legal entity name')),
-              TextField(controller: trading, decoration: const InputDecoration(labelText: 'Trading as (optional)')),
-              TextField(controller: address, key: const ValueKey('nj-address'), decoration: const InputDecoration(labelText: 'Site address')),
-              TextField(controller: location, key: const ValueKey('nj-location'), decoration: const InputDecoration(labelText: 'Hazardous substance location, e.g. G2 Chiller')),
               DropdownButtonFormField<String>(
                 initialValue: classKey,
                 decoration: const InputDecoration(labelText: 'Check sheets'),
@@ -146,6 +143,20 @@ class _JobsBoardState extends State<JobsBoard> {
                   child: Text(sets.firstWhere((x) => x.key == classKey).regulation!,
                       style: const TextStyle(fontSize: 11, color: Colors.black54)),
                 ),
+              TextField(controller: legal, key: const ValueKey('nj-legal'), decoration: const InputDecoration(labelText: 'Legal entity name')),
+              TextField(controller: trading, decoration: const InputDecoration(labelText: 'Trading as (optional)')),
+              TextField(controller: address, key: const ValueKey('nj-address'), decoration: const InputDecoration(labelText: 'Site address')),
+              TextField(
+                controller: location,
+                key: const ValueKey('nj-location'),
+                decoration: InputDecoration(
+                  labelText: switch (kindOf(classKey)) {
+                    'handler' => 'Applicant (full name)',
+                    'cylinder' => 'Shipment or batch reference',
+                    _ => 'Hazardous substance location, e.g. G2 Chiller',
+                  },
+                ),
+              ),
               TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)')),
               TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)')),
             ]),
@@ -168,6 +179,12 @@ class _JobsBoardState extends State<JobsBoard> {
         'site': {'address': address.text.trim()},
         'location': {'name': location.text.trim()},
         'classKey': classKey,
+        // Form sheets: what was typed becomes the first subject field, so the
+        // sheet opens with it filled in the template's own label.
+        if (kindOf(classKey) != 'location')
+          'subject': kindOf(classKey) == 'handler'
+              ? {'Name': location.text.trim(), 'Company': legal.text.trim(), 'Address': address.text.trim()}
+              : {'Company/Legal Entity': legal.text.trim(), 'Physical Address': address.text.trim()},
         if (manager.text.trim().isNotEmpty)
           'contacts': [
             {'name': manager.text.trim(), 'role': 'Site manager', 'phone': phone.text.trim(), 'isSiteManager': true}
@@ -392,7 +409,9 @@ class _JobsBoardState extends State<JobsBoard> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                j.certificateDecision != null ? Icons.verified_outlined : Icons.factory_outlined,
+                j.certificateDecision != null
+                    ? Icons.verified_outlined
+                    : switch (j.kind) { 'handler' => Icons.person_outline, 'cylinder' => Icons.propane_tank_outlined, _ => Icons.factory_outlined },
                 color: StageChip.colorFor(j.stage),
                 size: 24,
               ),
@@ -409,7 +428,7 @@ class _JobsBoardState extends State<JobsBoard> {
               ]),
               const SizedBox(height: 2),
               Text(
-                [j.locationName, if ((j.address ?? '').isNotEmpty) j.address!].join('  ·  '),
+                [j.subjectLine, if ((j.address ?? '').isNotEmpty) j.address!].join('  ·  '),
                 style: const TextStyle(fontSize: 13, color: Colors.black87),
               ),
               const SizedBox(height: 10),

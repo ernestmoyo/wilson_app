@@ -200,6 +200,7 @@ class _JobScreenState extends State<JobScreen> {
     final total = j.inspectionId == null ? 0 : itemTotalFor(j.classKey);
     final text = ProcessStage.nextAction(
       j.stage,
+      kind: j.kind,
       itemTotal: total,
       assessed: j.assessedCount,
       nonCompliant: j.nonCompliances.length,
@@ -883,8 +884,10 @@ class _JobScreenState extends State<JobScreen> {
     String iso(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     var decision = _check?.canGrant == true ? 'granted' : 'conditional';
     final number = TextEditingController(text: '${CurrentUser.authorisationNumber}-${today.year}-${j.id.toString().padLeft(4, '0')}');
-    final issuedTo = TextEditingController(text: j.clientName);
-    final appliesTo = TextEditingController(text: j.address ?? j.locationName);
+    final issuedTo = TextEditingController(
+        text: '${j.subject['Name'] ?? j.subject['Full Name of PCBU'] ?? j.clientName}');
+    final appliesTo = TextEditingController(
+        text: '${j.subject['Company'] ?? j.subject['Company/Legal Entity'] ?? j.address ?? j.locationName}');
     final issueDate = TextEditingController(text: iso(today));
     final expiry = TextEditingController(text: iso(DateTime(today.year + 1, today.month, today.day)));
     final lines = TextEditingController();

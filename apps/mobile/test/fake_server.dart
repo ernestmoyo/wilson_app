@@ -82,10 +82,17 @@ class FakeServer {
         },
       ];
 
+  /// Subject and units as the server keeps them (form sheets).
+  final Map<String, dynamic> subject = {};
+  final List<Map<String, dynamic>> units = [];
+
   Map<String, dynamic> job() => {
         'id': 7,
         'stage': stage,
         'class_key': 'class_6_8',
+        'kind': 'location',
+        'subject': subject,
+        'units': units,
         'client': client,
         'location': location,
         'inspections': [
@@ -168,8 +175,10 @@ class FakeServer {
 
   Map<String, dynamic> sheetSets() => {
         'sets': [
-          {'key': 'class_6_8', 'name': 'Location: classes 6 or 8', 'templates': ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 13.38'}},
+          {'key': 'class_6_8', 'kind': 'location', 'name': 'Location: classes 6 or 8', 'templates': ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 13.38'}},
           {'key': 'class_2_3', 'name': 'Location: classes 2 and 3.1', 'templates': ['wks17-general', 'wks17-class-2-and-3-1-substances'], 'authorised': false, 'authorisationEntry': null},
+          {'key': 'handler_6', 'kind': 'handler', 'name': 'Certified handler: class 6', 'templates': ['ch-class-6-handler-assessment'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 4.1'}},
+          {'key': 'cylinder_fern', 'kind': 'cylinder', 'name': 'Cylinder importation: fire extinguishers (FERN)', 'templates': ['ci-cylinder-importation-fern'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 15.16'}},
         ],
         'planned': [],
         'certifier': {'number': 'TST100250'},
@@ -198,6 +207,16 @@ class FakeServer {
         comms.add({...p, 'id': comms.length + 1, 'occurred_at': '2026-09-10T00:00:00Z'});
       case 'job.transition':
         stage = p['toStage'] as String;
+      case 'job.subject.set':
+        subject.addAll((p['fields'] as Map).cast<String, dynamic>());
+      case 'job.unit.upsert':
+        final ord = p['ordinal'] as int;
+        while (units.length < ord) {
+          units.add({'ordinal': units.length + 1, 'fields': <String, dynamic>{}});
+        }
+        (units[ord - 1]['fields'] as Map).addAll((p['fields'] as Map? ?? const {}).cast<String, dynamic>());
+      case 'job.unit.remove':
+        units.removeWhere((u) => u['ordinal'] == p['ordinal']);
       case 'finding.upsert':
         String key(Map<String, dynamic> f) => '${f['template_code']}/${f['section_ordinal']}/${f['item_ordinal']}';
         final k = '${p['templateCode']}/${p['sectionOrdinal']}/${p['itemOrdinal']}';

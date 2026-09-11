@@ -86,15 +86,18 @@ class DashboardData {
 /// and whether the signed-in certifier's WorkSafe authorisation covers it.
 class SheetSet {
   final String key;
+  /// location | handler | cylinder: what the job inspects.
+  final String kind;
   final String name;
   final String? detail;
   final List<String> templates;
   final bool authorised;
   final String? regulation;
-  const SheetSet({required this.key, required this.name, this.detail, required this.templates, required this.authorised, this.regulation});
+  const SheetSet({required this.key, this.kind = 'location', required this.name, this.detail, required this.templates, required this.authorised, this.regulation});
 
   factory SheetSet.fromJson(Map<String, dynamic> j) => SheetSet(
         key: j['key'] as String,
+        kind: j['kind'] as String? ?? 'location',
         name: j['name'] as String,
         detail: j['detail'] as String?,
         templates: [for (final t in (j['templates'] as List?) ?? const []) '$t'],

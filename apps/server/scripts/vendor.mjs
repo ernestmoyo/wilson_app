@@ -36,6 +36,7 @@ const copies = [
   ['packages/checksheets/brand', 'brand', false],
   // Loops 1 to 4: the non-compliance report and the two catalogues.
   ['packages/checksheets/lib/render-report.mjs', 'lib/render-report.mjs', true],
+  ['packages/checksheets/lib/render-form-certificate.mjs', 'lib/render-form-certificate.mjs', true],
   ['packages/checksheets/data/sheet-sets.json', 'data/sheet-sets.json', true],
   ['packages/checksheets/data/authorisation.json', 'data/authorisation.json', true],
 ];

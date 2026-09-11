@@ -144,7 +144,7 @@ void main() {
     expect(find.text('Argenta Manufacturing Limited'), findsOneWidget);
     expect(find.textContaining('G2 Chiller'), findsWidgets);
     expect(find.textContaining('4 · Site inspection'), findsOneWidget);
-    expect(find.text('Continue the inspection: 2 of 54 items assessed'), findsOneWidget);
+    expect(find.text('Continue the site inspection: 2 of 54 items assessed'), findsOneWidget);
     expect(find.textContaining('2/54'), findsOneWidget);
     // Loop 1: what needs attention, and who did what, above the cards.
     expect(find.byKey(const ValueKey('attention')), findsOneWidget);
@@ -164,7 +164,7 @@ void main() {
     await tester.pumpAndSettle();
     // The hub: context bar and the Now card name the next step.
     expect(find.byKey(const ValueKey('now-card')), findsOneWidget);
-    expect(find.text('Continue the inspection: 2 of 54 items assessed'), findsOneWidget);
+    expect(find.text('Continue the site inspection: 2 of 54 items assessed'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('open-sheet')));
     await tester.pumpAndSettle();
 

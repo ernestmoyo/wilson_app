@@ -10,6 +10,7 @@ import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
+import '../widgets/subject_editor.dart';
 import 'item_screen.dart';
 import 'sheet_view.dart';
 
@@ -121,6 +122,15 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
                 : ListView(
                     padding: const EdgeInsets.only(bottom: 32),
                     children: [
+                      if (template.sheetFor(insp.classKey).kind != 'location')
+                        Card(
+                          margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                          child: Column(children: [
+                            SubjectEditor(inspection: insp, sheet: template.sheetFor(insp.classKey)),
+                            if (template.sheetFor(insp.classKey).hasUnits)
+                              UnitsEditor(inspection: insp, sheet: template.sheetFor(insp.classKey)),
+                          ]),
+                        ),
                       for (final section in template.sections) ..._section(section),
                     ],
                   ),
@@ -191,19 +201,24 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _pill('$nc non-compliant', nc > 0 ? Brand.nonCompliant : Brand.tealDark),
-              const SizedBox(width: 6),
-              _pill('$pending pending', Brand.tealDark),
-              const Spacer(),
-              // reg 13.39 — surfaced continuously so the decision is never a
-              // guess made at the end.
-              _pill(
-                insp.canGrant ? 'Can grant' : 'Cannot grant yet',
-                insp.canGrant ? Brand.compliant : Brand.tealDark,
-              ),
-            ],
+          // One line at any width: a phone scrolls the pills sideways rather
+          // than overflowing the fixed-height header.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _pill('$nc non-compliant', nc > 0 ? Brand.nonCompliant : Brand.tealDark),
+                const SizedBox(width: 6),
+                _pill('$pending pending', Brand.tealDark),
+                const SizedBox(width: 6),
+                // reg 13.39 — surfaced continuously so the decision is never a
+                // guess made at the end.
+                _pill(
+                  insp.canGrant ? 'Can grant' : 'Cannot grant yet',
+                  insp.canGrant ? Brand.compliant : Brand.tealDark,
+                ),
+              ],
+            ),
           ),
           if (widget.sync != null) ...[
             const SizedBox(height: 8),

@@ -27,9 +27,15 @@ const reportMod = await import(
   pathToFileURL(assetPath('lib/render-report.mjs', 'packages/checksheets/lib/render-report.mjs')).href
 );
 const { renderNonComplianceReport } = reportMod;
+const formCertMod = await import(
+  pathToFileURL(assetPath('lib/render-form-certificate.mjs', 'packages/checksheets/lib/render-form-certificate.mjs')).href
+);
+const { renderFormCertificate } = formCertMod;
 const readJson = (vendorRel, repoRel) => JSON.parse(readFileSync(assetPath(vendorRel, repoRel), 'utf8'));
 const SHEET_SETS = readJson('data/sheet-sets.json', 'packages/checksheets/data/sheet-sets.json');
 const AUTHORISATION = readJson('data/authorisation.json', 'packages/checksheets/data/authorisation.json');
+const sheetSetFor = (classKey) => SHEET_SETS.sets.find((x) => x.key === classKey) ?? SHEET_SETS.sets[0];
+const kindFor = (classKey) => sheetSetFor(classKey).kind ?? 'location';
 const templatesForClass = (classKey) =>
   (SHEET_SETS.sets.find((x) => x.key === classKey) ?? SHEET_SETS.sets[0]).templates;
 
@@ -208,7 +214,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
    */
   app.get('/api/jobs', wrap(async (_req, res) => {
     const r = await db.query(`
-      SELECT j.id, j.stage, j.class_key, j.opened_at,
+      SELECT j.id, j.stage, j.class_key, j.opened_at, j.subject,
              c.legal_name AS client, c.trading_name, l.name AS location, s.address,
              i.id AS inspection_id, i.inspected_at,
              COALESCE(items.n, 0)::int       AS item_total,
@@ -235,7 +241,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM communication WHERE job_id = j.id) cm ON true
       LEFT JOIN LATERAL (SELECT decision FROM certificate WHERE job_id = j.id LIMIT 1) cert ON true
       ORDER BY last_activity DESC NULLS LAST, j.id DESC`);
-    res.json(r.rows);
+    res.json(r.rows.map((row) => ({ ...row, kind: kindFor(row.class_key) })));
   }));
 
   /** Create a client + site + location + job in one call (stage 1, enquiry). */
@@ -271,6 +277,14 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
            VALUES ($1,$2,$3,$4,$5,$6,$7)`,
           [l.rows[0].id, sb.name, sb.hazardClass, sb.quantity ?? null, sb.unit ?? null,
            sb.unNumber ?? null, sb.hsnoApproval ?? null]);
+      }
+      if (b.subject && typeof b.subject === 'object') {
+        await tx.query(`UPDATE job SET subject = $2::jsonb WHERE id = $1`, [j.rows[0].id, JSON.stringify(b.subject)]);
+      }
+      let ord = 0;
+      for (const u of Array.isArray(b.units) ? b.units : []) {
+        await tx.query(`INSERT INTO job_unit (job_id, ordinal, fields) VALUES ($1,$2,$3::jsonb)`,
+          [j.rows[0].id, ++ord, JSON.stringify(u?.fields ?? u ?? {})]);
       }
       return { jobId: j.rows[0].id, clientId: c.rows[0].id, siteId: s.rows[0].id,
                hsLocationId: l.rows[0].id, stage: j.rows[0].stage };
@@ -330,7 +344,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   app.get('/api/jobs/:id', wrap(async (req, res) => {
     const id = Number(req.params.id);
     const j = await db.query(`
-      SELECT j.id, j.stage, j.class_key, j.opened_at, j.closed_at,
+      SELECT j.id, j.stage, j.class_key, j.opened_at, j.closed_at, j.subject,
              json_build_object('id', c.id, 'legalName', c.legal_name, 'tradingName', c.trading_name,
                                'nzbn', c.nzbn, 'companiesNumber', c.companies_number,
                                'postalAddress', c.postal_address, 'phone', c.phone,
@@ -345,7 +359,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
     const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances,
-           correctiveActions, allowedNext, communications, events] = await Promise.all([
+           correctiveActions, allowedNext, communications, events, units] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
@@ -419,6 +433,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                         SELECT ca.id FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id
                         JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = $1)
                 ORDER BY e.occurred_at DESC, e.received_at DESC LIMIT 100`, [id]),
+      db.query(`SELECT id, ordinal, fields, updated_at FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -438,6 +453,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       allowedNext: allowedNext.rows.map((r) => r.stage),
       communications: communications.rows,
       events: events.rows,
+      units: units.rows,
+      kind: kindFor(j.rows[0].class_key),
     });
   }));
 
@@ -505,6 +522,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // The same renderer that reproduces the legacy workbook, fed from findings.
   // The certificate stops being a separately-typed document.
   async function fetchCertificateHtml(id) {
+    const jk = await db.query(`SELECT class_key, subject FROM job WHERE id = $1`, [id]);
+    if (!jk.rows.length) return null;
+    if (kindFor(jk.rows[0].class_key) !== 'location') return fetchFormCertificateHtml(id, jk.rows[0]);
     const r = await db.query(`
       SELECT c.*, u.full_name, u.authorisation_number, u.email AS certifier_email,
              cl.legal_name, cl.postal_address, cl.nzbn, cl.companies_number,
@@ -560,6 +580,27 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       ribbon: brand('bottom-ribbon.png'),
     };
     return renderCertificateHtml(cert, { signatureDataUrl, letterhead });
+  }
+
+  /** Certified handler and cylinder importation certificates. */
+  async function fetchFormCertificateHtml(id, job) {
+    const set = sheetSetFor(job.class_key);
+    const [cert, tpl, units, user] = await Promise.all([
+      db.query(`SELECT * FROM certificate WHERE job_id = $1`, [id]),
+      db.query(`SELECT meta->'sheet'->'certificate' AS certificate FROM checksheet_template
+                WHERE code = $1 AND status = 'current' LIMIT 1`, [set.templates[0]]),
+      db.query(`SELECT ordinal, fields FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [id]),
+      db.query(`SELECT u.full_name, u.authorisation_number, u.email FROM certificate c JOIN app_user u ON u.id = c.certifier_id WHERE c.job_id = $1`, [id]),
+    ]);
+    if (!cert.rows.length) return null;
+    const certificateTemplate = tpl.rows[0]?.certificate;
+    if (!certificateTemplate) return null;
+    const u = user.rows[0] ?? {};
+    return renderFormCertificate({
+      certificateTemplate, subject: job.subject ?? {}, units: units.rows, cert: cert.rows[0],
+      certifier: { fullName: u.full_name, authorisationNumber: u.authorisation_number, email: u.email },
+      letterhead: letterheadImages(),
+    });
   }
 
   app.get('/api/jobs/:id/certificate.html', wrap(async (req, res) => {

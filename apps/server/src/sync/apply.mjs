@@ -243,6 +243,35 @@ const handlers = {
     return { correctiveActionId: r.rows[0].id, status: r.rows[0].status };
   },
 
+  /**
+   * The subject block of a form sheet (applicant, PCBU): label → value,
+   * merged so a device that edited one field does not blank the others.
+   */
+  async 'job.subject.set'(db, p, ctx) {
+    const r = await db.query(
+      `UPDATE job SET subject = subject || $2::jsonb WHERE id = $1 RETURNING subject`,
+      [p.jobId, JSON.stringify(p.fields ?? {})]
+    );
+    if (!r.rows.length) { const e = new Error(`job ${p.jobId} not found`); e.code = '22P02'; throw e; }
+    return { jobId: p.jobId, subject: r.rows[0].subject };
+  },
+
+  /** One unit of a job (a cylinder batch), by ordinal; fields label → value. */
+  async 'job.unit.upsert'(db, p, ctx) {
+    const r = await db.query(
+      `INSERT INTO job_unit (job_id, ordinal, fields) VALUES ($1,$2,$3::jsonb)
+       ON CONFLICT (job_id, ordinal) DO UPDATE SET fields = job_unit.fields || EXCLUDED.fields, updated_at = now()
+       RETURNING id, ordinal, fields`,
+      [p.jobId, p.ordinal, JSON.stringify(p.fields ?? {})]
+    );
+    return { unitId: r.rows[0].id, ordinal: r.rows[0].ordinal };
+  },
+
+  async 'job.unit.remove'(db, p, ctx) {
+    const r = await db.query(`DELETE FROM job_unit WHERE job_id = $1 AND ordinal = $2`, [p.jobId, p.ordinal]);
+    return { jobId: p.jobId, ordinal: p.ordinal, removed: r.rowCount };
+  },
+
   /** IPS 21(2)(a): a communication with the applicant is a statutory record. */
   async 'communication.record'(db, p, ctx) {
     const r = await db.query(

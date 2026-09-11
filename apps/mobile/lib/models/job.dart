@@ -86,17 +86,18 @@ class ProcessStage {
 
   /// The one line a certifier reads first: what this job needs now.
   static String nextAction(String stage, {int itemTotal = 0, int assessed = 0, int nonCompliant = 0,
-      bool interestDeclared = false, int openActions = 0, String? certificateDecision}) {
+      bool interestDeclared = false, int openActions = 0, String? certificateDecision, String kind = 'location'}) {
     final pending = itemTotal - assessed;
+    final visit = switch (kind) { 'handler' => 'assessment', 'cylinder' => 'cylinder inspection', _ => 'site inspection' };
     return switch (stage) {
       'enquiry' => 'Triage the enquiry: in scope, urgent?',
       'application' => 'Send the application pack and quote',
       'document_review' => 'Review the documents; request anything missing',
       'rfi' => 'Waiting on the client for further information',
       'site_inspection' => itemTotal == 0
-          ? 'Start the site inspection'
+          ? 'Start the $visit'
           : pending > 0
-              ? 'Continue the inspection: $assessed of $itemTotal items assessed'
+              ? 'Continue the $visit: $assessed of $itemTotal items assessed'
               : 'Inspection complete: start compliance evaluation',
       'compliance_evaluation' => nonCompliant > 0
           ? '$nonCompliant non-compliance${nonCompliant == 1 ? '' : 's'}: raise and track corrective actions'
@@ -123,6 +124,8 @@ class JobSummary {
   final int id;
   final String stage;
   final String? classKey;
+  final String kind;
+  final Map<String, dynamic> subject;
   final String clientName;
   final String? tradingName;
   final String locationName;
@@ -139,6 +142,8 @@ class JobSummary {
     required this.id,
     required this.stage,
     this.classKey,
+    this.kind = 'location',
+    this.subject = const {},
     required this.clientName,
     this.tradingName,
     required this.locationName,
@@ -154,12 +159,21 @@ class JobSummary {
 
   int get pending => itemTotal - assessed;
   String get nextAction => ProcessStage.nextAction(stage,
-      itemTotal: itemTotal, assessed: assessed, nonCompliant: nonCompliant, certificateDecision: certificateDecision);
+      itemTotal: itemTotal, assessed: assessed, nonCompliant: nonCompliant, certificateDecision: certificateDecision, kind: kind);
+
+  /// What the card is about: the applicant or PCBU name for form kinds, else the location.
+  String get subjectLine => switch (kind) {
+        'handler' => '${subject['Name'] ?? locationName}',
+        'cylinder' => '${subject['Full Name of PCBU'] ?? locationName}',
+        _ => locationName,
+      };
 
   factory JobSummary.fromJson(Map<String, dynamic> j) => JobSummary(
         id: _int(j['id']),
         stage: j['stage'] as String,
         classKey: j['class_key'] as String?,
+        kind: j['kind'] as String? ?? 'location',
+        subject: (j['subject'] as Map?)?.cast<String, dynamic>() ?? const {},
         clientName: j['client'] as String? ?? '',
         tradingName: j['trading_name'] as String?,
         locationName: j['location'] as String? ?? '',
@@ -295,6 +309,8 @@ class JobRecord {
   final int id;
   final String stage;
   final String? classKey;
+  final String kind;
+  final Map<String, dynamic> subject;
   final List<String> allowedNext;
   final String clientName;
   final String locationName;
@@ -315,6 +331,8 @@ class JobRecord {
     required this.id,
     required this.stage,
     this.classKey,
+    this.kind = 'location',
+    this.subject = const {},
     required this.allowedNext,
     required this.clientName,
     required this.locationName,
@@ -354,6 +372,8 @@ class JobRecord {
       id: _int(j['id']),
       stage: j['stage'] as String,
       classKey: j['class_key'] as String?,
+      kind: j['kind'] as String? ?? 'location',
+      subject: (j['subject'] as Map?)?.cast<String, dynamic>() ?? const {},
       allowedNext: _strings(j['allowedNext']),
       clientName: client['legalName'] as String? ?? '',
       locationName: loc['name'] as String? ?? '',

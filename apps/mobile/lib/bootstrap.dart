@@ -193,13 +193,13 @@ Future<ServerJob> ensureG2Job(ApiClient api) async {
 }
 
 /// The sheets a job's class calls for: the general sheet plus one class sheet.
-List<ChecksheetTemplate> templatesFor(String? classKey) => [
-      kTemplatesByCode['wks17-general']!,
-      if (classKey == 'class_2_3')
-        kTemplatesByCode['wks17-class-2-and-3-1-substances']!
-      else
-        kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!,
-    ];
+List<ChecksheetTemplate> templatesFor(String? classKey) {
+  final set = kSheetSetsByKey[classKey] ?? kSheetSetsByKey['class_6_8']!;
+  return [for (final code in set.templates) kTemplatesByCode[code]!];
+}
+
+/// location | handler | cylinder for a sheet set key.
+String kindFor(String? classKey) => (kSheetSetsByKey[classKey] ?? kSheetSetsByKey['class_6_8']!).kind;
 
 int itemTotalFor(String? classKey) => templatesFor(classKey).fold(0, (n, t) => n + t.itemCount);
 
@@ -270,7 +270,13 @@ Future<Inspection> openInspectionForJob(ApiClient api, SyncService sync, int job
 /// Everything in a job payload that the inspection model shows: findings,
 /// rows 2 to 14, the two signatures, the certificate decision. Used on first
 /// open and on every pull, so a change made on another device lands here.
-void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal = const {}}) {
+void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal = const {}, bool keepSubject = false}) {
+  if (!keepSubject) {
+    insp.hydrateSubject(
+      ((job.raw['subject'] as Map?) ?? const {}).cast<String, dynamic>(),
+      ((job.raw['units'] as List?) ?? const []).cast<Map>().map((u) => u.cast<String, dynamic>()).toList(),
+    );
+  }
   insp.hydrate(job.findings
       .cast<Map<String, dynamic>>()
       .where((f) => job.inspectionId == null || toInt(f['inspection_id']) == insp.inspectionId)
@@ -287,7 +293,9 @@ void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal
           )));
 
   final sb = job.siteBlock();
-  insp.siteBlock = sb.inspectionDate != null
+  insp.siteBlock = insp.kind != 'location'
+      ? null
+      : sb.inspectionDate != null
       ? sb
       : SiteBlock(
           legalEntityName: sb.legalEntityName,

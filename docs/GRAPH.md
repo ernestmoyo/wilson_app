@@ -59,6 +59,34 @@ TemplateItem.regulationRefsByClass { "class_6_8": [...], "class_2_3": [...] }  /
 
 Re-extracting any workbook and diffing against `packages/checksheets/data/` is the regression test for a PS revision.
 
+**Three kinds of sheet, one template model (11 September 2026).** Bryan's
+second batch of workbooks are not location check sheets. The certified
+handler assessment (class 6) assesses a *person*; the cylinder importation
+checklists (FERN fire extinguishers, UNRTDG cylinders) assess a *shipment*
+of units. The template gains one discriminator and two label lists instead
+of a second model:
+
+```
+Sheet.kind                 location | handler | cylinder
+Sheet.subjectBlock[]       the labels above the items, in the workbook's words
+                           handler: Name, Company, DOB, Application type
+                             (New Applicant | Renewal | Change of scope), Scope …
+                           cylinder: Company/Legal Entity, NZBN, Full Name of PCBU …
+Sheet.unitBlock[]          cylinder only: the labels the workbook lays across
+                           columns, one column per batch (Certificate Number,
+                           FERN, Country of Manufacturer, Water Capacity …)
+Sheet.certificate          the Certificate tab's wording: title, "certifies
+                           that", field labels, scope text, date labels, signature
+```
+
+A location sheet has `kind = location` and no subject block (rows 2–14 are
+the site block, already modelled). The extractor (`tools/extract-forms.mjs`)
+reads only labels and template wording from those workbooks; the values in
+them are real applicants and are never written anywhere. Sheet sets
+(`data/sheet-sets.json`) carry the kind so a job knows what it is from its
+class key: `class_6_8`, `class_2_3` (location), `handler_6` (handler),
+`cylinder_fern`, `cylinder_un` (cylinder).
+
 **Revisions are keyed by content hash.** The generated seed inserts a template only when no row with the same `meta.contentHash` exists; a changed template therefore becomes `revision + 1`, the previous revision is marked `superseded` (rows kept, so old findings still resolve), and re-running the seed is a no-op. Merging a changed template into an existing revision once turned 98 items into 116 on the deployed database; `packages/db/test/reseed.test.mjs` reproduces that case and asserts it cannot recur.
 
 ### Instance layer — per engagement
@@ -78,6 +106,13 @@ HSLocation                 site_id, name, summary
                              of any item or location inquired into"
 
 Job                        client_id, hs_location_id, type, stage, opened_at
+                           subject jsonb            ← label → value for a form sheet
+                             (the applicant, the PCBU); merged, never replaced,
+                             so two devices editing different fields both land
+JobUnit                    job_id, ordinal, fields jsonb
+                           ← one per cylinder batch; the workbook's columns.
+                             migration 009; events job.subject.set,
+                             job.unit.upsert, job.unit.remove
                            ← one certification engagement; walks the 8-stage flow
 
 Inspection                 job_id, hs_location_id, template_revision_ids[],
@@ -243,6 +278,19 @@ Every screen answers "which client, where, what stage" in the same strip
 nothing on them is decided locally. The one next step per stage is
 `ProcessStage.nextAction`, computed from stage + counts, and the move
 buttons use verbs (`ProcessStage.moveLabel`), not the document's headings.
+
+**A job knows what it is.** The board icon and the "Now" wording follow
+`kind`: a factory for a location, a person for a handler, a cylinder for an
+importation. New job asks for the applicant's name or the shipment
+reference instead of a hazardous substance location, and seeds the subject
+block from it. On the sheet the site block gives way to the subject block
+(`SubjectEditor`: the template's labels, a choice where the workbook has
+one) and, for cylinders, the units grid (`UnitsEditor`: one column per
+batch, add and remove). The column grid collapses the slots a sheet does
+not have: handler sheets show Ref | Requirement | Comments | Evidence,
+cylinder sheets keep Records. The certificate for a form job is rendered
+from the template's Certificate tab wording (`render-form-certificate.mjs`)
+with the subject's fields and one column per unit.
 
 **Reading a 54-row sheet.** A chip row pinned above the sheet lists every
 section with done/total (red when a non-compliance sits in it, green when

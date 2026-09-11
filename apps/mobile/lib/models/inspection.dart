@@ -50,6 +50,63 @@ class Inspection extends ChangeNotifier {
   /// Rows 2–14 of the sheet. Null until hydrated from the server.
   SiteBlock? siteBlock;
 
+  /// The block above the items on a form sheet (applicant, PCBU): label →
+  /// value, in the template's own labels. Empty for location sheets.
+  final Map<String, String> subject = {};
+
+  /// Units of a form sheet (cylinder batches): one map of label → value
+  /// per unit, in order.
+  final List<Map<String, String>> units = [];
+
+  /// Called after a subject field changes; the sync layer queues job.subject.set.
+  void Function(Map<String, String> changed)? onSubjectChanged;
+
+  /// Called after a unit changes (ordinal, fields) or is removed (fields null).
+  void Function(int ordinal, Map<String, String>? fields)? onUnitChanged;
+
+  /// location | handler | cylinder, from the first template's sheet.
+  String get kind => templates.isEmpty ? 'location' : templates.first.sheet.kind;
+
+  void setSubject(String label, String value) {
+    subject[label] = value;
+    notifyListeners();
+    onSubjectChanged?.call({label: value});
+  }
+
+  void setUnitField(int ordinal, String label, String value) {
+    while (units.length < ordinal) {
+      units.add({});
+    }
+    units[ordinal - 1][label] = value;
+    notifyListeners();
+    onUnitChanged?.call(ordinal, {label: value});
+  }
+
+  int addUnit() {
+    units.add({});
+    notifyListeners();
+    onUnitChanged?.call(units.length, {});
+    return units.length;
+  }
+
+  void removeUnit(int ordinal) {
+    if (ordinal < 1 || ordinal > units.length) return;
+    units.removeAt(ordinal - 1);
+    notifyListeners();
+    onUnitChanged?.call(ordinal, null);
+  }
+
+  /// Server copies replace local state without firing the change hooks.
+  void hydrateSubject(Map<String, dynamic> fields, List<Map<String, dynamic>> unitRows) {
+    subject
+      ..clear()
+      ..addAll(fields.map((k, v) => MapEntry(k, '${v ?? ''}')));
+    units
+      ..clear()
+      ..addAll(unitRows.map((u) => ((u['fields'] as Map?) ?? const {}).map((k, v) => MapEntry('$k', '${v ?? ''}'))));
+    notifyListeners();
+  }
+
   /// IPS 21(5) — the two signatures the sheet carries. A signature is a
   /// (who, when) pair, never a bare checkbox.
   DateTime? declarationSignedAt;

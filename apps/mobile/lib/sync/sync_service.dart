@@ -37,6 +37,19 @@ class SyncService extends ChangeNotifier {
   void track(Inspection insp) {
     insp.onFindingChanged = (f) => _enqueueFinding(insp, f);
     insp.onSign = (which) => _enqueueSignature(insp, which);
+    insp.onSubjectChanged = (changed) async {
+      if (insp.jobId == null) return;
+      await outbox.enqueue('job.subject.set', {'jobId': insp.jobId, 'fields': changed});
+      notifyListeners();
+    };
+    insp.onUnitChanged = (ordinal, fields) async {
+      if (insp.jobId == null) return;
+      await outbox.enqueue(
+        fields == null ? 'job.unit.remove' : 'job.unit.upsert',
+        {'jobId': insp.jobId, 'ordinal': ordinal, if (fields != null) 'fields': fields},
+      );
+      notifyListeners();
+    };
   }
 
   /// IPS 21(5): the signer is the authenticated user on the server side; the
@@ -124,13 +137,14 @@ class SyncService extends ChangeNotifier {
   Future<int> pull(Inspection insp) async {
     if (insp.jobId == null) return 0;
     await outbox.load();
+    final subjectPending = outbox.pending.any((e) => e.type == 'job.subject.set' || e.type.startsWith('job.unit.'));
     final keepLocal = outbox.pending
         .where((e) => e.type == 'finding.upsert')
         .map((e) => '${e.payload['templateCode']}/${e.payload['sectionOrdinal']}/${e.payload['itemOrdinal']}')
         .toSet();
     final before = {for (final f in insp.findings) f.key: _fingerprint(f)};
     final job = await fetchJob(api, insp.jobId!);
-    applyJobToInspection(insp, job, keepLocal: keepLocal);
+    applyJobToInspection(insp, job, keepLocal: keepLocal, keepSubject: subjectPending);
     var changed = 0;
     for (final f in insp.findings) {
       if (before[f.key] != _fingerprint(f)) changed++;

@@ -35,6 +35,7 @@ const files = readdirSync(dataDir)
   .sort();
 
 const templates = files.map((f) => JSON.parse(readFileSync(join(dataDir, f), 'utf8')));
+const sheetSets = JSON.parse(readFileSync(join(dataDir, 'sheet-sets.json'), 'utf8')).sets;
 if (!templates.length) {
   console.error('no templates in data/ — run tools/extract-workbook.mjs first');
   process.exit(1);
@@ -485,6 +486,26 @@ ${templates.map((t) => `  k${pascal(t.code)},`).join('\n')}
 
 final Map<String, ChecksheetTemplate> kTemplatesByCode = {
   for (final t in kChecksheetTemplates) t.code: t,
+};
+
+/// A sheet set: what a job inspects against, named by what it is. From
+/// data/sheet-sets.json; the server publishes the same list with the
+/// authorisation resolved.
+class SheetSetDef {
+  final String key;
+  final String kind;
+  final String name;
+  final List<String> templates;
+  final String? authorisation;
+  const SheetSetDef(this.key, this.kind, this.name, this.templates, this.authorisation);
+}
+
+const List<SheetSetDef> kSheetSets = [
+${sheetSets.map((x) => `  SheetSetDef(${dartStr(x.key)}, ${dartStr(x.kind ?? 'location')}, ${dartStr(x.name)}, ${dartList(x.templates)}, ${dartStr(x.authorisation)}),`).join('\n')}
+];
+
+final Map<String, SheetSetDef> kSheetSetsByKey = {
+  for (final s in kSheetSets) s.key: s,
 };
 `);
 

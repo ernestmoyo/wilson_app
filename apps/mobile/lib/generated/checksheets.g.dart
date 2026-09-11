@@ -2386,3 +2386,27 @@ const List<ChecksheetTemplate> kChecksheetTemplates = [
 final Map<String, ChecksheetTemplate> kTemplatesByCode = {
   for (final t in kChecksheetTemplates) t.code: t,
 };
+
+/// A sheet set: what a job inspects against, named by what it is. From
+/// data/sheet-sets.json; the server publishes the same list with the
+/// authorisation resolved.
+class SheetSetDef {
+  final String key;
+  final String kind;
+  final String name;
+  final List<String> templates;
+  final String? authorisation;
+  const SheetSetDef(this.key, this.kind, this.name, this.templates, this.authorisation);
+}
+
+const List<SheetSetDef> kSheetSets = [
+  SheetSetDef('class_6_8', 'location', 'Location: classes 6 or 8', ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'], 'location-6-8'),
+  SheetSetDef('class_2_3', 'location', 'Location: classes 2 and 3.1', ['wks17-general', 'wks17-class-2-and-3-1-substances'], null),
+  SheetSetDef('handler_6', 'handler', 'Certified handler: class 6', ['ch-class-6-handler-assessment'], 'handler-class-6'),
+  SheetSetDef('cylinder_fern', 'cylinder', 'Cylinder importation: fire extinguishers (FERN)', ['ci-cylinder-importation-fern'], 'cylinder-importation'),
+  SheetSetDef('cylinder_un', 'cylinder', 'Cylinder importation: UNRTDG', ['ci-unrtdg-cylinder-importation'], 'cylinder-importation-un'),
+];
+
+final Map<String, SheetSetDef> kSheetSetsByKey = {
+  for (final s in kSheetSets) s.key: s,
+};

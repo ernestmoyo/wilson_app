@@ -8,6 +8,7 @@ import '../models/site_block.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/company_details.dart';
+import '../widgets/subject_editor.dart';
 import 'evidence_capture.dart';
 
 /// The check sheet as the workbook lays it out, for wide screens.
@@ -66,7 +67,20 @@ class _SheetViewState extends State<SheetView> {
   static const _rule = Color(0xFFBDBDBD);
   static const _cellPad = EdgeInsets.symmetric(horizontal: 8, vertical: 4);
   // Column proportions approximating the workbook's widths.
-  static const _flex = [7, 12, 30, 24, 28, 9];
+  // Column proportions approximating the workbook's widths. Form sheets
+  // (handler, cylinder) have no Regulation or Records column.
+  // Grid slots: item | regulation | action | records | comments | evidence.
+  // A zero flex hides the slot. The location sheets use all six; the
+  // cylinder sheets have Item | Check | Records | Comments | Evidence; the
+  // handler sheet has Ref | Requirement | Comments.
+  static const _flexLocation = [7, 12, 30, 24, 28, 9];
+  static const _flexFiveCol = [8, 0, 36, 22, 25, 9];
+  static const _flexThreeCol = [9, 0, 48, 0, 32, 11];
+  List<int> get _flex => sheet.kind == 'location'
+      ? _flexLocation
+      : sheet.columnHeaders.length >= 5
+          ? _flexFiveCol
+          : _flexThreeCol;
 
   @override
   void dispose() {
@@ -142,7 +156,11 @@ class _SheetViewState extends State<SheetView> {
           children: [
             _letterhead(),
             _titleRow(),
-            if (insp.siteBlock != null) ..._siteBlockFolded(insp.siteBlock!),
+            if (sheet.kind == 'location' && insp.siteBlock != null) ..._siteBlockFolded(insp.siteBlock!),
+            if (sheet.kind != 'location') ...[
+              SubjectEditor(inspection: insp, sheet: sheet, readOnly: !CurrentUser.canRecord),
+              if (sheet.hasUnits) UnitsEditor(inspection: insp, sheet: sheet, readOnly: !CurrentUser.canRecord),
+            ],
             if (sheet.banner != null) _bandRow(sheet.banner!, bold: true),
             _columnHeaders(),
             for (final s in t.sections) ...[
@@ -274,19 +292,26 @@ class _SheetViewState extends State<SheetView> {
     while (h.length < 5) {
       h.add('');
     }
-    final labels = [...h.take(5), sheet.evidenceColumnLabel ?? 'Evidence Portfolio'];
+    // Form sheets name three columns (ref, requirement, comments); map them
+    // onto the six-column grid with the unused ones collapsed.
+    final labels = sheet.kind == 'location'
+        ? [...h.take(5), sheet.evidenceColumnLabel ?? 'Evidence Portfolio']
+        : sheet.columnHeaders.length >= 5
+            ? [h[0], '', h[1], h[2], h[3], h[4]]
+            : [h[0], '', h[1], '', h[2], sheet.evidenceColumnLabel ?? 'Evidence'];
     return Container(
       color: const Color(0xFFEFEFEF),
       child: _TRow(
         children: [
           for (var k = 0; k < 6; k++)
-            Expanded(
-              flex: _flex[k],
-              child: _cell(
-                Text(labels[k], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
-                left: k > 0,
+            if (_flex[k] > 0)
+              Expanded(
+                flex: _flex[k],
+                child: _cell(
+                  Text(labels[k], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                  left: k > 0,
+                ),
               ),
-            ),
         ],
       ),
     );
@@ -358,6 +383,7 @@ class _SheetViewState extends State<SheetView> {
             ),
           ),
         ),
+        if (_flex[1] > 0)
         Expanded(
           flex: _flex[1],
           child: _cell(
@@ -379,7 +405,8 @@ class _SheetViewState extends State<SheetView> {
           ),
         ),
         Expanded(flex: _flex[2], child: _cell(Text(i.action, style: const TextStyle(fontSize: 12, height: 1.3)), left: true)),
-        Expanded(flex: _flex[3], child: _cell(Text(i.records, style: const TextStyle(fontSize: 12, height: 1.3)), left: true)),
+        if (_flex[3] > 0)
+          Expanded(flex: _flex[3], child: _cell(Text(i.records, style: const TextStyle(fontSize: 12, height: 1.3)), left: true)),
         Expanded(
           flex: _flex[4],
           child: _cell(
