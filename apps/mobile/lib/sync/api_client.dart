@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../auth/session.dart';
 import '../models/dashboard.dart';
+import '../models/person.dart';
 import 'outbox.dart';
 
 /// The wire to the server. One method per endpoint the app uses; nothing
@@ -193,6 +194,21 @@ class ApiClient {
     }
     return jsonDecode(res.body);
   }
+
+  Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
+    final res = await _http.patch(_u(path), headers: _headers, body: jsonEncode(body));
+    if (res.statusCode != 200) throw ApiException(res.statusCode, _reason(res.body));
+    return jsonDecode(res.body);
+  }
+
+  // ── people: Person → Role, managed by a compliance certifier ──────────────
+  Future<List<Person>> users() async =>
+      [for (final x in (await getJson('/api/users')) as List) Person.fromJson((x as Map).cast<String, dynamic>())];
+  Future<Person> createPerson(Map<String, dynamic> body) async =>
+      Person.fromJson((await postJson('/api/users', body) as Map).cast<String, dynamic>());
+  Future<Person> updatePerson(int id, Map<String, dynamic> body) async =>
+      Person.fromJson((await patchJson('/api/users/$id', body) as Map).cast<String, dynamic>());
+  Future<void> setPasscode(int id, String passcode) => postJson('/api/users/$id/passcode', {'passcode': passcode});
 
   Future<bool> health() async {
     try {

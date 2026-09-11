@@ -105,6 +105,16 @@ HSLocation                 site_id, name, summary
                              IPS 21(1)(a): "unique identification or description
                              of any item or location inquired into"
 
+Person (app_user)          full_name, occupation, email, role, authorisation_number,
+                           active, passcode_hash
+                           ← Person → Role. certifier | reviewer | viewer | admin,
+                             enforced per event and per route (roles.mjs). Managed
+                             by a certifier on the People screen (/people):
+                             GET/POST /api/users, PATCH /api/users/:id,
+                             POST /api/users/:id/passcode (revokes tokens).
+                             Occupation is on the person because IPS 21(4) prints
+                             it with every photograph.
+
 Substance                  hs_location_id, name, hazard_class, quantity, unit,
                            un_number, hsno_approval, lifecycles (migration 010)
                            ← entered on New job, one row per substance. Read by

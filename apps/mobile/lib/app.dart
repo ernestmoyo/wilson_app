@@ -8,6 +8,7 @@ import 'models/inspection.dart';
 import 'screens/checksheet_screen.dart';
 import 'screens/job_screen.dart';
 import 'screens/jobs_board.dart';
+import 'screens/people_screen.dart';
 import 'screens/login_screen.dart';
 import 'sync/api_client.dart';
 import 'sync/outbox.dart';
@@ -118,6 +119,10 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
           builder: (context, state) => _gated(app,
               () => JobsBoard(api: app.api, sync: app.sync, session: app.session!, onSignOut: app.signOut)),
           routes: [
+            GoRoute(
+              path: 'people',
+              builder: (context, state) => _gated(app, () => PeopleScreen(api: app.api)),
+            ),
             GoRoute(
               path: 'jobs/:id',
               builder: (context, state) => _gated(app,

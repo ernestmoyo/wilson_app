@@ -91,6 +91,15 @@ class FakeServer {
         },
       ];
 
+  /// People as the server lists them.
+  final List<Map<String, dynamic>> users = [
+    {'id': 1, 'fullName': 'Bryan Wilson', 'occupation': 'Compliance certifier', 'email': 'compliancecertifier@assuresafety.co.nz', 'role': 'certifier', 'authorisationNumber': 'TST100250', 'active': true, 'hasPasscode': true},
+    {'id': 2, 'fullName': 'Document reviewer', 'occupation': 'Compliance reviewer', 'email': 'reviewer@assuresafety.co.nz', 'role': 'reviewer', 'active': true, 'hasPasscode': false},
+  ];
+  final List<Map<String, dynamic>> passcodesSet = [];
+  final List<Map<String, dynamic>> patches = [];
+  final List<String> requests = [];
+
   /// Bodies posted to /api/jobs, in order.
   final List<Map<String, dynamic>> created = [];
 
@@ -253,6 +262,7 @@ class FakeServer {
 
   http.Client client_() => MockClient((req) async {
         final path = req.url.path;
+        requests.add('${req.method} $path');
         if (path == '/api/auth/login') {
           final b = jsonDecode(req.body) as Map<String, dynamic>;
           if (b['passcode'] != 'chiller-2026') {
@@ -273,6 +283,29 @@ class FakeServer {
           return http.Response('{"error":"login required"}', 401);
         }
         if (path == '/api/jobs' && req.method == 'GET') return http.Response(jsonEncode(board()), 200);
+        if (path == '/api/users' && req.method == 'GET') {
+          if (role != 'certifier') return http.Response('{"error":"managing people needs a compliance certifier","clause":"Role"}', 403);
+          return http.Response(jsonEncode(users), 200);
+        }
+        if (path == '/api/users' && req.method == 'POST') {
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          if ((b['passcode'] as String? ?? '').length < 6) return http.Response('{"error":"a passcode of at least 6 characters is required"}', 400);
+          final u = {'id': users.length + 1, ...b, 'email': (b['email'] as String).toLowerCase(), 'active': true, 'hasPasscode': true}..remove('passcode');
+          users.add(u);
+          return http.Response(jsonEncode(u), 201);
+        }
+        final pm = RegExp(r'^/api/users/(\d+)/passcode$').firstMatch(path);
+        if (pm != null && req.method == 'POST') {
+          passcodesSet.add({'id': int.parse(pm.group(1)!), ...jsonDecode(req.body) as Map<String, dynamic>});
+          return http.Response('{"ok":true}', 200);
+        }
+        final um = RegExp(r'^/api/users/(\d+)$').firstMatch(path);
+        if (um != null && req.method == 'PATCH') {
+          final u = users.firstWhere((x) => x['id'] == int.parse(um.group(1)!));
+          patches.add(jsonDecode(req.body) as Map<String, dynamic>);
+          u.addAll(jsonDecode(req.body) as Map<String, dynamic>);
+          return http.Response(jsonEncode(u), 200);
+        }
         if (path == '/api/jobs' && req.method == 'POST') {
           final b = jsonDecode(req.body) as Map<String, dynamic>;
           created.add(b);

@@ -13,7 +13,7 @@ import { pathToFileURL } from 'url';
 import { applyEvents, EVENT_TYPES } from './sync/apply.mjs';
 import { explain, isClientError } from './sync/errors.mjs';
 import { assetPath } from './db.mjs';
-import { authenticate, login, logout, tokenFromRequest } from './auth.mjs';
+import { authenticate, hashPasscode, login, logout, tokenFromRequest } from './auth.mjs';
 import { canDecide, canRecord } from './roles.mjs';
 import { mailConfigured, sendMail } from './mail.mjs';
 import { randomUUID } from 'crypto';
@@ -624,6 +624,78 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       certifier: AUTHORISATION.certifier,
     });
   });
+
+  // ── people: who may sign in, and as what ─────────────────────────────────
+  // Person → Role. Managed by a compliance certifier (or admin) from the
+  // People screen. Every account is one person, so History and photographs
+  // (IPS 21(4): name and occupation) carry the right name.
+  const ROLES = ['certifier', 'reviewer', 'viewer', 'admin'];
+  const personRow = (u) => ({
+    id: u.id, fullName: u.full_name, occupation: u.occupation, email: u.email, role: u.role,
+    authorisationNumber: u.authorisation_number, active: u.active, createdAt: u.created_at, hasPasscode: !!u.passcode_hash,
+  });
+  const PERSON_COLS = 'id, full_name, occupation, email, role, authorisation_number, active, created_at, passcode_hash';
+
+  app.get('/api/users', wrap(async (req, res) => {
+    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'managing people needs a compliance certifier', clause: 'Role' });
+    const r = await db.query(`SELECT ${PERSON_COLS} FROM app_user ORDER BY active DESC, id`);
+    res.json(r.rows.map(personRow));
+  }));
+
+  app.post('/api/users', wrap(async (req, res) => {
+    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'adding a person needs a compliance certifier', clause: 'Role' });
+    const b = req.body ?? {};
+    const fullName = String(b.fullName ?? '').trim(), occupation = String(b.occupation ?? '').trim();
+    const email = String(b.email ?? '').trim().toLowerCase(), role = String(b.role ?? 'reviewer');
+    if (!fullName || !occupation) return res.status(400).json({ error: 'a person needs a name and an occupation', clause: 'IPS 21(4)' });
+    if (!/^[^@\s]+@[^@\s]+$/.test(email)) return res.status(400).json({ error: 'a sign-in email is required' });
+    if (!ROLES.includes(role)) return res.status(400).json({ error: `role must be one of ${ROLES.join(', ')}` });
+    if (String(b.passcode ?? '').length < 6) return res.status(400).json({ error: 'a passcode of at least 6 characters is required' });
+    const dup = await db.query(`SELECT id FROM app_user WHERE lower(email) = $1`, [email]);
+    if (dup.rows.length) return res.status(409).json({ error: 'that email is already a person here' });
+    const r = await db.query(
+      `INSERT INTO app_user (full_name, occupation, email, role, authorisation_number, passcode_hash)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${PERSON_COLS}`,
+      [fullName, occupation, email, role, b.authorisationNumber ? String(b.authorisationNumber).trim() : null, hashPasscode(b.passcode)]);
+    res.status(201).json(personRow(r.rows[0]));
+  }));
+
+  app.patch('/api/users/:id', wrap(async (req, res) => {
+    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'changing a person needs a compliance certifier', clause: 'Role' });
+    const id = Number(req.params.id);
+    const b = req.body ?? {};
+    if (b.role !== undefined && !ROLES.includes(b.role)) return res.status(400).json({ error: `role must be one of ${ROLES.join(', ')}` });
+    if (b.active === false && id === req.ctx.userId) return res.status(400).json({ error: 'you cannot deactivate yourself' });
+    if (b.email !== undefined) {
+      const email = String(b.email).trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+$/.test(email)) return res.status(400).json({ error: 'a sign-in email is required' });
+      const dup = await db.query(`SELECT id FROM app_user WHERE lower(email) = $1 AND id <> $2`, [email, id]);
+      if (dup.rows.length) return res.status(409).json({ error: 'that email is already a person here' });
+      b.email = email;
+    }
+    const r = await db.query(
+      `UPDATE app_user SET
+         full_name = COALESCE($2, full_name), occupation = COALESCE($3, occupation), email = COALESCE($4, email),
+         role = COALESCE($5, role), authorisation_number = COALESCE($6, authorisation_number), active = COALESCE($7, active)
+       WHERE id = $1 RETURNING ${PERSON_COLS}`,
+      [id, b.fullName?.trim() || null, b.occupation?.trim() || null, b.email ?? null, b.role ?? null,
+       b.authorisationNumber === undefined ? null : String(b.authorisationNumber).trim(), typeof b.active === 'boolean' ? b.active : null]);
+    if (!r.rows.length) return res.status(404).json({ error: 'person not found' });
+    if (b.active === false) await db.query(`UPDATE auth_token SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [id]);
+    res.json(personRow(r.rows[0]));
+  }));
+
+  /** A new passcode signs that person out everywhere. */
+  app.post('/api/users/:id/passcode', wrap(async (req, res) => {
+    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'resetting a passcode needs a compliance certifier', clause: 'Role' });
+    const id = Number(req.params.id);
+    const passcode = String(req.body?.passcode ?? '');
+    if (passcode.length < 6) return res.status(400).json({ error: 'a passcode of at least 6 characters is required' });
+    const r = await db.query(`UPDATE app_user SET passcode_hash = $2 WHERE id = $1 RETURNING id`, [id, hashPasscode(passcode)]);
+    if (!r.rows.length) return res.status(404).json({ error: 'person not found' });
+    await db.query(`UPDATE auth_token SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [id]);
+    res.json({ ok: true, id });
+  }));
 
   // ── dashboard: what needs attention, and what just happened ─────────────
   app.get('/api/dashboard', wrap(async (_req, res) => {

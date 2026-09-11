@@ -281,6 +281,13 @@ class _JobsBoardState extends State<JobsBoard> {
         title: 'Jobs',
         subtitle: '${widget.session.fullName} · ${widget.session.authorisationNumber ?? ''}',
         actions: [
+          if (widget.session.canDecide)
+            IconButton(
+              key: const ValueKey('to-people'),
+              tooltip: 'People',
+              icon: const Icon(Icons.people_outline),
+              onPressed: () => context.go('/people'),
+            ),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: _busy ? null : _reload),
           IconButton(
             key: const ValueKey('sign-out'),
