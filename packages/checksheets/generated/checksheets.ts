@@ -952,7 +952,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           "Gas Traffic",
           "Test Pressure",
           "Charging Pressure",
-          "Wall thckness",
+          "Wall thickness",
           "Nozzle Orifice Diameter"
         ],
         "dateLabels": [

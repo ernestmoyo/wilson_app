@@ -14,6 +14,27 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const nl = (s) => esc(s).replace(/\n/g, '<br>');
 const d = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
 
+// The Certificate tab words its unit labels more tersely than the checklist
+// ("Water Capacity" for "Water Capacity (L)", "Charging Pressure" for
+// "Charging Pressure at 15 degrees Celsius (Permanent Gas)", "Model" for
+// "Model Number", "Manufacturer" for "Name of Manufacturer"), and the UN
+// workbook's tab says "FERN" where its checklist says "Batch/Serial Number".
+// Match exactly first, then by alias, then by the normalised label being
+// contained in a checklist label.
+const UNIT_ALIASES = { 'FERN': ['Batch/Serial Number'], 'Batch/Serial Number': ['FERN'], 'Manufacturer': ['Name of Manufacturer'], 'Model': ['Model Number'] };
+const norm = (x) => String(x).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
+function unitValue(fields, label) {
+  if (fields[label] != null && fields[label] !== '') return fields[label];
+  for (const alt of UNIT_ALIASES[label] ?? []) if (fields[alt]) return fields[alt];
+  const want = norm(label);
+  if (!want) return '';
+  const keys = Object.keys(fields);
+  const exact = keys.find((k) => norm(k) === want);
+  if (exact) return fields[exact];
+  const within = keys.find((k) => norm(k).startsWith(want) || norm(k).includes(want));
+  return within ? fields[within] : '';
+}
+
 /**
  * @param {object} p
  * @param {object} p.certificateTemplate  template.sheet.certificate (documentTitle, certifiesThat, fields, unitTitle, unitFields, tables, scopeHeading, scopeText, dateLabels, signature, issuerStatement)
@@ -52,7 +73,7 @@ export function renderFormCertificate({ certificateTemplate: t, subject = {}, un
     const cols = units.length ? units : [{ ordinal: 1, fields: {} }];
     unitTable = `<div class="block">${esc(t.unitTitle ?? 'Details')}</div>
     <table class="units"><tbody>
-      ${t.unitFields.map((f) => `<tr><th>${esc(f)}</th>${cols.map((u) => `<td>${nl(u.fields?.[f] ?? '')}</td>`).join('')}</tr>`).join('')}
+      ${t.unitFields.map((f) => `<tr><th>${esc(f)}</th>${cols.map((u) => `<td>${nl(unitValue(u.fields ?? {}, f))}</td>`).join('')}</tr>`).join('')}
     </tbody></table>`;
   }
   let tables = '';

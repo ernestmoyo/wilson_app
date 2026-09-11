@@ -54,7 +54,9 @@ const SPELLING = [
 function fix(corrections, where, s) {
   let out = s;
   for (const [re, to] of SPELLING) {
+    re.lastIndex = 0;
     if (re.test(out)) {
+      re.lastIndex = 0;
       const from = out;
       out = out.replace(re, to);
       corrections.push({ where, from, to: out, reason: 'spelling' });
@@ -156,7 +158,7 @@ function extractHandler(ws, workbook) {
   };
 }
 
-function extractHandlerCertificate(ws) {
+function extractHandlerCertificate(ws, corrections = []) {
   const labels = [];
   for (let r = 3; r <= 10; r++) {
     for (const c of ['A', 'E']) {
@@ -167,7 +169,7 @@ function extractHandlerCertificate(ws) {
   return {
     documentTitle: text(ws.getCell('A1')),
     certifiesThat: text(ws.getCell('A2')),
-    fields: labels,
+    fields: labels.map((l) => fix(corrections, 'certificate label', l)),
     tables: [{ title: text(ws.getCell('A11')), columns: ['A', 'E', 'G'].map((c) => text(ws.getCell(`${c}12`))).filter(Boolean) }],
     scopeHeading: text(ws.getCell('A15')),
     scopeText: text(ws.getCell('A17')),
@@ -235,18 +237,18 @@ function extractCylinder(ws, workbook, { unitRows, itemRows, photoRow }) {
   };
 }
 
-function extractCylinderCertificate(ws, { unitRows, dateRow, signRows }) {
+function extractCylinderCertificate(ws, { unitRows, dateRow, signRows, corrections = [] }) {
   const fields = [];
   for (let r = 3; r <= 10; r++) {
     for (const c of ['A', 'E']) {
       const k = text(ws.getCell(`${c}${r}`));
-      if (k && /:$|Number$/.test(k)) fields.push(stripColon(k));
+      if (k && /:$|Number$/.test(k)) fields.push(fix(corrections, `certificate ${c}${r}`, stripColon(k)));
     }
   }
   const unitFields = [];
   for (let r = unitRows[0]; r <= unitRows[1]; r++) {
     const k = cellA(ws, r);
-    if (k) unitFields.push(stripColon(k));
+    if (k) unitFields.push(fix(corrections, `certificate A${r}`, stripColon(k)));
   }
   return {
     documentTitle: text(ws.getCell('A1')),
@@ -309,7 +311,7 @@ if (isMain) {
   if (hf) {
     const wb = await load(hf);
     const ex = extractHandler(wb.getWorksheet('Checksheet'), basename(hf));
-    const cert = extractHandlerCertificate(wb.getWorksheet('Certificate'));
+    const cert = extractHandlerCertificate(wb.getWorksheet('Certificate'), ex.corrections);
     write(buildTemplate(ex, 'ch-class-6-handler-assessment', {
       authorisation: 'handler-class-6',
       psReference: 'Health and Safety at Work (Hazardous Substances—Certified Handler Compliance Certification) Performance Standard',
@@ -320,7 +322,7 @@ if (isMain) {
   if (ff) {
     const wb = await load(ff);
     const ex = extractCylinder(wb.getWorksheet('Checklist'), basename(ff), { unitRows: [23, 38], itemRows: [39, 43], photoRow: 12 });
-    const cert = extractCylinderCertificate(wb.getWorksheet('Compliance Certificate'), { unitRows: [13, 22], dateRow: 24, signRows: [33, 34, 35] });
+    const cert = extractCylinderCertificate(wb.getWorksheet('Compliance Certificate'), { unitRows: [13, 22], dateRow: 24, signRows: [33, 34, 35], corrections: ex.corrections });
     write(buildTemplate(ex, 'ci-cylinder-importation-fern', {
       authorisation: 'cylinder-importation',
       psReference: 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.16',
@@ -331,7 +333,7 @@ if (isMain) {
   if (uf) {
     const wb = await load(uf);
     const ex = extractCylinder(wb.getWorksheet('Checklist'), basename(uf), { unitRows: [23, 33], itemRows: [35, 39], photoRow: 12 });
-    const cert = extractCylinderCertificate(wb.getWorksheet('Compliance Certificate'), { unitRows: [13, 23], dateRow: 25, signRows: [34, 35, 36] });
+    const cert = extractCylinderCertificate(wb.getWorksheet('Compliance Certificate'), { unitRows: [13, 23], dateRow: 25, signRows: [34, 35, 36], corrections: ex.corrections });
     write(buildTemplate(ex, 'ci-unrtdg-cylinder-importation', {
       authorisation: 'cylinder-importation-un',
       psReference: 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)',

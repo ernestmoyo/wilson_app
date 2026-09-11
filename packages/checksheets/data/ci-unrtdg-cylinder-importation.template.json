@@ -10,7 +10,7 @@
   "source": {
     "workbook": "UNRTDG CYLINDERS Template (1).xlsx",
     "sheet": "Checklist",
-    "extractedAt": "2026-09-11T08:45:27.845Z",
+    "extractedAt": "2026-09-11T13:47:08.748Z",
     "extractorVersion": "forms-1",
     "corrections": [
       {
@@ -23,6 +23,12 @@
         "where": "A32",
         "from": "Wall thckness:",
         "to": "Wall thickness:",
+        "reason": "spelling"
+      },
+      {
+        "where": "certificate A22",
+        "from": "Wall thckness",
+        "to": "Wall thickness",
         "reason": "spelling"
       }
     ],
@@ -132,7 +138,7 @@
         "Gas Traffic",
         "Test Pressure",
         "Charging Pressure",
-        "Wall thckness",
+        "Wall thickness",
         "Nozzle Orifice Diameter"
       ],
       "dateLabels": [

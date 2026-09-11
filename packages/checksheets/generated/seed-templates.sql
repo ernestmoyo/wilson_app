@@ -391,58 +391,58 @@ JOIN checksheet_template t ON t.id = sec.template_id
 WHERE t.code = 'ci-cylinder-importation-fern' AND t.meta->>'contentHash' = '402b18b69bba0f185748fc66a5251c4e22c8d930ab0bef9b517b3fbb6cf52212' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
--- ci-unrtdg-cylinder-importation — 1 sections, 6 items — content 1b0462918522
+-- ci-unrtdg-cylinder-importation — 1 sections, 6 items — content 8a85ba2bfbf6
 INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
 SELECT 'ci-unrtdg-cylinder-importation',
        COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation'), 0) + 1,
-       'Compliance Certifier Checklist — Un Cylinder Importation', 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)', '{}', 'current', '{"contentHash":"1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb","sheet":{"title":"Compliance Certifier Checklist — Un Cylinder Importation","evidenceColumnLabel":null,"banner":null,"columnHeaders":["Item","Check","Records","Comments","Evidence"],"note":null,"declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":null,"kind":"cylinder","subjectBlockTitle":"Details of PCBU","subjectBlock":[{"label":"Company/Legal Entity"},{"label":"Postal Address"},{"label":"Physical Address"},{"label":"Business Contact Number"},{"label":"NZBN"},{"label":"Full Name of PCBU"},{"label":"Email Address"},{"label":"Contact"}],"unitBlockTitle":"Cylinder Details","unitBlock":[{"label":"Batch/Serial Number"},{"label":"Country of Manufacturer"},{"label":"Number of Cylinders"},{"label":"Inspection Agency"},{"label":"Water Capacity"},{"label":"Design Standard"},{"label":"Gas Traffic"},{"label":"Test Pressure"},{"label":"Charging Pressure"},{"label":"Wall thickness"},{"label":"Neck Thread"}],"authorisation":"cylinder-importation-un","certificate":{"documentTitle":"COMPLIANCE CERTIFICATE\nCylinder Importation (FERN)\nIssued in accordance with regulations 6.23 and 15.16(1) of the Health and Safety at Work (Hazardous Substances) Regulations 2017","certifiesThat":"This certificate certifies that the requirements prescribed in regulation 15(4) and 15(3A) for a cylinder importation (low-pressure fire extinguisher) compliance certificate have been met","fields":["Unique Register Number","Certificate Number","Company/Legal Entity","Postal Address","Physical Address","Business Contact Number","NZBN","Full Name of PCBU","Email Address","Contact"],"unitTitle":"Cylinder Details","unitFields":["FERN","Country of Manufacturer","Number of Cylinders","Water Capacity","Manufacturer","Design Standard","Gas Traffic","Test Pressure","Charging Pressure","Wall thckness","Nozzle Orifice Diameter"],"dateLabels":["Issued Date","Effective From"],"signature":["Bryan Wilson","Worksafe Authorised Compliance Certifier (TST100250)","Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."]}},"sheetByClass":null}'::jsonb
+       'Compliance Certifier Checklist — Un Cylinder Importation', 'Health and Safety at Work (Hazardous Substances) Regulations 2017, regulation 15.3(3)', '{}', 'current', '{"contentHash":"8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf","sheet":{"title":"Compliance Certifier Checklist — Un Cylinder Importation","evidenceColumnLabel":null,"banner":null,"columnHeaders":["Item","Check","Records","Comments","Evidence"],"note":null,"declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":null,"kind":"cylinder","subjectBlockTitle":"Details of PCBU","subjectBlock":[{"label":"Company/Legal Entity"},{"label":"Postal Address"},{"label":"Physical Address"},{"label":"Business Contact Number"},{"label":"NZBN"},{"label":"Full Name of PCBU"},{"label":"Email Address"},{"label":"Contact"}],"unitBlockTitle":"Cylinder Details","unitBlock":[{"label":"Batch/Serial Number"},{"label":"Country of Manufacturer"},{"label":"Number of Cylinders"},{"label":"Inspection Agency"},{"label":"Water Capacity"},{"label":"Design Standard"},{"label":"Gas Traffic"},{"label":"Test Pressure"},{"label":"Charging Pressure"},{"label":"Wall thickness"},{"label":"Neck Thread"}],"authorisation":"cylinder-importation-un","certificate":{"documentTitle":"COMPLIANCE CERTIFICATE\nCylinder Importation (FERN)\nIssued in accordance with regulations 6.23 and 15.16(1) of the Health and Safety at Work (Hazardous Substances) Regulations 2017","certifiesThat":"This certificate certifies that the requirements prescribed in regulation 15(4) and 15(3A) for a cylinder importation (low-pressure fire extinguisher) compliance certificate have been met","fields":["Unique Register Number","Certificate Number","Company/Legal Entity","Postal Address","Physical Address","Business Contact Number","NZBN","Full Name of PCBU","Email Address","Contact"],"unitTitle":"Cylinder Details","unitFields":["FERN","Country of Manufacturer","Number of Cylinders","Water Capacity","Manufacturer","Design Standard","Gas Traffic","Test Pressure","Charging Pressure","Wall thickness","Nozzle Orifice Diameter"],"dateLabels":["Issued Date","Effective From"],"signature":["Bryan Wilson","Worksafe Authorised Compliance Certifier (TST100250)","Issued by an individual compliance certifier authorised by WorkSafe under regulation 6.8."]}},"sheetByClass":null}'::jsonb
 WHERE NOT EXISTS (
-  SELECT 1 FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb'
+  SELECT 1 FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf'
 );
 UPDATE checksheet_template
    SET status = 'superseded',
-       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb')
- WHERE code = 'ci-unrtdg-cylinder-importation' AND (meta->>'contentHash') IS DISTINCT FROM '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND status <> 'superseded';
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf')
+ WHERE code = 'ci-unrtdg-cylinder-importation' AND (meta->>'contentHash') IS DISTINCT FROM '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND status <> 'superseded';
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 1, NULL, 'Un Cylinder Importation'
-FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb'
+FROM checksheet_template WHERE code = 'ci-unrtdg-cylinder-importation' AND meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, NULL, '{}', NULL, NULL, NULL, 'Photo evidence of compliance to marking requirements in clause 6.2.2.7.1 to 5 of UNRTDG Model regulations', 'Photographs', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, NULL, '{}', NULL, NULL, NULL, 'Visual inspection', '', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, NULL, '{}', NULL, NULL, NULL, 'Repaired Cylinders', '', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, NULL, '{}', NULL, NULL, NULL, 'Standard applying to the design', '', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, NULL, '{}', NULL, NULL, NULL, 'Manufacturing certificate from a recognised inspection agency', 'Issuing agency : Date of Issue:', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 6, NULL, '{}', NULL, NULL, NULL, 'Visual Inspection', '', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '1b0462918522ba37b7cb496b6aa417ffa91567ab05001b7a94666fb37d0577eb' AND sec.ordinal = 1
+WHERE t.code = 'ci-unrtdg-cylinder-importation' AND t.meta->>'contentHash' = '8a85ba2bfbf60a16101fd28d2e3074f5e44cb903de4035a56021f0f866a32ccf' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 -- wks17-class-2-and-3-1-substances — 23 sections, 44 items — content 530b2db794ee

@@ -122,6 +122,36 @@ await step('a cylinder importation job: two batches as units, each by its labels
   return `job ${cJob}`;
 });
 
+await step('a UN cylinder certificate carries the batches under the Certificate tab\'s own labels', async () => {
+  // The UN workbook's Certificate tab says "FERN" where its checklist says
+  // "Batch/Serial Number", and shortens other labels; the values must still land.
+  const r = await api.post('/api/jobs').set(H).send({
+    client: { legalName: 'Test UN Imports Ltd' }, site: { address: '3 Quay Road, Tauranga' },
+    location: { name: 'Cylinder importation: batch TEST-UN-1' }, classKey: 'cylinder_un',
+    subject: { 'Company/Legal Entity': 'Test UN Imports Ltd', 'Full Name of PCBU': 'U. Importer' },
+    units: [{ fields: { 'Batch/Serial Number': 'UN-BATCH-7', 'Number of Cylinders': '75', 'Water Capacity': '47.5 L', 'Charging Pressure': '150 bar', 'Wall thickness': '5.8 mm' } }],
+  });
+  expect(r.status === 201, `${r.status} ${r.text}`);
+  const uJob = r.body.jobId;
+  const s = await sync([
+    ev('job.transition', { jobId: uJob, toStage: 'application' }),
+    ev('job.transition', { jobId: uJob, toStage: 'document_review' }),
+    ev('job.transition', { jobId: uJob, toStage: 'site_inspection' }),
+    ev('interest.declare', { jobId: uJob, conflictFound: false }),
+    ev('job.transition', { jobId: uJob, toStage: 'compliance_evaluation' }),
+    ev('job.transition', { jobId: uJob, toStage: 'final_validation' }),
+  ]);
+  expect(s.body.rejected.length === 0, JSON.stringify(s.body.rejected));
+  const c = await api.post(`/api/jobs/${uJob}/certificate`).set(H).send({ decision: 'granted', certificateNumber: 'TST100250-CI-UN-0001', issuedTo: 'Test UN Imports Ltd', appliesTo: 'batch TEST-UN-1', issueDate: '2026-09-11' });
+  expect(c.status === 201, `${c.status} ${c.text}`);
+  const html = await api.get(`/api/jobs/${uJob}/certificate.html`).set(H);
+  expect(html.status === 200, `${html.status}`);
+  for (const v of ['UN-BATCH-7', '75', '47.5 L', '150 bar', '5.8 mm', 'U. Importer', 'TST100250-CI-UN-0001']) {
+    expect(html.text.includes(v), `certificate lacks ${v}`);
+  }
+  return `job ${uJob}`;
+});
+
 await step('the board rows say which kind each job is', async () => {
   const r = await api.get('/api/jobs').set(H);
   const kinds = Object.fromEntries(r.body.map((x) => [x.id, x.kind]));
