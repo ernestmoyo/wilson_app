@@ -56,7 +56,11 @@ async function storeEvidence(sha256, ext, buf, mime) {
     // which needs a signed-in user.
     const { put } = await import('@vercel/blob');
     const key = `evidence/${sha256}.${ext}`;
-    const b = await put(key, buf, { access: 'private', addRandomSuffix: false, contentType: mime });
+    // The key is the SHA-256 of the bytes, so a second upload of the same
+    // photograph (another device, a retry) carries identical bytes: writing
+    // them again is harmless, and refusing would fail the retry (IPS 21(4)
+    // wants the record, not a duplicate error).
+    const b = await put(key, buf, { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: mime });
     return { storageKey: key, url: b.url, backend: 'vercel-blob' };
   }
   // On Vercel the bundle is read-only; /tmp is the only writable path and is
