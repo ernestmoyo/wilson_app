@@ -86,7 +86,10 @@ class ProcessStage {
 
   /// The one line a certifier reads first: what this job needs now.
   static String nextAction(String stage, {int itemTotal = 0, int assessed = 0, int nonCompliant = 0,
-      bool interestDeclared = false, int openActions = 0, String? certificateDecision, String kind = 'location'}) {
+      bool interestDeclared = false, int openActions = 0, String? certificateDecision, String kind = 'location',
+      int? unactioned}) {
+    // Non-compliances with no corrective action yet; the board does not know, so it assumes all.
+    final needAction = unactioned ?? nonCompliant;
     final pending = itemTotal - assessed;
     final visit = switch (kind) { 'handler' => 'assessment', 'cylinder' => 'cylinder inspection', _ => 'site inspection' };
     return switch (stage) {
@@ -99,9 +102,13 @@ class ProcessStage {
           : pending > 0
               ? 'Continue the $visit: $assessed of $itemTotal items assessed'
               : 'Inspection complete: start compliance evaluation',
-      'compliance_evaluation' => nonCompliant > 0
-          ? '$nonCompliant non-compliance${nonCompliant == 1 ? '' : 's'}: raise and track corrective actions'
-          : 'No non-compliances: start final validation',
+      'compliance_evaluation' => nonCompliant == 0
+          ? 'No non-compliances: start final validation'
+          : needAction > 0
+              ? '$needAction non-compliance${needAction == 1 ? '' : 's'} without a corrective action: raise one for each'
+              : openActions > 0
+                  ? '$openActions corrective action${openActions == 1 ? '' : 's'} open: verify when the client has fixed it'
+                  : 'All corrective actions verified: start final validation',
       'gap_closure' => openActions > 0
           ? 'Client remediating: $openActions action${openActions == 1 ? '' : 's'} still open'
           : 'Client remediating',

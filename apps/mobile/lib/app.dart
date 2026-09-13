@@ -166,7 +166,11 @@ class _SheetRouteState extends State<SheetRoute> {
     final insp = widget.app.inspections[widget.jobId] ??
         (widget.app.inspections[widget.jobId] =
             await openInspectionForJob(widget.app.api, widget.app.sync, widget.jobId));
-    return (insp, job.stage);
+    // Opening the sheet from an early stage walks the job to site inspection
+    // (openInspectionForJob); the context bar must say so, not the stage read
+    // a moment before.
+    final walked = CurrentUser.canRecord && const {'enquiry', 'application', 'document_review'}.contains(job.stage);
+    return (insp, walked ? 'site_inspection' : job.stage);
   }
 
   @override

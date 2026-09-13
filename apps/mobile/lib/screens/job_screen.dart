@@ -54,7 +54,7 @@ class _JobScreenState extends State<JobScreen> {
     if (route != null && route.isCurrent && _job != null && !_busy) _reload();
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload({bool keepError = false}) async {
     setState(() => _busy = true);
     try {
       final j = JobRecord.fromJson(await api.job(widget.jobId));
@@ -68,7 +68,7 @@ class _JobScreenState extends State<JobScreen> {
       setState(() {
         _job = j;
         _check = c;
-        _error = null;
+        if (!keepError) _error = null;
       });
     } on ApiException catch (e) {
       if (e.status == 401 && widget.onUnauthorized != null) {
@@ -89,8 +89,10 @@ class _JobScreenState extends State<JobScreen> {
     setState(() => _busy = true);
     final ev = await widget.sync.outbox.enqueue(type, payload);
     await widget.sync.flush();
+    var failed = false;
     if (widget.sync.lastError != null && mounted) {
       // Offline or the server errored: the event is queued, say so.
+      failed = true;
       setState(() => _error = 'Not sent yet: ${widget.sync.lastError}. It will go with the next sync.');
     }
     final rejected = widget.sync.rejected.where((r) => r.id == ev.id).toList();
@@ -98,9 +100,10 @@ class _JobScreenState extends State<JobScreen> {
       final o = rejected.first.outcome;
       final msg = [if (o?.clause != null) o!.clause, o?.reason ?? 'rejected'].join(': ');
       await widget.sync.dismissRejected(ev.id);
+      failed = true;
       if (mounted) setState(() => _error = msg);
     }
-    await _reload();
+    await _reload(keepError: failed);
   }
 
   static String _d(DateTime? d) {
@@ -223,11 +226,12 @@ class _JobScreenState extends State<JobScreen> {
       nonCompliant: j.nonCompliances.length,
       interestDeclared: j.interestDeclared,
       openActions: j.openActions,
+      unactioned: j.nonCompliances.where((f) => j.actionsFor(f.id).isEmpty).length,
       certificateDecision: j.certificate?.decision,
     );
     final n = ProcessStage.numberOf(j.stage);
     final sheetLabel = j.inspectionId == null
-        ? 'Start site inspection'
+        ? switch (j.kind) { 'handler' => 'Start assessment', 'cylinder' => 'Start cylinder inspection', _ => 'Start site inspection' }
         : n <= 4
             ? 'Continue check sheet'
             : 'Open check sheet';
@@ -970,10 +974,10 @@ class _JobScreenState extends State<JobScreen> {
         if (decision == 'conditional') 'conditions': list,
         if (decision == 'refused') 'requirementsNotMet': list,
       });
+      await _reload();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
-    } finally {
-      await _reload();
+      await _reload(keepError: true);
     }
   }
 

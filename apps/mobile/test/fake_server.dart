@@ -69,6 +69,9 @@ class FakeServer {
   /// A server with nothing on it yet.
   bool noJobs = false;
 
+  /// Refuse the next interest.declare with this clause (null: accept).
+  String? rejectDeclareWith;
+
   List<Map<String, dynamic>> board() => noJobs ? [] : [
         {
           'id': 7,
@@ -328,11 +331,17 @@ class FakeServer {
         if (path == '/api/sync') {
           final body = jsonDecode(req.body) as Map<String, dynamic>;
           final applied = <Map<String, dynamic>>[];
+          final rejected = <Map<String, dynamic>>[];
           for (final e in (body['events'] as List).cast<Map<String, dynamic>>()) {
+            if (e['type'] == 'interest.declare' && rejectDeclareWith != null) {
+              rejected.add({'id': e['id'], 'type': e['type'], 'clause': rejectDeclareWith, 'reason': 'refused for the test'});
+              rejectDeclareWith = null;
+              continue;
+            }
             _apply(e);
             applied.add({'id': e['id'], 'result': e['type'] == 'inspection.open' ? {'inspectionId': 3} : {}});
           }
-          return http.Response(jsonEncode({'applied': applied, 'rejected': [], 'duplicate': []}), 200);
+          return http.Response(jsonEncode({'applied': applied, 'rejected': rejected, 'duplicate': []}), 200);
         }
         return http.Response('{"error":"not found"}', 404);
       });

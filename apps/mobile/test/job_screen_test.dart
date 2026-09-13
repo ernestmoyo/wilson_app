@@ -91,6 +91,14 @@ void main() {
     expect(find.textContaining('IPS 23(1)'), findsNothing);
   });
 
+  testWidgets('a refused move keeps its clause on screen after the re-read', (t) async {
+    server.rejectDeclareWith = 'IPS 23(1)';
+    await pump(t);
+    await t.tap(find.byKey(const ValueKey('declare-none')));
+    await t.pumpAndSettle();
+    expect(find.textContaining('IPS 23(1): refused for the test'), findsOneWidget, reason: 'the reload must not wipe the refusal');
+  });
+
   testWidgets('verifying a corrective action sends corrective_action.update and re-reads the job', (t) async {
     await pump(t);
     expect(find.text('General 4.4'), findsOneWidget);
