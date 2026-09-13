@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../bootstrap.dart' show applyJobToInspection, fetchJob;
@@ -41,6 +42,7 @@ class SyncService extends ChangeNotifier {
       if (insp.jobId == null) return;
       await outbox.enqueue('job.subject.set', {'jobId': insp.jobId, 'fields': changed});
       notifyListeners();
+      _scheduleFlush();
     };
     insp.onUnitChanged = (ordinal, fields) async {
       if (insp.jobId == null) return;
@@ -49,6 +51,7 @@ class SyncService extends ChangeNotifier {
         {'jobId': insp.jobId, 'ordinal': ordinal, if (fields != null) 'fields': fields},
       );
       notifyListeners();
+      _scheduleFlush();
     };
   }
 
@@ -65,6 +68,27 @@ class SyncService extends ChangeNotifier {
     await flush();
   }
 
+  /// How long after the last edit the queue is sent on its own. Null turns
+  /// automatic sending off (tests drive flush() themselves).
+  Duration? autoFlushDelay = const Duration(seconds: 2);
+  Timer? _autoFlush;
+
+  void _scheduleFlush() {
+    final delay = autoFlushDelay;
+    if (delay == null) return;
+    _autoFlush?.cancel();
+    _autoFlush = Timer(delay, () {
+      _autoFlush = null;
+      flush();
+    });
+  }
+
+  /// Cancel a pending automatic send (a screen going away).
+  void stopAutoFlush() {
+    _autoFlush?.cancel();
+    _autoFlush = null;
+  }
+
   Future<void> _enqueueFinding(Inspection insp, Finding f) async {
     if (insp.inspectionId == null) return; // not yet opened on the server
     await outbox.enqueue('finding.upsert', {
@@ -78,6 +102,7 @@ class SyncService extends ChangeNotifier {
       'failureReason': f.status == FindingStatus.nonCompliant ? f.failureReason : null,
     });
     notifyListeners();
+    _scheduleFlush();
   }
 
   /// Open the inspection on the server. Must succeed before findings sync,
@@ -110,6 +135,8 @@ class SyncService extends ChangeNotifier {
   /// Send everything queued. Safe to call repeatedly; safe to call offline
   /// (it just records the error and leaves the queue intact).
   Future<void> flush() async {
+    _autoFlush?.cancel();
+    _autoFlush = null;
     if (_flushing) return;
     _flushing = true;
     lastError = null;

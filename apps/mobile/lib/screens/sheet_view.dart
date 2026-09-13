@@ -224,7 +224,7 @@ class _SheetViewState extends State<SheetView> {
           Expanded(
             flex: 2,
             child: _cell(
-              Text(sheet.evidenceColumnLabel ?? 'Evidence Portfolio',
+              Text(sheet.evidenceColumnLabel ?? (sheet.kind == 'location' ? 'Evidence Portfolio' : 'Evidence'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
               top: false,
@@ -383,7 +383,7 @@ class _SheetViewState extends State<SheetView> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(i.number ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                Text(i.number ?? (s.items.every((x) => x.number == null) ? '${i.ordinal}' : ''), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 const SizedBox(height: 4),
                 _statusPicker(f),
               ],

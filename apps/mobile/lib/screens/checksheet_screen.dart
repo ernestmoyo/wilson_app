@@ -48,13 +48,15 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
     // are left alone; see SyncService.pull.
     final sync = widget.sync;
     if (sync != null && insp.jobId != null) {
-      _pull = Timer.periodic(const Duration(seconds: 30), (_) => sync.pull(insp).catchError((_) => 0));
+      // Every 30 s: send what is queued, then take what the other device sent.
+      _pull = Timer.periodic(const Duration(seconds: 30), (_) => sync.syncNow(insp).catchError((_) {}));
     }
   }
 
   @override
   void dispose() {
     _pull?.cancel();
+    widget.sync?.stopAutoFlush();
     super.dispose();
   }
 
@@ -329,10 +331,19 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
         child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
       );
 
+  /// The workbook's number, or the item's position when the section carries
+  /// no numbers at all (the cylinder sheets); a blank in a numbered section
+  /// stays blank, as it is a continuation row in the workbook.
+  static String? _numberFor(ChecksheetSection s, ChecksheetItem i) =>
+      i.number ?? (s.items.every((x) => x.number == null) ? '${i.ordinal}' : null);
+
   String _shortTitle(ChecksheetTemplate t) {
     if (t.code.contains('general')) return 'General';
     if (t.code.contains('6-1a')) return 'Class 6 & 8';
     if (t.code.contains('2-and-3')) return 'Class 2 & 3.1';
+    if (t.code.contains('handler')) return 'Handler assessment';
+    if (t.code.contains('fern')) return 'Cylinders (FERN)';
+    if (t.code.contains('unrtdg')) return 'UN cylinders';
     return t.code;
   }
 
@@ -407,10 +418,10 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
                   children: [
                     Row(
                       children: [
-                        if (i.number != null)
+                        if (_numberFor(s, i) != null)
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
-                            child: Text('${i.number}.',
+                            child: Text('${_numberFor(s, i)}.',
                                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                           ),
                         if (refs.isNotEmpty)

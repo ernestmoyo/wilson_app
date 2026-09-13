@@ -280,7 +280,7 @@ class _JobsBoardState extends State<JobsBoard> {
     return Scaffold(
       appBar: BrandBar(
         title: 'Jobs',
-        subtitle: '${widget.session.fullName} · ${widget.session.authorisationNumber ?? ''}',
+        subtitle: [widget.session.fullName, if ((widget.session.authorisationNumber ?? '').isNotEmpty) widget.session.authorisationNumber!].join(' · '),
         actions: [
           if (widget.session.canDecide)
             IconButton(
@@ -415,6 +415,20 @@ class _JobsBoardState extends State<JobsBoard> {
       );
 
   /// Who did what, most recent first, across every job.
+  /// A status change and a comment on the same item arrive as two events
+  /// seconds apart; the strip shows the person did one thing, once.
+  static List<T> _collapsed<T extends dynamic>(List<T> items) {
+    final out = <T>[];
+    for (final a in items) {
+      if (out.isNotEmpty) {
+        final p = out.last;
+        if (p.userName == a.userName && p.verb == a.verb && p.jobId == a.jobId) continue;
+      }
+      out.add(a);
+    }
+    return out;
+  }
+
   Widget _activity(DashboardData d) => Card(
         key: const ValueKey('activity'),
         margin: const EdgeInsets.only(bottom: 10),
@@ -423,7 +437,7 @@ class _JobsBoardState extends State<JobsBoard> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Recent activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Brand.tealDark)),
             const SizedBox(height: 4),
-            for (final a in d.activity.take(8))
+            for (final a in _collapsed(d.activity).take(8))
               InkWell(
                 onTap: _busy || a.jobId == null ? null : () => _open(a.jobId!),
                 child: Padding(
