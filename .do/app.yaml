@@ -1,0 +1,85 @@
+# DigitalOcean App Platform spec for Assure Safety Field.
+#
+#   doctl apps create --spec .do/app.yaml          (first time)
+#   doctl apps update <app-id> --spec .do/app.yaml (after changes)
+#
+# One container (the API plus the web app) built from the repo's Dockerfile,
+# a managed Postgres alongside it in the same region, and Spaces for evidence
+# bytes. Scale by editing instance_size_slug / instance_count and the database
+# size; nothing in the code changes.
+#
+# Secrets marked SECRET are set once in the control panel or with
+# `doctl apps update` and are never committed. Replace <owner>/<repo> with
+# the GitHub repository and set the branch that deploys.
+
+name: assure-safety-field
+region: syd
+
+services:
+  - name: server
+    dockerfile_path: Dockerfile
+    source_dir: /
+    github:
+      repo: ernestmoyo/wilson_app
+      branch: feat/graph-model
+      deploy_on_push: true
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 20
+      period_seconds: 30
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_REQUIRED
+        value: "1"
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: ASSURE_PASSCODE
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME
+      - key: ASSURE_PASSCODE_REVIEWER
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME
+      - key: ASSURE_PASSCODE_VIEWER
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME
+      - key: SPACES_BUCKET
+        scope: RUN_TIME
+        value: assure-evidence
+      - key: SPACES_REGION
+        scope: RUN_TIME
+        value: syd1
+      - key: SPACES_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME
+      - key: SPACES_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME
+      # Optional: outgoing mail for certificates and reports.
+      # - key: SMTP_URL
+      #   scope: RUN_TIME
+      #   type: SECRET
+      #   value: smtps://user:pass@smtp.example:465
+      # - key: MAIL_FROM
+      #   value: compliancecertifier@assuresafety.co.nz
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: true
+    cluster_name: assure-safety-db
+    # Managed database sizes can be raised later without a code change.
+    size: db-s-1vcpu-1gb
+    num_nodes: 1

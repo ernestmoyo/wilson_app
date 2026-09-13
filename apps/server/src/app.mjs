@@ -48,8 +48,41 @@ function letterheadImages() {
   return { logo: brand('logo-white.png'), ribbon: brand('bottom-ribbon.png') };
 }
 
-/** Evidence bytes: Vercel Blob when a token is present, local disk otherwise. */
+/**
+ * S3-compatible object storage (DigitalOcean Spaces). Keys are the SHA-256 of
+ * the bytes under evidence/, so a second upload of the same photograph writes
+ * the same object again: harmless, and the retry succeeds.
+ */
+const SPACES = process.env.SPACES_BUCKET
+  ? {
+      bucket: process.env.SPACES_BUCKET,
+      region: process.env.SPACES_REGION ?? 'syd1',
+      endpoint: process.env.SPACES_ENDPOINT ?? `https://${process.env.SPACES_REGION ?? 'syd1'}.digitaloceanspaces.com`,
+      key: process.env.SPACES_KEY,
+      secret: process.env.SPACES_SECRET,
+    }
+  : null;
+let s3Client = null;
+async function s3() {
+  if (s3Client) return s3Client;
+  const { S3Client } = await import('@aws-sdk/client-s3');
+  s3Client = new S3Client({
+    region: SPACES.region,
+    endpoint: SPACES.endpoint,
+    forcePathStyle: false,
+    credentials: { accessKeyId: SPACES.key, secretAccessKey: SPACES.secret },
+  });
+  return s3Client;
+}
+
+/** Evidence bytes: Spaces, Vercel Blob or local disk, chosen by env. */
 async function storeEvidence(sha256, ext, buf, mime) {
+  if (SPACES) {
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+    const key = `evidence/${sha256}.${ext}`;
+    await (await s3()).send(new PutObjectCommand({ Bucket: SPACES.bucket, Key: key, Body: buf, ContentType: mime, ACL: 'private' }));
+    return { storageKey: key, url: null, backend: 'spaces' };
+  }
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     // Private store: a photograph of a hazardous substance location is not a
     // public document. Bytes come back only through GET /api/evidence/:key,
@@ -76,6 +109,18 @@ async function storeEvidence(sha256, ext, buf, mime) {
 }
 
 async function readEvidence(storageKey) {
+  if (SPACES) {
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const Key = storageKey.startsWith('evidence/') ? storageKey : 'evidence/' + storageKey;
+    try {
+      const r = await (await s3()).send(new GetObjectCommand({ Bucket: SPACES.bucket, Key }));
+      const buf = Buffer.from(await r.Body.transformToByteArray());
+      return { buf, mime: r.ContentType ?? null };
+    } catch (e) {
+      if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
+      throw e;
+    }
+  }
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { get } = await import('@vercel/blob');
     // Uploads live under evidence/; the route is called with the bare key.
@@ -168,7 +213,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       JOIN checksheet_section s ON s.id = i.section_id
       JOIN checksheet_template t ON t.id = s.template_id
       WHERE t.status = 'current'`);
-    res.json({ ok: true, db: db.kind, templateItems: r.rows[0].n });
+    res.json({ ok: true, db: db.kind, templateItems: r.rows[0].n , evidence: SPACES ? 'spaces' : process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'disk' });
   }));
 
   // ── templates: the canonical check sheets, from the database ─────────────
