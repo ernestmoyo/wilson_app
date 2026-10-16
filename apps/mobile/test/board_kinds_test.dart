@@ -73,7 +73,7 @@ void main() {
     expect(find.textContaining('6.1C'), findsOneWidget);
   });
 
-  testWidgets('an empty server settles on "No jobs yet"', (tester) async {
+  testWidgets('an empty server settles on "No active clients yet"', (tester) async {
     final server = FakeServer()..noJobs = true;
     final api = ApiClient(
       baseUrl: Uri.parse('http://fake.test'),
@@ -82,6 +82,6 @@ void main() {
     );
     await tester.pumpWidget(AssureFieldApp(app: AppSession(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore())));
     await tester.pumpAndSettle();
-    expect(find.text('No jobs yet'), findsOneWidget);
+    expect(find.text('No active clients yet'), findsOneWidget);
   });
 }

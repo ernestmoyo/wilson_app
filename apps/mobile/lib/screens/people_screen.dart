@@ -79,7 +79,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
             key: const ValueKey('to-jobs'),
             onPressed: () => context.go('/'),
             icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
-            label: const Text('Jobs', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+            label: const Text('Clients', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
           ),
         ],
       ),

@@ -50,7 +50,7 @@ const isPlainObject = (v) => v != null && typeof v === 'object' && !Array.isArra
 
 // Ids in a payload must be positive integers, so history queries can cast
 // them and a typo cannot poison every job's history (review finding).
-const ID_FIELDS = ['jobId', 'inspectionId', 'correctiveActionId', 'findingId', 'hsLocationId', 'itemId', 'ordinal', 'evidenceId'];
+const ID_FIELDS = ['jobId', 'inspectionId', 'correctiveActionId', 'findingId', 'hsLocationId', 'itemId', 'ordinal', 'evidenceId', 'clientId'];
 function badIdField(p) {
   for (const k of ID_FIELDS) {
     const v = p?.[k];
@@ -342,6 +342,24 @@ const handlers = {
        p.occurredAt ?? new Date().toISOString(), ctx.userId ?? null]
     );
     return { communicationId: r.rows[0].id };
+  },
+
+  /**
+   * Archive (or bring back) a client: it leaves the board and the reminders;
+   * its jobs and documents stay readable. Certifier only (roles.mjs).
+   */
+  async 'client.archive'(db, p, ctx) {
+    if (p.clientId == null) throw reject('clientId is required');
+    if (p.archived !== undefined && typeof p.archived !== 'boolean') throw reject('archived must be true or false');
+    const archived = p.archived !== false;
+    const r = await db.query(
+      `UPDATE client SET archived_at = CASE WHEN $2 THEN COALESCE(archived_at, now()) END,
+                         archived_by = CASE WHEN $2 THEN COALESCE(archived_by, $3) END
+       WHERE id = $1 RETURNING id, archived_at`,
+      [p.clientId, archived, ctx.userId ?? null]
+    );
+    if (!r.rows.length) throw reject(`client ${p.clientId} not found`);
+    return { clientId: r.rows[0].id, archived };
   },
 };
 

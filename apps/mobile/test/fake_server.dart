@@ -72,9 +72,55 @@ class FakeServer {
   /// Refuse the next interest.declare with this clause (null: accept).
   String? rejectDeclareWith;
 
-  List<Map<String, dynamic>> board() => noJobs ? [] : [
+  /// Further jobs for the clients board: other clients, or a second job
+  /// under client 1. Each row as /api/jobs returns it (see [row]).
+  final List<Map<String, dynamic>> extraJobs = [];
+
+  /// Client ids archived through a client.archive event.
+  final Set<int> archivedClients = {};
+
+  /// Refuse every client.archive with this reason (null: accept).
+  String? rejectArchiveWith;
+
+  /// No reminders on the dashboard (the empty state of Needs attention).
+  bool noReminders = false;
+
+  /// A board row for another job, shaped like the real /api/jobs row.
+  static Map<String, dynamic> row(int id, int clientId, String client, String location,
+          {String stage = 'site_inspection', String? address, String? lastActivity}) =>
+      {
+        'id': id,
+        'stage': stage,
+        'class_key': 'class_6_8',
+        'kind': 'location',
+        'subject': <String, dynamic>{},
+        'opened_at': '2026-09-01T00:00:00Z',
+        'client_id': clientId,
+        'client_archived': false,
+        'client': client,
+        'trading_name': null,
+        'location': location,
+        'address': address ?? '1 Test Road',
+        'inspection_id': null,
+        'inspected_at': null,
+        'item_total': 0,
+        'assessed': 0,
+        'non_compliant': 0,
+        'certificate_decision': null,
+        'last_activity': lastActivity ?? '2026-09-05T00:00:00Z',
+      };
+
+  /// /api/jobs: archived clients only with ?archived=1, never otherwise.
+  List<Map<String, dynamic>> board({bool archived = false}) => [
+        ..._allJobs().where((j) => archivedClients.contains(j['client_id']) == archived)
+            .map((j) => {...j, 'client_archived': archived}),
+      ];
+
+  List<Map<String, dynamic>> _allJobs() => noJobs ? [] : [
         {
           'id': 7,
+          'client_id': 1,
+          'client_archived': false,
           'stage': stage,
           'class_key': classKey,
           'kind': kind,
@@ -92,6 +138,7 @@ class FakeServer {
           'certificate_decision': null,
           'last_activity': '2026-09-09T00:00:00Z',
         },
+        ...extraJobs,
       ];
 
   /// People as the server lists them.
@@ -190,7 +237,7 @@ class FakeServer {
       };
 
   Map<String, dynamic> dashboard() => {
-        'reminders': [
+        'reminders': noReminders ? [] : [
           {'kind': 'action', 'jobId': 7, 'client': client['legalName'], 'location': location['name'], 'when': '2026-09-15', 'text': 'Corrective action due 2026-09-15: Install compliant signage'},
         ],
         'activity': [
@@ -234,6 +281,9 @@ class FakeServer {
         comms.add({...p, 'id': comms.length + 1, 'occurred_at': '2026-09-10T00:00:00Z'});
       case 'job.transition':
         stage = p['toStage'] as String;
+      case 'client.archive':
+        final id = p['clientId'] as int;
+        p['archived'] == false ? archivedClients.remove(id) : archivedClients.add(id);
       case 'job.subject.set':
         subject.addAll((p['fields'] as Map).cast<String, dynamic>());
       case 'job.unit.upsert':
@@ -285,7 +335,9 @@ class FakeServer {
         if (requireLogin && req.headers['authorization'] != 'Bearer $token') {
           return http.Response('{"error":"login required"}', 401);
         }
-        if (path == '/api/jobs' && req.method == 'GET') return http.Response(jsonEncode(board()), 200);
+        if (path == '/api/jobs' && req.method == 'GET') {
+          return http.Response(jsonEncode(board(archived: req.url.queryParameters['archived'] == '1')), 200);
+        }
         if (path == '/api/users' && req.method == 'GET') {
           if (role != 'certifier') return http.Response('{"error":"managing people needs a compliance certifier","clause":"Role"}', 403);
           return http.Response(jsonEncode(users), 200);
@@ -333,6 +385,10 @@ class FakeServer {
           final applied = <Map<String, dynamic>>[];
           final rejected = <Map<String, dynamic>>[];
           for (final e in (body['events'] as List).cast<Map<String, dynamic>>()) {
+            if (e['type'] == 'client.archive' && rejectArchiveWith != null) {
+              rejected.add({'id': e['id'], 'type': e['type'], 'clause': 'Role', 'reason': rejectArchiveWith});
+              continue;
+            }
             if (e['type'] == 'interest.declare' && rejectDeclareWith != null) {
               rejected.add({'id': e['id'], 'type': e['type'], 'clause': rejectDeclareWith, 'reason': 'refused for the test'});
               rejectDeclareWith = null;

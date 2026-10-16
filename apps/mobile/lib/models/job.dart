@@ -133,6 +133,10 @@ class JobSummary {
   final String? classKey;
   final String kind;
   final Map<String, dynamic> subject;
+  /// The client row's id: the board groups by it, so two clients that share
+  /// a name stay two rows. Null only from a server older than 16 Oct 2026.
+  final int? clientId;
+  final bool clientArchived;
   final String clientName;
   final String? tradingName;
   final String locationName;
@@ -151,6 +155,8 @@ class JobSummary {
     this.classKey,
     this.kind = 'location',
     this.subject = const {},
+    this.clientId,
+    this.clientArchived = false,
     required this.clientName,
     this.tradingName,
     required this.locationName,
@@ -181,6 +187,8 @@ class JobSummary {
         classKey: j['class_key'] as String?,
         kind: j['kind'] as String? ?? 'location',
         subject: (j['subject'] as Map?)?.cast<String, dynamic>() ?? const {},
+        clientId: j['client_id'] == null ? null : _int(j['client_id']),
+        clientArchived: j['client_archived'] == true,
         clientName: j['client'] as String? ?? '',
         tradingName: j['trading_name'] as String?,
         locationName: j['location'] as String? ?? '',

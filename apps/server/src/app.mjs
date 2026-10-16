@@ -264,9 +264,12 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
    * where, which stage, how far the inspection has got, and when anything
    * last happened. Computed here so every device sees the same numbers.
    */
-  app.get('/api/jobs', wrap(async (_req, res) => {
+  app.get('/api/jobs', wrap(async (req, res) => {
+    // Archived clients are off the board; ?archived=1 lists only them.
+    const archived = req.query.archived === '1';
     const r = await db.query(`
       SELECT j.id, j.stage, j.class_key, j.opened_at, j.subject,
+             c.id AS client_id, (c.archived_at IS NOT NULL) AS client_archived,
              c.legal_name AS client, c.trading_name, l.name AS location, s.address,
              i.id AS inspection_id, i.inspected_at,
              COALESCE(items.n, 0)::int       AS item_total,
@@ -292,19 +295,24 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM job_stage_transition WHERE job_id = j.id) tr ON true
       LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM communication WHERE job_id = j.id) cm ON true
       LEFT JOIN LATERAL (SELECT decision FROM certificate WHERE job_id = j.id LIMIT 1) cert ON true
-      ORDER BY last_activity DESC NULLS LAST, j.id DESC`);
+      WHERE (c.archived_at IS NOT NULL) = $1
+      ORDER BY last_activity DESC NULLS LAST, j.id DESC`, [archived]);
     res.json(r.rows.map((row) => ({ ...row, kind: kindFor(row.class_key) })));
   }));
 
   /** Create a client + site + location + job in one call (stage 1, enquiry). */
   /** Client + site + location + job, plus contacts and substances, in one transaction. */
   async function createJob(tx, b) {
-      const c = await tx.query(
+      // A picked client (client.id) is reused; a typed name makes a new one.
+      const c = b.client.id != null
+        ? await tx.query(`SELECT id FROM client WHERE id = $1 AND archived_at IS NULL FOR SHARE`, [b.client.id])
+        : await tx.query(
         `INSERT INTO client (legal_name, trading_name, nzbn, companies_number, postal_address, phone, website, industry)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
         [b.client.legalName, b.client.tradingName ?? null, b.client.nzbn ?? null,
          b.client.companiesNumber ?? null, b.client.postalAddress ?? null,
          b.client.phone ?? null, b.client.website ?? null, b.client.industry ?? null]);
+      if (!c.rows.length) throw Object.assign(new Error(`client ${b.client.id} not found or archived`), { code: 'P0001' });
       const s = await tx.query(`INSERT INTO site (client_id, address) VALUES ($1,$2) RETURNING id`,
         [c.rows[0].id, b.site.address]);
       const l = await tx.query(
@@ -351,6 +359,15 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!set) return res.status(400).json({ error: `unknown check sheet set "${b.classKey}"` });
     if (!set.authorisation || !AUTHORISATION.authorisations.some((a) => a.key === set.authorisation)) {
       return res.status(400).json({ error: `"${set.name}" is outside the certifier's WorkSafe authorisation`, clause: 'IPS 8' });
+    }
+    if (b.client.id != null) {
+      // The same shape the sync events accept: a positive integer, or its digits.
+      const v = b.client.id;
+      const id = (Number.isInteger(v) || (typeof v === 'string' && /^[1-9][0-9]{0,14}$/.test(v))) ? Number(v) : NaN;
+      const c = Number.isSafeInteger(id) && id > 0
+        ? await db.query(`SELECT 1 FROM client WHERE id = $1 AND archived_at IS NULL`, [id]) : { rows: [] };
+      if (!c.rows.length) return res.status(400).json({ error: 'that client is not on the list (unknown or archived); pick another or type a new name' });
+      b.client.id = id;
     }
     const out = await db.withTx((tx) => createJob(tx, b));
     res.status(201).json(out);
@@ -790,27 +807,27 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const [renewals, rfi, actions, stalled, activity, noAction, triage, decide] = await Promise.all([
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, c.expiry_date
                 FROM certificate c JOIN job j ON j.id = c.job_id
-                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE c.expiry_date IS NOT NULL AND c.expiry_date <= now() + interval '180 days'
                 ORDER BY c.expiry_date`),
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, t.occurred_at AS since
-                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                FROM job j JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 JOIN LATERAL (SELECT max(occurred_at) AS occurred_at FROM job_stage_transition WHERE job_id = j.id) t ON true
                 WHERE j.stage = 'rfi' AND t.occurred_at < now() - interval '7 days'`),
       db.query(`SELECT ca.id, ca.description, ca.severity, ca.due_date, ca.status, j.id AS job_id,
                        cl.legal_name AS client, l.name AS location
                 FROM corrective_action ca JOIN finding f ON f.id = ca.finding_id
                 JOIN inspection i ON i.id = f.inspection_id JOIN job j ON j.id = i.job_id
-                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE ca.status <> 'verified' AND ca.due_date IS NOT NULL AND ca.due_date <= now() + interval '14 days'
                 ORDER BY ca.due_date`),
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, fc.last_at
-                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                FROM job j JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 LEFT JOIN LATERAL (SELECT max(f.updated_at) AS last_at FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = j.id) fc ON true
                 WHERE j.stage = 'site_inspection' AND COALESCE(fc.last_at, j.opened_at) < now() - interval '14 days'`),
       db.query(`SELECT e.type, e.occurred_at, e.payload, u.full_name AS user_name,
                        COALESCE(int_or_null(e.payload->>'jobId'), i.job_id, ci.job_id) AS job_id,
-                       cl.legal_name AS client, l.name AS location
+                       COALESCE(cl.legal_name, ac.legal_name) AS client, l.name AS location
                 FROM sync_event e
                 LEFT JOIN app_user u ON u.id = e.user_id
                 LEFT JOIN inspection i ON i.id = int_or_null(e.payload->>'inspectionId')
@@ -819,25 +836,26 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 LEFT JOIN inspection ci ON ci.id = cf.inspection_id
                 LEFT JOIN job j ON j.id = COALESCE(int_or_null(e.payload->>'jobId'), i.job_id, ci.job_id)
                 LEFT JOIN client cl ON cl.id = j.client_id
+                LEFT JOIN client ac ON ac.id = int_or_null(e.payload->>'clientId')
                 LEFT JOIN hs_location l ON l.id = j.hs_location_id
-                WHERE e.outcome = 'applied'
+                WHERE e.outcome = 'applied' AND cl.archived_at IS NULL
                 ORDER BY e.occurred_at DESC LIMIT 30`),
       // Stage 5: a non-compliance with no corrective action yet.
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, count(*)::int AS n
                 FROM finding f JOIN inspection i ON i.id = f.inspection_id JOIN job j ON j.id = i.job_id
-                JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE f.status = 'non_compliant'
                   AND j.stage IN ('compliance_evaluation', 'gap_closure', 'final_validation')
                   AND NOT EXISTS (SELECT 1 FROM corrective_action ca WHERE ca.finding_id = f.id)
                 GROUP BY j.id, cl.legal_name, l.name`),
       // Stages 1 and 2: an enquiry or application untouched for 2 days.
       db.query(`SELECT j.id AS job_id, j.stage, cl.legal_name AS client, l.name AS location, j.opened_at
-                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                FROM job j JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 LEFT JOIN LATERAL (SELECT max(occurred_at) AS at FROM job_stage_transition WHERE job_id = j.id) t ON true
                 WHERE j.stage IN ('enquiry', 'application') AND COALESCE(t.at, j.opened_at) < now() - interval '2 days'`),
       // Stage 6: at final validation with nothing left to resolve; decide.
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location
-                FROM job j JOIN client cl ON cl.id = j.client_id LEFT JOIN hs_location l ON l.id = j.hs_location_id
+                FROM job j JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
                 WHERE j.stage = 'final_validation' AND NOT EXISTS (SELECT 1 FROM certificate c WHERE c.job_id = j.id)`),
     ]);
     const reminders = [
@@ -934,7 +952,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
     }
     const classKey = b.classKey ?? 'class_6_8';
-    const created = await db.withTx((tx) => createJob(tx, { ...b, classKey }));
+    const created = await db.withTx((tx) => createJob(tx, { ...b, client: { ...b.client, id: undefined }, classKey }));
     const target = b.stage ?? 'site_inspection';
     const path = ['application', 'document_review', 'site_inspection', 'compliance_evaluation', 'final_validation'];
     const stop = path.indexOf(target);

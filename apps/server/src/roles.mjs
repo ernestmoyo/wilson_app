@@ -21,6 +21,7 @@ const CERTIFIER_ONLY = {
   'interest.declare': () => true,
   'corrective_action.update': (p) => p?.status === 'verified',
   'job.transition': (p) => p?.toStage === 'certificate_issued',
+  'client.archive': () => true,
 };
 
 export function roleError(role, what) {
@@ -47,6 +48,7 @@ function describe(type, p) {
     case 'interest.declare': return 'the register of interests';
     case 'corrective_action.update': return 'verifying a corrective action';
     case 'job.transition': return 'issuing a certificate';
+    case 'client.archive': return 'archiving a client';
     default: return type;
   }
 }
