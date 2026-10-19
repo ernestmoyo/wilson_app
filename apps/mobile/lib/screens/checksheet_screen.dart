@@ -100,7 +100,7 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
             ],
             bottom: PreferredSize(
               // Context bar 40 + chips 40 + progress 6 + pills 20 + sync row 28 + gaps/padding.
-              preferredSize: Size.fromHeight(40 + (widget.sync == null ? 112 : 150)),
+              preferredSize: Size.fromHeight(JobContextBar.height + (widget.sync == null ? 112 : 150)),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 JobContextBar(
                   clientName: insp.pcbuName,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/job.dart';
 import '../theme.dart';
+import 'ui.dart';
 
 /// The line that answers "which client, where, at what stage" on every job
 /// screen. Sits under the letterhead bar so the sheet and the hub read as
@@ -22,37 +23,42 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
     this.trailing,
   });
 
+  static const double height = 44;
+
   @override
-  Size get preferredSize => const Size.fromHeight(40);
+  Size get preferredSize => const Size.fromHeight(height);
 
   @override
   Widget build(BuildContext context) => Container(
-        height: 40,
-        color: const Color(0xFFEEF3F3),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        height: height,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(bottom: BorderSide(color: Neutral.line)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: Space.lg),
         child: Row(
           children: [
-            const Icon(Icons.business_outlined, size: 16, color: Brand.tealDark),
-            const SizedBox(width: 6),
+            const Icon(Icons.business_outlined, size: 18, color: Brand.ribbon),
+            const SizedBox(width: Space.sm),
             Expanded(
               child: Text.rich(
                 TextSpan(children: [
-                  TextSpan(text: clientName, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  TextSpan(text: clientName, style: const TextStyle(fontWeight: FontWeight.w600)),
                   const TextSpan(text: '  ·  '),
-                  TextSpan(text: locationName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  TextSpan(text: locationName, style: const TextStyle(fontWeight: FontWeight.w500)),
                   if ((address ?? '').isNotEmpty) ...[
                     const TextSpan(text: '  ·  '),
-                    TextSpan(text: address, style: const TextStyle(color: Colors.black54)),
+                    TextSpan(text: address, style: const TextStyle(color: Neutral.muted)),
                   ],
                 ]),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12.5, color: Colors.black87),
+                style: const TextStyle(fontSize: 14, color: Neutral.strong),
               ),
             ),
             if (trailing != null) ...[
-              Text(trailing!, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-              const SizedBox(width: 10),
+              Text(trailing!, style: const TextStyle(fontSize: 13, color: Neutral.muted)),
+              const SizedBox(width: Space.md),
             ],
             StageChip(stage: stage),
           ],
@@ -60,30 +66,39 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
       );
 }
 
-/// Stage as a coloured chip: teal while the job moves forward, amber while it
-/// waits on the client, green once a certificate is issued, grey when it ends.
+/// Stage as a badge: info while the job moves forward, warning while it
+/// waits on the client, good once a certificate is issued, neutral when it
+/// ends. Icon + words, never colour alone.
 class StageChip extends StatelessWidget {
   final String stage;
   final bool dense;
   const StageChip({super.key, required this.stage, this.dense = false});
 
-  static Color colorFor(String stage) => switch (stage) {
-        'rfi' || 'gap_closure' => Brand.conditional,
-        'certificate_issued' || 'monitoring' => Brand.compliant,
-        'closed' || 'referred' => Brand.notApplicable,
-        _ => Brand.teal,
+  static Tone toneFor(String stage) => switch (stage) {
+        'rfi' || 'gap_closure' => Tone.warn,
+        'certificate_issued' || 'monitoring' => Tone.good,
+        'closed' || 'referred' => Tone.neutral,
+        _ => Tone.info,
+      };
+
+  static Color colorFor(String stage) => toneFor(stage).fg;
+
+  static IconData iconFor(String stage) => switch (stage) {
+        'rfi' || 'gap_closure' => Icons.hourglass_bottom,
+        'certificate_issued' => Icons.verified_outlined,
+        'monitoring' => Icons.event_repeat,
+        'closed' || 'referred' => Icons.do_not_disturb_on_outlined,
+        _ => Icons.play_circle_outline,
       };
 
   @override
   Widget build(BuildContext context) {
     final n = ProcessStage.numberOf(stage);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: dense ? 8 : 10, vertical: dense ? 2 : 4),
-      decoration: BoxDecoration(color: colorFor(stage), borderRadius: BorderRadius.circular(12)),
-      child: Text(
-        '${n > 0 ? '$n · ' : ''}${ProcessStage.short(stage)}',
-        style: TextStyle(color: Colors.white, fontSize: dense ? 11 : 12, fontWeight: FontWeight.w700),
-      ),
+    return StatusBadge(
+      label: '${n > 0 ? '$n · ' : ''}${ProcessStage.short(stage)}',
+      tone: toneFor(stage),
+      icon: iconFor(stage),
+      dense: dense,
     );
   }
 }

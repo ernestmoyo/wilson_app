@@ -60,7 +60,8 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                     leading!
                   else if (canPop)
                     IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Brand.teal),
+                      tooltip: 'Back',
+                      icon: const Icon(Icons.arrow_back, color: Brand.ribbon),
                       onPressed: () => router != null ? router.pop() : Navigator.of(context).maybePop(),
                     )
                   else
@@ -69,6 +70,7 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                   // first route, so pop to it.
                   InkWell(
                     key: const ValueKey('logo-home'),
+                    borderRadius: BorderRadius.circular(Radii.sm),
                     onTap: () => router != null ? router.go('/') : Navigator.of(context).popUntil((r) => r.isFirst),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -91,10 +93,10 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: Brand.tealDark,
-                            letterSpacing: .2,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Neutral.strong,
+                            height: 1.25,
                           ),
                         ),
                         if (subtitle != null)
@@ -102,7 +104,7 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                             subtitle!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            style: const TextStyle(fontSize: 13, color: Neutral.muted),
                           ),
                       ],
                     ),

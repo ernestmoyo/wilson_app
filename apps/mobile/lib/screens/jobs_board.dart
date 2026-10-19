@@ -11,6 +11,7 @@ import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
+import '../widgets/ui.dart';
 
 /// The landing: Brian's active clients. One row per client (grouped by the
 /// client's id, so two clients that share a name stay two), its open jobs
@@ -450,6 +451,7 @@ class _JobsBoardState extends State<JobsBoard> {
         title: 'Clients',
         subtitle: [widget.session.fullName, if ((widget.session.authorisationNumber ?? '').isNotEmpty) widget.session.authorisationNumber!].join(' · '),
         actions: [
+          SyncIndicator(sync: widget.sync, onTap: _busy ? null : _reload),
           if (widget.session.canDecide)
             IconButton(
               key: const ValueKey('to-people'),
@@ -462,7 +464,9 @@ class _JobsBoardState extends State<JobsBoard> {
             key: const ValueKey('sign-out'),
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            onPressed: widget.onSignOut,
+            onPressed: () async {
+              if (await confirmSignOut(context, pending: widget.sync.pendingCount)) await widget.onSignOut();
+            },
           ),
         ],
       ),
@@ -792,4 +796,37 @@ class _ClientGroup {
   final String? trading;
   final List<JobSummary> jobs = [];
   _ClientGroup({required this.id, required this.name, this.trading});
+}
+
+/// Signing out drops whatever has not reached the server (it is never sent
+/// under the next person's sign-in), so say so first (UX change graph F1).
+/// True to go ahead.
+Future<bool> confirmSignOut(BuildContext context, {required int pending}) async {
+  if (pending <= 0) return true;
+  final go = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      icon: Icon(Icons.cloud_off_outlined, color: Tone.warn.fg),
+      title: const Text('Changes not saved yet'),
+      content: Text(
+        '$pending ${pending == 1 ? 'change has' : 'changes have'} not reached the server. '
+        'Signing out now throws ${pending == 1 ? 'it' : 'them'} away. '
+        'Stay signed in until the status shows "All saved".',
+      ),
+      actions: [
+        TextButton(
+          key: const ValueKey('sign-out-anyway'),
+          style: TextButton.styleFrom(foregroundColor: Tone.bad.fg),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Sign out anyway'),
+        ),
+        FilledButton(
+          key: const ValueKey('sign-out-stay'),
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Stay signed in'),
+        ),
+      ],
+    ),
+  );
+  return go ?? false;
 }
