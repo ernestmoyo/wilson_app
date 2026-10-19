@@ -82,6 +82,15 @@ class FakeServer {
   /// Refuse every client.archive with this reason (null: accept).
   String? rejectArchiveWith;
 
+  /// The network is down for POST /api/sync: the request fails before it
+  /// reaches the server, so the events stay queued on the device.
+  bool syncOffline = false;
+
+  /// The certificate once issued through POST /api/jobs/7/certificate (null:
+  /// not issued), and the bodies that route received.
+  Map<String, dynamic>? certificate;
+  final List<Map<String, dynamic>> issued = [];
+
   /// No reminders on the dashboard (the empty state of Needs attention).
   bool noReminders = false;
 
@@ -214,7 +223,7 @@ class FakeServer {
           {'from_stage': 'compliance_evaluation', 'to_stage': 'final_validation', 'occurred_at': '2026-09-09T00:00:00Z', 'reason': 'All actions verified'},
         ],
         'interestDeclarations': declared ? [{'conflict_found': false}] : [],
-        'certificate': null,
+        'certificate': certificate,
         'retention': null,
         'contacts': [
           {'id': 1, 'name': 'Jesh Chandra', 'role': 'Site manager', 'phone': '0226787761', 'email': 'jesh@argenta.example', 'is_site_manager': true}
@@ -483,6 +492,25 @@ class FakeServer {
                   ? {'url': 'https://storage.invalid/evidence/${lm.group(1)}?sig=get', 'expiresAt': '2026-10-19T00:10:00Z'}
                   : {'url': '/api/evidence/${lm.group(1)}', 'expiresAt': null}),
               200);
+        }
+        if (path == '/api/jobs/7/certificate' && req.method == 'POST') {
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          issued.add(b);
+          certificate = {
+            'id': 1,
+            'decision': b['decision'],
+            'certificate_number': b['certificateNumber'],
+            'issue_date': b['issueDate'],
+            'in_force_date': b['issueDate'],
+            'expiry_date': b['expiryDate'],
+            'conditions': b['conditions'] ?? [],
+            'requirements_not_met': b['requirementsNotMet'] ?? [],
+          };
+          stage = 'certificate_issued';
+          return http.Response(jsonEncode({'certificateId': 1}), 201);
+        }
+        if (path == '/api/sync' && syncOffline) {
+          throw http.ClientException('Failed host lookup: fake.test');
         }
         if (path == '/api/sync') {
           final body = jsonDecode(req.body) as Map<String, dynamic>;
