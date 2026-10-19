@@ -99,9 +99,11 @@ class _SheetViewState extends State<SheetView> {
   /// rest follow the model, so a change pulled from another device shows.
   final Set<String> _focused = {};
 
-  TextEditingController _ctl(Map<String, TextEditingController> m, String key, String text) {
+  /// [fieldKey] is the key the field registers in [_focused] while it has the
+  /// caret; the model only overwrites a field that is not being typed in.
+  TextEditingController _ctl(Map<String, TextEditingController> m, String key, String text, String fieldKey) {
     final ctl = m.putIfAbsent(key, () => TextEditingController(text: text));
-    if (!_focused.contains(key) && ctl.text != text) ctl.text = text;
+    if (!_focused.contains(fieldKey) && ctl.text != text) ctl.text = text;
     return ctl;
   }
 
@@ -372,10 +374,10 @@ class _SheetViewState extends State<SheetView> {
     final f = insp.findingFor(t, s, i);
     final refs = i.regulationRefsFor(insp.classKey);
     final nc = f.status == FindingStatus.nonCompliant;
-    final commentCtl = _ctl(_comment, f.key, f.comment);
-    final reasonCtl = _ctl(_reason, f.key, f.failureReason);
-    final generalCtl = _ctl(_general, f.key, f.generalComment);
-    final naCtl = _ctl(_na, f.key, f.naReason);
+    final commentCtl = _ctl(_comment, f.key, f.comment, 'c:${f.key}');
+    final reasonCtl = _ctl(_reason, f.key, f.failureReason, 'r:${f.key}');
+    final generalCtl = _ctl(_general, f.key, f.generalComment, 'g:${f.key}');
+    final naCtl = _ctl(_na, f.key, f.naReason, 'na:${f.key}');
     final na = f.status == FindingStatus.notApplicable;
 
     return _TRow(
@@ -441,6 +443,8 @@ class _SheetViewState extends State<SheetView> {
                     hint: 'Reason not met — IPS 21(1)(f)',
                     color: Brand.nonCompliant,
                     error: f.isIncomplete,
+                    current: f.failureReason,
+                    fieldKey: 'r:${f.key}',
                     onCommit: (v) => insp.update(f, (x) => x.failureReason = v),
                   ),
                 ],

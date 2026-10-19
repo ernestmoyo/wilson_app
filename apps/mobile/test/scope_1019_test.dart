@@ -63,6 +63,31 @@ void main() {
     });
   });
 
+  testWidgets('on the wide sheet, a rebuild while typing does not wipe the text being typed', (tester) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    final insp = g2();
+    final general = insp.templates.first;
+    final s1 = general.sections.first;
+    final changed = <Finding>[];
+    insp.onFindingChanged = changed.add;
+    // The checksheet screen rebuilds the sheet on every model change; so does this.
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: ListenableBuilder(
+        listenable: insp, builder: (_, _) => SheetView(inspection: insp, template: general)))));
+    await tester.pumpAndSettle();
+    final hint = find.widgetWithText(TextField, 'General comment').first;
+    await tester.tap(hint);
+    await tester.pump();
+    await tester.enterText(hint, 'PCBU to keep the cabinet key with the site manager');
+    // Something else changes the model mid-typing (a sync pull, another field).
+    insp.update(insp.findingFor(general, s1, s1.items[1]), (x) => x.status = FindingStatus.compliant);
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    expect(insp.findingFor(general, s1, s1.items.first).generalComment, 'PCBU to keep the cabinet key with the site manager');
+  });
+
   group('the item: general comment and N/A reason', () {
     Future<Inspection> openItem(WidgetTester tester, {FindingStatus status = FindingStatus.compliant}) async {
       final insp = g2();
