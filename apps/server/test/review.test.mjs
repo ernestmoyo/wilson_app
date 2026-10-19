@@ -183,6 +183,10 @@ await step('granted needs every non-compliance closed; conditional does not; a m
     ev('job.transition', { jobId: E.jobId, toStage: 'final_validation' }),
   ]);
   expect(s.body.rejected.length === 0, JSON.stringify(s.body.rejected));
+  // Every other item is assessed: an untouched item now blocks any certificate (F8, 19 Oct).
+  const rest = (await db.query(`SELECT item_id FROM inspection_item_in_scope WHERE inspection_id = $1 AND item_id <> $2`, [insp, item])).rows;
+  s = await sync(cert, rest.map((r) => ev('finding.upsert', { inspectionId: insp, itemId: r.item_id, status: 'compliant' })));
+  expect(s.body.rejected.length === 0, JSON.stringify(s.body.rejected));
   const j = await api.get(`/api/jobs/${E.jobId}`).set(cert);
   const moved = j.body.transitions.find((t) => t.to_stage === 'compliance_evaluation');
   expect(Math.abs(new Date(moved.occurred_at) - new Date(backdated)) < 1000, `transition kept its date: ${moved.occurred_at}`);

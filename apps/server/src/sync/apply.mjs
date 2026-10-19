@@ -46,6 +46,9 @@ async function resolveItemId(db, inspectionId, templateCode, sectionOrdinal, ite
   return r.rows[0]?.id ?? null;
 }
 
+/** Free text from a payload: trimmed, empty becomes null, never a non-string. */
+const textOrNull = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
 const isPlainObject = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
 
 // Ids in a payload must be positive integers, so history queries can cast
@@ -112,20 +115,23 @@ const handlers = {
     const r = await db.query(
       `INSERT INTO finding
          (inspection_id, item_id, status, comment, verification_method, failure_reason,
-          decided_by, decided_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+          decided_by, decided_at, general_comment, na_reason)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        ON CONFLICT (inspection_id, item_id) DO UPDATE SET
          status              = EXCLUDED.status,
          comment             = EXCLUDED.comment,
          verification_method = EXCLUDED.verification_method,
          failure_reason      = EXCLUDED.failure_reason,
+         general_comment     = EXCLUDED.general_comment,
+         na_reason           = EXCLUDED.na_reason,
          decided_by          = EXCLUDED.decided_by,
          decided_at          = EXCLUDED.decided_at,
          updated_at          = now()
        RETURNING id, status`,
       [p.inspectionId, itemId, p.status ?? 'pending',
        p.comment ?? null, p.verificationMethod ?? null, p.failureReason ?? null,
-       ctx.userId ?? null, p.decidedAt ?? new Date().toISOString()]
+       ctx.userId ?? null, p.decidedAt ?? new Date().toISOString(),
+       textOrNull(p.generalComment), p.status === 'not_applicable' ? textOrNull(p.naReason) : null]
     );
     return { findingId: r.rows[0].id, itemId, status: r.rows[0].status };
   },
