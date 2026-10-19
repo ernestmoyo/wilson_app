@@ -288,6 +288,19 @@ await step('a certified handler job prints its applicant block and assessment ro
     expect(t.includes(s), `missing "${s}"`);
 });
 
+await step('a class 2/3.1 job prints the class 2/3.1 regulations and scope, not the class 6/8 wording', async () => {
+  const c = await api.post('/api/jobs').set(cert.h).send({ client: { legalName: 'Export Test Paints Limited' }, site: { address: '9 Export Road' },
+    location: { name: 'Flammables cabinet' }, classKey: 'class_2_3', scopeChoices: ['3_1_cabinet'] });
+  expect(c.status === 201, `${c.status} ${c.text}`);
+  await sync([['inspection.open', { jobId: c.body.jobId, hsLocationId: c.body.hsLocationId, equipmentUsed: 'iPad',
+    templateCodes: ['wks17-general', 'wks17-class-2-and-3-1-substances'] }]]);
+  const r = await api.get(`/api/jobs/${c.body.jobId}/checksheet.pdf`).set(cert.h).buffer(true).parse(zipBody);
+  const t = pdfText(r.body);
+  expect(t.includes('10.34(1)(a)'), 'general sheet item 2.1 should cite 10.34(1)(a) for class 2/3.1');
+  expect(!t.includes('13.34(4)'), 'class 6/8 regulation 13.34(4) printed on a class 2/3.1 job');
+  expect(!/classes 6 or 8/i.test(t), 'class 6/8 scope wording printed on a class 2/3.1 job');
+});
+
 await db.close();
 console.log(`\n${pass} passed, ${problems.length} failed`);
 if (problems.length) { console.error(problems.join('\n')); process.exit(1); }

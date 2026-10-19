@@ -33,6 +33,22 @@ import { evidenceFileNames } from './naming.mjs';
  * @param {(classKey) => string[]} [o.templateOrder] the sheet set's template codes, in workbook order
  * @param {(classKey) => string} [o.kindFor]
  */
+/**
+ * The general sheet is shared by every location class; its title, scope text
+ * and some regulation references differ per class (meta.sheetByClass and
+ * item.regulation_refs_by_class), exactly as the app shows them.
+ */
+function sheetForClass(meta, classKey) {
+  const base = meta?.sheet ?? meta ?? {};
+  const over = (classKey && meta?.sheetByClass?.[classKey]) || null;
+  if (!over) return base;
+  return { ...base, ...Object.fromEntries(Object.entries(over).filter(([, v]) => v != null)) };
+}
+function regulationForClass(item, classKey) {
+  const over = classKey ? item.regulation_refs_by_class?.[classKey] : null;
+  return Array.isArray(over) && over.length ? over.join(' ') : item.regulation_raw;
+}
+
 export async function loadChecksheetData(db, jobId, { templateOrder = () => [], kindFor = () => 'location' } = {}) {
   const j = await db.query(`
     SELECT j.id, j.stage, j.class_key, j.subject, j.opened_at,
@@ -94,7 +110,7 @@ export async function loadChecksheetData(db, jobId, { templateOrder = () => [], 
       db.query(`SELECT s.id, s.template_id, s.ordinal, s.number, s.title FROM checksheet_section s
                 JOIN inspection_template it ON it.template_id = s.template_id AND it.inspection_id = $1
                 ORDER BY s.ordinal`, [ins.id]),
-      db.query(`SELECT i.id, i.section_id, i.ordinal, i.number, i.regulation_raw, i.action, i.records
+      db.query(`SELECT i.id, i.section_id, i.ordinal, i.number, i.regulation_raw, i.regulation_refs_by_class, i.action, i.records
                 FROM checksheet_item i JOIN checksheet_section s ON s.id = i.section_id
                 JOIN inspection_template it ON it.template_id = s.template_id AND it.inspection_id = $1
                 ORDER BY i.ordinal`, [ins.id]),
@@ -109,14 +125,14 @@ export async function loadChecksheetData(db, jobId, { templateOrder = () => [], 
     const templates = tpls.rows
       .sort((a, b) => rank(a.code) - rank(b.code) || a.code.localeCompare(b.code))
       .map((t) => ({
-        code: t.code, revision: t.revision, title: t.title, sheet: t.meta?.sheet ?? t.meta ?? {},
+        code: t.code, revision: t.revision, title: t.title, sheet: sheetForClass(t.meta, job.class_key),
         sections: sections.rows.filter((s) => Number(s.template_id) === Number(t.id)).map((s) => ({
           number: s.number, ordinal: s.ordinal, title: s.title,
           excluded: excludedBy.get(Number(s.id)) ?? null,
           items: items.rows.filter((i) => Number(i.section_id) === Number(s.id)).map((i) => {
             const f = findingByItem.get(Number(i.id)) ?? null;
             return {
-              number: i.number ?? String(i.ordinal), regulation: i.regulation_raw, action: i.action, records: i.records,
+              number: i.number ?? String(i.ordinal), regulation: regulationForClass(i, job.class_key), action: i.action, records: i.records,
               finding: f,
               evidence: f ? evRows.filter((e) => Number(e.finding_id) === Number(f.id)).map((e) => fileNames.get(e.id)) : [],
             };
