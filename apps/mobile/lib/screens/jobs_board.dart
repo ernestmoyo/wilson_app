@@ -131,6 +131,9 @@ class _JobsBoardState extends State<JobsBoard> {
       (TextEditingController(), TextEditingController(), TextEditingController()),
     ];
     var classKey = 'class_6_8';
+    // The set's scope choices picked for this job (e.g. which 3.1 arrangements).
+    final chosen = <String>{};
+    List<ScopeChoice> choicesOf(String key) => sets.firstWhere((x) => x.key == key, orElse: () => sets.first).choices;
     // An existing client picked from the suggestions: the job goes under it
     // instead of making a second client with the same name.
     final clients = _groups(_jobs ?? const []);
@@ -157,8 +160,31 @@ class _JobsBoardState extends State<JobsBoard> {
                           style: TextStyle(color: x.authorised ? null : Colors.black38)),
                     ),
                 ],
-                onChanged: (v) => setD(() => classKey = v ?? classKey),
+                onChanged: (v) => setD(() {
+                  classKey = v ?? classKey;
+                  chosen.clear();
+                }),
               ),
+              if (choicesOf(classKey).isNotEmpty)
+                Column(
+                  key: const ValueKey('nj-choices'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(chosen.isEmpty ? 'Scope: pick what this location is (one or more)' : 'Scope',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                            color: chosen.isEmpty ? Theme.of(ctx).colorScheme.error : Colors.black87)),
+                    const SizedBox(height: 6),
+                    Wrap(spacing: 6, runSpacing: 6, children: [
+                      for (final c in choicesOf(classKey))
+                        FilterChip(
+                          key: ValueKey('nj-choice-${c.key}'),
+                          label: Text(c.label, style: const TextStyle(fontSize: 12)),
+                          selected: chosen.contains(c.key),
+                          onSelected: (on) => setD(() => on ? chosen.add(c.key) : chosen.remove(c.key)),
+                        ),
+                    ]),
+                  ],
+                ),
               if (sets.any((x) => x.key == classKey && x.regulation != null))
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -278,7 +304,10 @@ class _JobsBoardState extends State<JobsBoard> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(key: const ValueKey('nj-create'), onPressed: () => Navigator.pop(ctx, true), child: const Text('Create')),
+            FilledButton(
+                key: const ValueKey('nj-create'),
+                onPressed: choicesOf(classKey).isNotEmpty && chosen.isEmpty ? null : () => Navigator.pop(ctx, true),
+                child: const Text('Create')),
           ],
         ),
       ),
@@ -295,6 +324,7 @@ class _JobsBoardState extends State<JobsBoard> {
         'site': {'address': address.text.trim()},
         'location': {'name': location.text.trim()},
         'classKey': classKey,
+        if (choicesOf(classKey).isNotEmpty) 'scopeChoices': chosen.toList(),
         // Form sheets: what was typed becomes the first subject field, so the
         // sheet opens with it filled in the template's own label.
         if (kindOf(classKey) != 'location')

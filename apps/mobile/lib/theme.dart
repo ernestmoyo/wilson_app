@@ -20,6 +20,8 @@ class Brand {
   /// app sees the same signal.
   static const nonCompliant = Color(0xFFFF0000);
   static const compliant = Color(0xFF00B050);
+  /// The workbooks' blue "General comment" (scope of work, 19 Oct 2026).
+  static const generalComment = Color(0xFF0070C0);
   static const notApplicable = Color(0xFF757575);
   static const conditional = Color(0xFFE68A00);
   static const pending = Color(0xFFBDBDBD);

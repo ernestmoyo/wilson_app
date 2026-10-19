@@ -38,6 +38,17 @@ class Inspection extends ChangeNotifier {
   final List<ChecksheetTemplate> templates;
   final Map<String, Finding> _findings = {};
 
+  /// Sections this inspection does not assess, as 'templateCode/sectionOrdinal':
+  /// scope choices not picked, or work outside the authorisation. Hidden from
+  /// the sheet and left out of every count.
+  final Set<String> excludedSections = {};
+
+  bool isExcluded(ChecksheetTemplate t, ChecksheetSection s) => excludedSections.contains('${t.code}/${s.ordinal}');
+
+  /// The sections of a template this inspection assesses.
+  List<ChecksheetSection> sectionsInScope(ChecksheetTemplate t) =>
+      [for (final s in t.sections) if (!isExcluded(t, s)) s];
+
   /// Server identities, set once the job and inspection exist there. Findings
   /// cannot sync until `inspectionId` is known — they reference it.
   int? jobId;
@@ -207,6 +218,8 @@ class Inspection extends ChangeNotifier {
       f.comment = r.comment;
       f.verificationMethod = r.verificationMethod;
       f.failureReason = r.failureReason;
+      f.generalComment = r.generalComment;
+      f.naReason = r.naReason;
       f.evidenceIds
         ..clear()
         ..addAll(List.generate(r.evidenceCount, (k) => 'server-$k'));
@@ -216,15 +229,18 @@ class Inspection extends ChangeNotifier {
 
   Iterable<Finding> get findings => _findings.values;
 
-  int get totalItems => templates.fold(0, (n, t) => n + t.itemCount);
+  int get totalItems => templates.fold(
+      0, (n, t) => n + sectionsInScope(t).fold(0, (m, s) => m + s.items.length));
+
+  bool _inScope(Finding f) => !excludedSections.contains('${f.templateCode}/${f.sectionOrdinal}');
 
   int countWhere(FindingStatus s) {
     if (s == FindingStatus.pending) {
       // Items never touched are pending too, not just explicitly-pending ones.
-      final assessed = _findings.values.where((f) => f.status != FindingStatus.pending).length;
+      final assessed = _findings.values.where((f) => _inScope(f) && f.status != FindingStatus.pending).length;
       return totalItems - assessed;
     }
-    return _findings.values.where((f) => f.status == s).length;
+    return _findings.values.where((f) => _inScope(f) && f.status == s).length;
   }
 
   int get assessedCount => totalItems - countWhere(FindingStatus.pending);
@@ -265,6 +281,8 @@ class HydratedFinding {
   final String comment;
   final String verificationMethod;
   final String failureReason;
+  final String generalComment;
+  final String naReason;
   final int evidenceCount;
   const HydratedFinding({
     required this.templateCode,
@@ -274,6 +292,8 @@ class HydratedFinding {
     required this.comment,
     required this.verificationMethod,
     required this.failureReason,
+    this.generalComment = '',
+    this.naReason = '',
     required this.evidenceCount,
   });
 }

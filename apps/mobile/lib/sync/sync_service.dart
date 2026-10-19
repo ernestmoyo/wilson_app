@@ -100,6 +100,8 @@ class SyncService extends ChangeNotifier {
       'comment': f.comment,
       'verificationMethod': f.verificationMethod,
       'failureReason': f.status == FindingStatus.nonCompliant ? f.failureReason : null,
+      'generalComment': f.generalComment,
+      'naReason': f.status == FindingStatus.notApplicable ? f.naReason : null,
     });
     notifyListeners();
     _scheduleFlush();
@@ -185,7 +187,7 @@ class SyncService extends ChangeNotifier {
   }
 
   static String _fingerprint(Finding f) =>
-      '${f.status.wireValue}|${f.comment}|${f.verificationMethod}|${f.failureReason}|${f.evidenceIds.length}';
+      '${f.status.wireValue}|${f.comment}|${f.verificationMethod}|${f.failureReason}|${f.generalComment}|${f.naReason}|${f.evidenceIds.length}';
 
   /// Send, then pull: the button a person presses when they want this screen
   /// to match the other device right now.

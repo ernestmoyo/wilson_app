@@ -14,6 +14,7 @@
 
 import { explain, isClientError } from './errors.mjs';
 import { canDecide, checkEventRole } from '../roles.mjs';
+import { excludedSections, sheetSet } from '../scope.mjs';
 
 /**
  * An inspection is pinned to the template revisions it was opened against
@@ -88,6 +89,25 @@ const handlers = {
          WHERE code = ANY($2::text[]) AND status IN ('current','draft')
          ON CONFLICT DO NOTHING`,
         [inspectionId, p.templateCodes]
+      );
+    }
+
+    // Sections this job does not assess: scope choices not picked, and work
+    // outside the authorisation (scope of work 19 Oct 2026, B3/B4). Resolved
+    // against the revisions just pinned, so they stay put through a re-seed.
+    const jk = await db.query(`SELECT class_key, scope_choices FROM job WHERE id = $1`, [p.jobId]);
+    const set = sheetSet(jk.rows[0]?.class_key);
+    const excluded = set ? excludedSections(set, jk.rows[0].scope_choices) : [];
+    if (excluded.length) {
+      await db.query(
+        `INSERT INTO inspection_section_excluded (inspection_id, section_id, reason)
+         SELECT $1, s.id, x.reason
+         FROM jsonb_to_recordset($2::jsonb) AS x(template text, ordinal int, reason text)
+         JOIN checksheet_template t ON t.code = x.template
+         JOIN inspection_template pin ON pin.template_id = t.id AND pin.inspection_id = $1
+         JOIN checksheet_section s ON s.template_id = t.id AND s.ordinal = x.ordinal
+         ON CONFLICT DO NOTHING`,
+        [inspectionId, JSON.stringify(excluded)]
       );
     }
     return { inspectionId };

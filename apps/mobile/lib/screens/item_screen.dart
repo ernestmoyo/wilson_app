@@ -41,6 +41,8 @@ class _ItemScreenState extends State<ItemScreen> {
   late final TextEditingController _comment;
   late final TextEditingController _verification;
   late final TextEditingController _reason;
+  late final TextEditingController _general;
+  late final TextEditingController _naReason;
 
   @override
   void initState() {
@@ -48,6 +50,8 @@ class _ItemScreenState extends State<ItemScreen> {
     _comment = TextEditingController(text: widget.finding.comment);
     _verification = TextEditingController(text: widget.finding.verificationMethod);
     _reason = TextEditingController(text: widget.finding.failureReason);
+    _general = TextEditingController(text: widget.finding.generalComment);
+    _naReason = TextEditingController(text: widget.finding.naReason);
   }
 
   @override
@@ -57,6 +61,8 @@ class _ItemScreenState extends State<ItemScreen> {
     _comment.dispose();
     _verification.dispose();
     _reason.dispose();
+    _general.dispose();
+    _naReason.dispose();
     super.dispose();
   }
 
@@ -67,11 +73,16 @@ class _ItemScreenState extends State<ItemScreen> {
   void _saveIfChanged() {
     if (!CurrentUser.canRecord) return;
     final f = widget.finding;
-    if (f.comment == _comment.text && f.verificationMethod == _verification.text && f.failureReason == _reason.text) return;
+    if (f.comment == _comment.text && f.verificationMethod == _verification.text && f.failureReason == _reason.text &&
+        f.generalComment == _general.text && f.naReason == _naReason.text) {
+      return;
+    }
     widget.inspection.update(f, (x) {
       x.comment = _comment.text;
       x.verificationMethod = _verification.text;
       x.failureReason = _reason.text;
+      x.generalComment = _general.text;
+      x.naReason = _naReason.text;
     });
   }
 
@@ -203,6 +214,29 @@ class _ItemScreenState extends State<ItemScreen> {
               ),
             ),
           ],
+
+          if (f.status == FindingStatus.notApplicable) ...[
+            const SizedBox(height: 20),
+            _label('Why not applicable', 'Optional'),
+            _onBlur(TextField(
+              key: const ValueKey('na-reason'),
+              controller: _naReason,
+              maxLines: 2,
+              readOnly: !CurrentUser.canRecord,
+              decoration: const InputDecoration(hintText: 'e.g. no cylinders held at this location'),
+            )),
+          ],
+
+          const SizedBox(height: 20),
+          _label('General comment', 'An observation or recommendation; printed in blue'),
+          _onBlur(TextField(
+            key: const ValueKey('general-comment'),
+            controller: _general,
+            maxLines: 3,
+            readOnly: !CurrentUser.canRecord,
+            style: const TextStyle(color: Brand.generalComment),
+            decoration: const InputDecoration(hintText: 'e.g. PCBU to make the hatch pattern denser'),
+          )),
 
           const SizedBox(height: 28),
           // Evidence capture: hash at capture, IPS 21(4) fields recorded before

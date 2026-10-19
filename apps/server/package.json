@@ -7,7 +7,7 @@
   "main": "src/index.mjs",
   "scripts": {
     "start": "node src/index.mjs",
-    "test": "node test/api.e2e.test.mjs && node test/revision-pin.test.mjs && node test/process-flow.test.mjs && node test/auth.test.mjs && node test/loops.test.mjs && node test/forms.test.mjs && node test/users.test.mjs && node test/review.test.mjs && node test/clients.test.mjs"
+    "test": "node test/api.e2e.test.mjs && node test/revision-pin.test.mjs && node test/process-flow.test.mjs && node test/auth.test.mjs && node test/loops.test.mjs && node test/forms.test.mjs && node test/users.test.mjs && node test/review.test.mjs && node test/clients.test.mjs && node test/scope.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",

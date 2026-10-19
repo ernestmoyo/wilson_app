@@ -85,6 +85,13 @@ class FakeServer {
   /// No reminders on the dashboard (the empty state of Needs attention).
   bool noReminders = false;
 
+  /// Sections the job does not assess (scope choices not picked, or work
+  /// outside the authorisation), as GET /api/jobs/:id reports them.
+  final List<Map<String, dynamic>> excludedSections = [];
+
+  /// When true, class_2_3 is authorised and offers scope choices (19 Oct 2026).
+  bool class23WithChoices = false;
+
   /// A board row for another job, shaped like the real /api/jobs row.
   static Map<String, dynamic> row(int id, int clientId, String client, String location,
           {String stage = 'site_inspection', String? address, String? lastActivity}) =>
@@ -176,6 +183,7 @@ class FakeServer {
           {'id': 3, 'inspected_at': '2026-09-09T00:00:00Z', 'status': 'in_progress'}
         ],
         'findings': findings,
+        'excludedSections': excludedSections,
         'correctiveActions': [
           {
             'id': 1,
@@ -250,7 +258,12 @@ class FakeServer {
   Map<String, dynamic> sheetSets() => {
         'sets': [
           {'key': 'class_6_8', 'kind': 'location', 'name': 'Location: classes 6 or 8', 'templates': ['wks17-general', 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 13.38'}},
-          {'key': 'class_2_3', 'name': 'Location: classes 2 and 3.1', 'templates': ['wks17-general', 'wks17-class-2-and-3-1-substances'], 'authorised': false, 'authorisationEntry': null},
+          {'key': 'class_2_3', 'name': 'Location: classes 2 and 3.1', 'templates': ['wks17-general', 'wks17-class-2-and-3-1-substances'],
+           'authorised': class23WithChoices, 'authorisationEntry': null,
+           if (class23WithChoices) 'choices': [
+             {'key': '2_1_1_gases', 'label': 'Class 2.1.1 gases'},
+             {'key': '3_1_cabinet', 'label': 'Class 3.1: packages in cabinets'},
+           ]},
           {'key': 'handler_6', 'kind': 'handler', 'name': 'Certified handler: class 6', 'templates': ['ch-class-6-handler-assessment'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 4.1'}},
           {'key': 'cylinder_fern', 'kind': 'cylinder', 'name': 'Cylinder importation: fire extinguishers (FERN)', 'templates': ['ci-cylinder-importation-fern'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 15.16'}},
         ],
@@ -308,6 +321,8 @@ class FakeServer {
           'comment': p['comment'],
           'verification_method': p['verificationMethod'],
           'failure_reason': p['failureReason'],
+          'general_comment': p['generalComment'],
+          'na_reason': p['naReason'],
           'updated_at': '2026-09-10T00:00:00Z',
         });
     }

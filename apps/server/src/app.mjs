@@ -17,6 +17,7 @@ import { authenticate, hashPasscode, login, logout, tokenFromRequest } from './a
 import { canDecide, canRecord } from './roles.mjs';
 import { mailConfigured, sendMail } from './mail.mjs';
 import { randomUUID } from 'crypto';
+import { setAuthorised, validateChoices } from './scope.mjs';
 
 // The certificate renderer lives in packages/checksheets; vendored on Vercel.
 const renderMod = await import(
@@ -319,8 +320,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
         `INSERT INTO hs_location (site_id, name, summary) VALUES ($1,$2,$3) RETURNING id`,
         [s.rows[0].id, b.location.name, b.location.summary ?? null]);
       const j = await tx.query(
-        `INSERT INTO job (client_id, hs_location_id, class_key) VALUES ($1,$2,$3) RETURNING id, stage`,
-        [c.rows[0].id, l.rows[0].id, b.classKey ?? null]);
+        `INSERT INTO job (client_id, hs_location_id, class_key, scope_choices) VALUES ($1,$2,$3,$4) RETURNING id, stage`,
+        [c.rows[0].id, l.rows[0].id, b.classKey ?? null, b.scopeChoices ?? null]);
       // Site block rows 10, 12 and 13 come from contacts and substances; accept
       // them at creation so a job is complete from its first render.
       for (const ct of Array.isArray(b.contacts) ? b.contacts : []) {
@@ -357,9 +358,12 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
     const set = SHEET_SETS.sets.find((x) => x.key === (b.classKey ?? 'class_6_8'));
     if (!set) return res.status(400).json({ error: `unknown check sheet set "${b.classKey}"` });
-    if (!set.authorisation || !AUTHORISATION.authorisations.some((a) => a.key === set.authorisation)) {
+    if (!setAuthorised(set, AUTHORISATION)) {
       return res.status(400).json({ error: `"${set.name}" is outside the certifier's WorkSafe authorisation`, clause: 'IPS 8' });
     }
+    const scope = validateChoices(set, b.scopeChoices);
+    if (scope.error) return res.status(400).json({ error: scope.error, clause: 'IPS 8' });
+    b.scopeChoices = scope.choices;
     if (b.client.id != null) {
       // The same shape the sync events accept: a positive integer, or its digits.
       const v = b.client.id;
@@ -419,7 +423,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   app.get('/api/jobs/:id', wrap(async (req, res) => {
     const id = Number(req.params.id);
     const j = await db.query(`
-      SELECT j.id, j.stage, j.class_key, j.opened_at, j.closed_at, j.subject,
+      SELECT j.id, j.stage, j.class_key, j.opened_at, j.closed_at, j.subject, j.scope_choices,
              json_build_object('id', c.id, 'legalName', c.legal_name, 'tradingName', c.trading_name,
                                'nzbn', c.nzbn, 'companiesNumber', c.companies_number,
                                'postalAddress', c.postal_address, 'phone', c.phone,
@@ -434,7 +438,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!j.rows.length) return res.status(404).json({ error: 'job not found' });
 
     const [insp, findings, evidence, cert, retention, transitions, interests, contacts, substances,
-           correctiveActions, allowedNext, communications, events, units] = await Promise.all([
+           correctiveActions, allowedNext, communications, events, units, excluded] = await Promise.all([
       db.query(`SELECT i.id, i.inspected_at, i.equipment_used, i.status, i.certifier_id,
                        i.conducted_by_id, i.supervised,
                        i.declaration_signed_at, i.declaration_signed_by,
@@ -448,7 +452,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 WHERE i.job_id = $1 GROUP BY i.id ORDER BY i.inspected_at DESC`, [id]),
       db.query(`SELECT f.id, f.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal,
                        i.ordinal AS item_ordinal, f.status, f.comment, f.verification_method,
-                       f.failure_reason, f.decided_at, f.updated_at,
+                       f.failure_reason, f.general_comment, f.na_reason, f.decided_at, f.updated_at,
                        (SELECT count(*)::int FROM evidence e WHERE e.finding_id = f.id) AS evidence_count
                 FROM finding f
                 JOIN inspection ins ON ins.id = f.inspection_id
@@ -512,6 +516,13 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                         JOIN inspection i ON i.id = f.inspection_id WHERE i.job_id = $1)
                 ORDER BY e.occurred_at DESC, e.received_at DESC LIMIT 100`, [id]),
       db.query(`SELECT id, ordinal, fields, updated_at FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [id]),
+      // Sections this job does not assess (scope choices not picked, work outside the authorisation).
+      db.query(`SELECT x.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal, x.reason
+                FROM inspection_section_excluded x
+                JOIN inspection i ON i.id = x.inspection_id
+                JOIN checksheet_section s ON s.id = x.section_id
+                JOIN checksheet_template t ON t.id = s.template_id
+                WHERE i.job_id = $1 ORDER BY t.code, s.ordinal`, [id]),
     ]);
 
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
@@ -532,6 +543,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       communications: communications.rows,
       events: events.rows,
       units: units.rows,
+      excludedSections: excluded.rows,
       kind: kindFor(j.rows[0].class_key),
     });
   }));
@@ -580,6 +592,19 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     });
   }));
 
+  /**
+   * An action taken through a REST route rather than a sync event (issuing,
+   * sending) still goes into the event log, by person, so the audit trail has
+   * one place to look (IPS 21(5), 22; scope of work 19 Oct 2026, C4).
+   */
+  async function recordServerEvent(q, req, type, payload, result = null) {
+    await q.query(`INSERT INTO device (id, label, platform) VALUES ('server', 'Server', 'server') ON CONFLICT (id) DO NOTHING`);
+    await q.query(
+      `INSERT INTO sync_event (id, device_id, user_id, type, payload, occurred_at, outcome, result)
+       VALUES ($1, 'server', $2, $3, $4, now(), 'applied', $5)`,
+      [randomUUID(), req.ctx.userId ?? null, type, JSON.stringify(payload), result == null ? null : JSON.stringify(result)]);
+  }
+
   /** Issue the certificate. The stage transition and the insert share one transaction. */
   app.post('/api/jobs/:id/certificate', wrap(async (req, res) => {
     const id = Number(req.params.id);
@@ -613,6 +638,14 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
          req.ctx.userId ?? b.certifierId ?? null, b.issuedTo, b.appliesTo, b.issueDate,
          b.inForceDate ?? b.issueDate, b.expiryDate ?? null, b.details ?? null,
          b.requirementsNotMet ?? [], b.conditions ?? [], b.signedAt ?? new Date().toISOString()]);
+      // The trigger writes the stage move; name who made it.
+      await tx.query(
+        `UPDATE job_stage_transition SET actor_id = $2
+         WHERE id = (SELECT max(id) FROM job_stage_transition WHERE job_id = $1 AND to_stage = 'certificate_issued')`,
+        [id, req.ctx.userId ?? null]);
+      await recordServerEvent(tx, req, 'certificate.issue',
+        { jobId: id, inspectionId: b.inspectionId ?? null, decision: b.decision, certificateNumber: b.certificateNumber ?? null },
+        { certificateId: r.rows[0].id });
       const rc = await tx.query(`SELECT retain_until FROM retention_clock WHERE job_id = $1`, [id]);
       return { certificateId: r.rows[0].id, worksafeRegisterDue: r.rows[0].worksafe_register_due,
                retainUntil: rc.rows[0]?.retain_until ?? null };
@@ -719,7 +752,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     res.json({
       sets: SHEET_SETS.sets.map((x) => ({
         ...x,
-        authorised: !!(x.authorisation && byKey[x.authorisation]),
+        authorised: setAuthorised(x, AUTHORISATION),
         authorisationEntry: x.authorisation ? byKey[x.authorisation] ?? null : null,
       })),
       planned: SHEET_SETS.planned,
@@ -941,6 +974,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       `INSERT INTO communication (job_id, direction, medium, party, summary, occurred_at, recorded_by)
        VALUES ($1,'outbound','email',$2,$3,now(),$4)`,
       [id, to, summary, req.ctx.userId ?? null]);
+    await recordServerEvent(db, req, 'document.send', { jobId: id, document, to, sent: !!result.sent }, { summary });
     res.json({ ...result, summary });
   }));
 
@@ -952,7 +986,11 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
     }
     const classKey = b.classKey ?? 'class_6_8';
-    const created = await db.withTx((tx) => createJob(tx, { ...b, client: { ...b.client, id: undefined }, classKey }));
+    const importSet = SHEET_SETS.sets.find((x) => x.key === classKey);
+    if (!importSet) return res.status(400).json({ error: `unknown check sheet set "${classKey}"` });
+    const importScope = validateChoices(importSet, b.scopeChoices);
+    if (importScope.error) return res.status(400).json({ error: importScope.error, clause: 'IPS 8' });
+    const created = await db.withTx((tx) => createJob(tx, { ...b, client: { ...b.client, id: undefined }, classKey, scopeChoices: importScope.choices }));
     const target = b.stage ?? 'site_inspection';
     const path = ['application', 'document_review', 'site_inspection', 'compliance_evaluation', 'final_validation'];
     const stop = path.indexOf(target);

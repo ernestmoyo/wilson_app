@@ -61,6 +61,14 @@ String describeEvent(String type, Map<String, dynamic> p) => switch (type) {
       'communication.record' => 'recorded a communication: ${p['summary'] ?? ''}',
       'evidence.attach' => 'attached evidence',
       'client.archive' => p['archived'] == false ? 'brought a client back to the list' : 'archived a client',
+      'certificate.issue' => switch (p['decision']) {
+          'refused' => 'refused the certificate',
+          'conditional' => 'issued a conditional certificate',
+          _ => 'issued the certificate',
+        },
+      'document.send' => p['sent'] == false
+          ? 'prepared the ${p['document'] == 'certificate' ? 'certificate' : 'non-compliance report'} for ${p['to']} (not sent)'
+          : 'emailed the ${p['document'] == 'certificate' ? 'certificate' : 'non-compliance report'} to ${p['to']}',
       _ => type,
     };
 
@@ -94,7 +102,10 @@ class SheetSet {
   final List<String> templates;
   final bool authorised;
   final String? regulation;
-  const SheetSet({required this.key, this.kind = 'location', required this.name, this.detail, required this.templates, required this.authorised, this.regulation});
+  /// Scope choices picked at job start, e.g. the class 3.1 arrangements.
+  /// Empty when the set is assessed whole.
+  final List<ScopeChoice> choices;
+  const SheetSet({required this.key, this.kind = 'location', required this.name, this.detail, required this.templates, required this.authorised, this.regulation, this.choices = const []});
 
   factory SheetSet.fromJson(Map<String, dynamic> j) => SheetSet(
         key: j['key'] as String,
@@ -104,5 +115,16 @@ class SheetSet {
         templates: [for (final t in (j['templates'] as List?) ?? const []) '$t'],
         authorised: j['authorised'] == true,
         regulation: (j['authorisationEntry'] as Map?)?['regulation'] as String?,
+        choices: [
+          for (final c in (j['choices'] as List?) ?? const [])
+            ScopeChoice(key: '${(c as Map)['key']}', label: '${c['label'] ?? c['key']}'),
+        ],
       );
+}
+
+/// One scope choice of a sheet set (scope of work, 19 Oct 2026).
+class ScopeChoice {
+  final String key;
+  final String label;
+  const ScopeChoice({required this.key, required this.label});
 }

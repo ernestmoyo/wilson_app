@@ -134,7 +134,7 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
                               UnitsEditor(inspection: insp, sheet: template.sheetFor(insp.classKey), readOnly: !CurrentUser.canRecord),
                           ]),
                         ),
-                      for (final section in template.sections) ..._section(section),
+                      for (final section in insp.sectionsInScope(template)) ..._section(section),
                     ],
                   ),
           ),

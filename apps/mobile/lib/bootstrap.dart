@@ -279,6 +279,12 @@ void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal
       ((job.raw['units'] as List?) ?? const []).cast<Map>().map((u) => u.cast<String, dynamic>()).toList(),
     );
   }
+  insp.excludedSections
+    ..clear()
+    ..addAll(((job.raw['excludedSections'] as List?) ?? const [])
+        .cast<Map>()
+        .where((x) => insp.inspectionId == null || toInt(x['inspection_id']) == insp.inspectionId)
+        .map((x) => '${x['template_code']}/${toInt(x['section_ordinal'])}'));
   insp.hydrate(job.findings
       .cast<Map<String, dynamic>>()
       .where((f) => job.inspectionId == null || toInt(f['inspection_id']) == insp.inspectionId)
@@ -291,6 +297,8 @@ void applyJobToInspection(Inspection insp, ServerJob job, {Set<String> keepLocal
             comment: f['comment'] as String? ?? '',
             verificationMethod: f['verification_method'] as String? ?? '',
             failureReason: f['failure_reason'] as String? ?? '',
+            generalComment: f['general_comment'] as String? ?? '',
+            naReason: f['na_reason'] as String? ?? '',
             evidenceCount: f['evidence_count'] == null ? 0 : toInt(f['evidence_count']),
           )));
 

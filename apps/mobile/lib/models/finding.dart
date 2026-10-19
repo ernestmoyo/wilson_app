@@ -86,6 +86,13 @@ class Finding {
   /// requirements. Required whenever status is nonCompliant.
   String failureReason;
 
+  /// The workbook's blue "General comment": an observation or recommendation
+  /// on an item that is otherwise decided. Printed apart from the result.
+  String generalComment;
+
+  /// Why the item does not apply. Optional; kept only for N/A.
+  String naReason;
+
   /// Ids of evidence captured against this item.
   final List<String> evidenceIds;
 
@@ -97,6 +104,8 @@ class Finding {
     this.comment = '',
     this.verificationMethod = '',
     this.failureReason = '',
+    this.generalComment = '',
+    this.naReason = '',
     List<String>? evidenceIds,
   }) : evidenceIds = evidenceIds ?? [];
 
@@ -116,6 +125,8 @@ class Finding {
         'comment': comment,
         'verificationMethod': verificationMethod,
         'failureReason': failureReason,
+        'generalComment': generalComment,
+        'naReason': naReason,
         'evidenceIds': evidenceIds,
       };
 
@@ -127,6 +138,8 @@ class Finding {
         comment: j['comment'] as String? ?? '',
         verificationMethod: j['verificationMethod'] as String? ?? '',
         failureReason: j['failureReason'] as String? ?? '',
+        generalComment: j['generalComment'] as String? ?? '',
+        naReason: j['naReason'] as String? ?? '',
         evidenceIds: (j['evidenceIds'] as List?)?.cast<String>().toList(),
       );
 }

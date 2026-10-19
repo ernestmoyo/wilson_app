@@ -38,6 +38,8 @@ class SheetView extends StatefulWidget {
 class _SheetViewState extends State<SheetView> {
   final _comment = <String, TextEditingController>{};
   final _reason = <String, TextEditingController>{};
+  final _general = <String, TextEditingController>{};
+  final _na = <String, TextEditingController>{};
 
   /// Rows 2–14 are on the sheet verbatim but folded behind one line, so the
   /// checklist starts on the first screen.
@@ -87,7 +89,7 @@ class _SheetViewState extends State<SheetView> {
     for (final c in _comment.values) {
       c.dispose();
     }
-    for (final c in _reason.values) {
+    for (final c in [..._reason.values, ..._general.values, ..._na.values]) {
       c.dispose();
     }
     super.dispose();
@@ -120,10 +122,10 @@ class _SheetViewState extends State<SheetView> {
           height: 34,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: t.sections.length,
+            itemCount: insp.sectionsInScope(t).length,
             separatorBuilder: (_, _) => const SizedBox(width: 6),
             itemBuilder: (_, k) {
-              final s = t.sections[k];
+              final s = insp.sectionsInScope(t)[k];
               final findings = s.items.map((i) => insp.findingFor(t, s, i)).toList();
               final done = findings.where((f) => f.status != FindingStatus.pending).length;
               final nc = findings.any((f) => f.status == FindingStatus.nonCompliant);
@@ -170,7 +172,7 @@ class _SheetViewState extends State<SheetView> {
             ],
             if (sheet.banner != null) _bandRow(sheet.banner!, bold: true),
             _columnHeaders(),
-            for (final s in t.sections) ...[
+            for (final s in insp.sectionsInScope(t)) ...[
               KeyedSubtree(key: _keyFor(s), child: _sectionRow(s)),
               if (!_folded.contains(s.ordinal))
                 for (final i in s.items) _itemRow(s, i),
@@ -372,6 +374,9 @@ class _SheetViewState extends State<SheetView> {
     final nc = f.status == FindingStatus.nonCompliant;
     final commentCtl = _ctl(_comment, f.key, f.comment);
     final reasonCtl = _ctl(_reason, f.key, f.failureReason);
+    final generalCtl = _ctl(_general, f.key, f.generalComment);
+    final naCtl = _ctl(_na, f.key, f.naReason);
+    final na = f.status == FindingStatus.notApplicable;
 
     return _TRow(
       children: [
@@ -423,7 +428,8 @@ class _SheetViewState extends State<SheetView> {
                 _inlineField(
                   commentCtl,
                   hint: '', // the workbook cell is blank; the column header says Comments
-                  color: nc ? Brand.nonCompliant : Colors.black87,
+                  // As the workbooks: red a finding, green compliant.
+                  color: nc ? Brand.nonCompliant : f.status == FindingStatus.compliant ? Brand.compliant : Colors.black87,
                   current: f.comment,
                   fieldKey: 'c:${f.key}',
                   onCommit: (v) => insp.update(f, (x) => x.comment = v),
@@ -438,6 +444,26 @@ class _SheetViewState extends State<SheetView> {
                     onCommit: (v) => insp.update(f, (x) => x.failureReason = v),
                   ),
                 ],
+                if (na) ...[
+                  const SizedBox(height: 4),
+                  _inlineField(
+                    naCtl,
+                    hint: 'Why not applicable (optional)',
+                    color: Brand.notApplicable,
+                    current: f.naReason,
+                    fieldKey: 'na:${f.key}',
+                    onCommit: (v) => insp.update(f, (x) => x.naReason = v),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                _inlineField(
+                  generalCtl,
+                  hint: 'General comment',
+                  color: Brand.generalComment,
+                  current: f.generalComment,
+                  fieldKey: 'g:${f.key}',
+                  onCommit: (v) => insp.update(f, (x) => x.generalComment = v),
+                ),
               ],
             ),
             left: true,
