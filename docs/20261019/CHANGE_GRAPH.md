@@ -163,17 +163,40 @@ Readers to keep in step when `finding` / `evidence` / sets change:
 
 The 14 days start on the agreed date. Phase 2 depends on the sheets arriving in week 1. If they don't, the date moves by written agreement (as the scope says).
 
-## 7. Built
+## 7. Built (phase 1, 19 October 2026; local, committed on feat/graph-model, NOT pushed or deployed)
 
-Nothing yet.
+Built as four packages in parallel (contract: `PHASE1_CONTRACT.md`), then hardened after an independent review.
 
-## 8. Proof
+| Piece | Where |
+|---|---|
+| Migration 013: general comment, N/A reason, `job.scope_choices`, `inspection_section_excluded`, `evidence.original_name`, views `inspection_item_in_scope` / `finding_in_scope`; issuance guard refuses unanswered in-scope items (F8) and ignores excluded sections | `packages/db/migrations/013_scope_of_work_1019.sql` |
+| Appendix A authorisations (8 entries with limits; C8 exclusions as text); `class_2_3` authorised through 8 scope choices (2.1.1, 2.1.2, six 3.1 arrangements; section 18 shared by use and workroom); new `class_5_1`; 4.1.1, 3.1-in-SCS, use ≤ 450 L and SCS listed as planned | `packages/checksheets/data/*`, `CHOICES.md` |
+| Templates: `wks17-class-2-and-3-1-substances` rev 2 and `wks17-general` rev 2 (r10.34 corrections, F5); new `wks17-class-5-1-1-and-5-1-2` (scope r12.17, B5); extractor reads colour per run, blue "General comment" → `generalComment` | `packages/checksheets` |
+| Scope choices: validated at New job (IPS 8), sections excluded at inspection open, hidden in the app and out of every count | `apps/server/src/scope.mjs`, `sync/apply.mjs`, app |
+| General comment (blue) and optional N/A reason, in the item editor and wide sheet; workbook colours on comments | app, `finding.upsert` |
+| Evidence: PDFs and photos (JPEG/PNG/PDF only, 50 MB); direct-to-storage presigned PUT with server re-hash on confirm; short-lived links; never overwrites or deletes evidence on record; keys content-addressed only | `app.mjs` evidence block, `evidence_capture.dart`, `api_client.dart` |
+| Checksheet PDF (workbook layout, class view, colours, evidence names, declaration, scope, signature block) and job ZIP (PDF, certificate, NC report, evidence named by appendix; 150 MB cap) | `apps/server/src/export/**`, job screen buttons |
+| Certificate issue and send in the audit trail by person; stage move names its actor (F9) | `app.mjs` |
+| `Referrer-Policy: no-referrer` on every response | `app.mjs` |
 
-Not started. Tests first, per phase; the full server and Flutter suites run before any deploy.
+## 8. Proof (19 October 2026, local only; nothing deployed, live untouched)
+
+- Tests first where the code was mine (server scope test seen red 8 of 10; hardening 11 of 11 red, including the path-traversal one, which really bundled a file outside the store).
+- **Server:** 13 suites, all green (api.e2e 29, revision-pin 5, process-flow 10, auth 8, loops 10, forms 6, users 6, review 9, clients 15, scope 13, evidence 14, export 12, hardening 13). **packages/db:** 4 suites green (PGlite). **Flutter:** 95 passed, 2 skipped (live); analyze: the 2 pre-existing notices.
+- **Independent review** (code reviewer): 2 high, 5 medium, 2 low. Fixed with tests: key traversal into the ZIP, overwrite/delete of stored evidence, unsigned Spaces size, size-before-hash, omitted fields wiping stored ones, excluded sections still blocking, Flutter denominator, ZIP extension, Referer. Bundle memory capped (150 MB, 413).
+- **Browser walk** (local server, PGlite): New job → class 2/3.1 → scope chips (Create waits for one) → cabinet-only sheet shows sections 1, 2, 3, 10, 11, 12 (43 items) → N/A with reason, general comment → job card "1 of 43" → Checksheet PDF. Found and fixed on the walk: the New job dialog stretched full width; typed text could be wiped by a rebuild mid-typing (pre-existing, also Comments); the PDF printed the class 6/8 regulations on a class 2/3.1 job. PDF evidence upload, ZIP and link walked through the API (disk mode).
+- **Not verified:** real Vercel Blob / DO Spaces presigned PUT and GET (only fakes); browser CORS for a direct PUT to Blob, and the Spaces bucket CORS rule; pdfkit fonts in the Vercel bundle; ZIP time on a large job inside 30 s; a real iPad; the file picker in a real browser (the walk could not drive the OS dialog).
 
 ## 9. Open
 
 - Q1–Q7 (sent to Tatenda on 19 Oct).
+- Not built yet in phase 1: B6 aerosol water capacity on the job (and quantity checks against the Appendix A limits); SAT 201 extraction; certificate as PDF (waits Q6); a short-lived download token instead of the session token in `?token=` links (Referrer-Policy added meanwhile); clean-up of old `exports/` ZIPs.
+- For Bryan/Tatenda, from the checksheet extraction (`packages/checksheets/data/CHOICES.md`):
+  1. Section 10 (3.1 transfer points) always shows: right, or only under some choices?
+  2. The class 5 general sheet still cites 13.34(5)(b) and the class 6/8 secondary-containment list: class 5 regulations wanted?
+  3. Appendix A authorises 5.1.1; the sheet and its scope say "5.1.1 or 5.1.2": which?
+  4. Class 2/3.1 section 14 cites "11.3": is that 11.30?
+- Before deploy: run the new routes once against a Vercel preview with the real Blob store (upload a PDF over 4.5 MB, open its link, download a ZIP), and check the browser accepts the direct PUT.
 - Earlier open items for Bryan:
   - archive the demo clients on live
   - Argenta job 20 vs job 1
