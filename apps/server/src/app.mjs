@@ -18,6 +18,9 @@ import { canDecide, canRecord } from './roles.mjs';
 import { mailConfigured, sendMail } from './mail.mjs';
 import { randomUUID } from 'crypto';
 import { setAuthorised, validateChoices } from './scope.mjs';
+import { checksheetPdf } from './export/checksheet-pdf.mjs';
+import { buildBundleZip, bundleFileName, contentDisposition, exportKey, exportStore } from './export/bundle.mjs';
+import { safeFileName } from './export/naming.mjs';
 
 // The certificate renderer lives in packages/checksheets; vendored on Vercel.
 const renderMod = await import(
@@ -1114,6 +1117,71 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!data) return res.status(404).json({ error: 'job not found' });
     res.type('html').send(renderNonComplianceReport({ ...data, letterhead: letterheadImages() }));
   }));
+
+  // ── exports: the checksheet PDF and the job bundle (contract C) ─────────
+  // Any signed-in role may download, a viewer included: these are reads.
+  const checksheetPdfFor = (id) => checksheetPdf(db, id, {
+    templateOrder: templatesForClass,
+    kindFor,
+    logoPath: assetPath('brand/logo-white.png', 'packages/checksheets/brand/logo-white.png'),
+    company: renderMod.COMPANY,
+    // Only ever a file the operator points at; no signature image is in the repo.
+    signatureImagePath: process.env.SIGNATURE_IMAGE_PATH || null,
+  });
+
+  app.get('/api/jobs/:id/checksheet.pdf', wrap(async (req, res) => {
+    const out = await checksheetPdfFor(Number(req.params.id));
+    if (!out) return res.status(404).json({ error: 'job not found' });
+    const name = `${safeFileName(`Checksheet - Job ${req.params.id} - ${out.data.job.legal_name}`, 100)}.pdf`;
+    res.set('Content-Disposition', contentDisposition(name).replace(/^attachment/, 'inline'));
+    res.type('application/pdf').send(out.pdf);
+  }));
+
+  /** The ZIP's bytes and entry names; null for an unknown job. */
+  async function jobBundle(id) {
+    const out = await checksheetPdfFor(id);
+    if (!out) return null;
+    const ncData = await nonComplianceData(id);
+    const certificateHtml = await fetchCertificateHtml(id);
+    const evidence = [], missing = [];
+    for (const e of out.data.evidence) {
+      const found = await readEvidence(e.storage_key);
+      if (found) evidence.push({ name: e.fileName, buf: found.buf });
+      else missing.push(`${e.fileName} (sha256 ${e.sha256})`);
+    }
+    const { zip, files } = buildBundleZip({
+      checksheetPdf: out.pdf,
+      certificateHtml,
+      nonComplianceHtml: renderNonComplianceReport({ ...ncData, letterhead: letterheadImages() }),
+      evidence, missing,
+    });
+    return { zip, files, fileName: bundleFileName(id, out.data.job.legal_name) };
+  }
+
+  /**
+   * Disk: the ZIP streams back. Blob / Spaces: stored under exports/ and a
+   * presigned GET comes back as JSON ({ url, bytes, files }), or as a
+   * redirect for the browser route below.
+   */
+  async function sendBundle(req, res, { redirect }) {
+    const id = Number(req.params.id);
+    const b = await jobBundle(id);
+    if (!b) return res.status(404).json({ error: 'job not found' });
+    const store = exportStore();
+    if (!store) {
+      res.set('Content-Disposition', contentDisposition(b.fileName));
+      res.set('X-Bundle-Files', String(b.files.length));
+      return res.type('application/zip').send(b.zip);
+    }
+    const link = await store.put(exportKey(id), b.zip);
+    if (redirect) return res.redirect(302, link.url);
+    res.json({ url: link.url, expiresAt: link.expiresAt, bytes: b.zip.length, files: b.files, fileName: b.fileName });
+  }
+
+  app.post('/api/jobs/:id/bundle', wrap((req, res) => sendBundle(req, res, { redirect: false })));
+  // The app opens this in the browser with ?token= (a page cannot POST with a
+  // bearer header); same bundle, a download or a redirect to the stored copy.
+  app.get('/api/jobs/:id/bundle.zip', wrap((req, res) => sendBundle(req, res, { redirect: true })));
 
   // ── send a document to the client, and record that it went ──────────────
   app.post('/api/jobs/:id/send', wrap(async (req, res) => {
