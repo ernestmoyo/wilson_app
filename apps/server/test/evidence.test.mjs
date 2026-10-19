@@ -197,7 +197,7 @@ await step('/link returns the store\'s presigned GET with an expiry', async () =
 
 console.log('\nEVIDENCE — Blob and Spaces presign, with their SDKs mocked');
 
-await step('Blob: a put token scoped to one pathname, type and size; presignUrl with no suffix, overwrite allowed', async () => {
+await step('Blob: a put token scoped to one pathname, type and size; presignUrl with no suffix, never overwriting', async () => {
   const seen = [];
   const sdk = {
     async issueSignedToken(o) { seen.push(['token', o]); return { delegationToken: 'payload.sig', clientSigningToken: 'k', validUntil: o.validUntil }; },
@@ -210,7 +210,7 @@ await step('Blob: a put token scoped to one pathname, type and size; presignUrl 
   const tok = seen[0][1]; const pre = seen[1][1];
   expect(tok.pathname === `evidence/${pdfSha}.pdf` && tok.operations.join() === 'put' && tok.maximumSizeInBytes === 1234
     && tok.allowedContentTypes.join() === 'application/pdf' && tok.validUntil === validUntil, JSON.stringify(tok));
-  expect(pre.operation === 'put' && pre.access === 'private' && pre.addRandomSuffix === false && pre.allowOverwrite === true
+  expect(pre.operation === 'put' && pre.access === 'private' && pre.addRandomSuffix === false && pre.allowOverwrite === false
     && pre.pathname === `evidence/${pdfSha}.pdf`, JSON.stringify(pre));
   expect(put.headers['x-content-type'] === 'application/pdf' && put.headers['x-vercel-blob-access'] === 'private'
     && put.headers['x-vercel-blob-store-id'] === 'store_test', JSON.stringify(put.headers));

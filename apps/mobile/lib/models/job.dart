@@ -333,6 +333,9 @@ class JobRecord {
   final String locationName;
   final String? address;
   final int? inspectionId;
+  /// Items the latest inspection must answer (scope choices applied); null
+  /// from an older server.
+  final int? itemsInScope;
   final List<JobFinding> findings;
   final List<CorrectiveAction> correctiveActions;
   final List<StageTransition> transitions;
@@ -359,6 +362,7 @@ class JobRecord {
     required this.locationName,
     this.address,
     this.inspectionId,
+    this.itemsInScope,
     this.findings = const [],
     this.correctiveActions = const [],
     this.transitions = const [],
@@ -409,6 +413,7 @@ class JobRecord {
       locationName: loc['name'] as String? ?? '',
       address: loc['address'] as String?,
       inspectionId: inspections.isEmpty ? null : _int((inspections.first as Map)['id']),
+      itemsInScope: j['itemsInScope'] == null ? null : _int(j['itemsInScope']),
       findings: [
         for (final f in (j['findings'] as List?) ?? const [])
           JobFinding(

@@ -47,7 +47,9 @@ export function evidenceFileNames(rows) {
     if (r.appendix_category) {
       const a = appendixLabel(r.appendix_category);
       let orig = r.original_name ? safeFileName(r.original_name) : `${next(`a:${a}`)}.${ext}`;
-      if (!/\.[a-z0-9]{1,4}$/i.test(orig)) orig = `${orig}.${ext}`;
+      // The extension follows the stored type, never what was typed: a
+      // document filed as "x.html" is still the PDF it was stored as.
+      orig = `${orig.replace(/\.[a-z0-9]{1,4}$/i, '')}.${ext}`;
       name = `Appendix ${a} - ${orig}`;
     } else if (r.item_label) {
       name = `Item ${safeFileName(r.item_label, 30)} - ${next(`i:${r.item_label}`)}.${ext}`;

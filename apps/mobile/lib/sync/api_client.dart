@@ -146,6 +146,16 @@ class ApiClient {
       'name': ?name,
     })) as Map<String, dynamic>;
     final headers = ((plan['headers'] as Map?) ?? const {}).map((k, v) => MapEntry('$k', '$v'));
+    if (plan['mode'] == 'exists') {
+      // Already stored (the same bytes, from here or another device): the
+      // server re-hashes what is there; nothing is uploaded again.
+      return (await postJson('/api/evidence/confirm', {
+        'sha256': sha256,
+        'storageKey': plan['storageKey'],
+        'mime': mime,
+        'bytes': bytes.length,
+      })) as Map<String, dynamic>;
+    }
     if (plan['mode'] == 'direct') {
       final put = await _http.put(Uri.parse(plan['url'] as String), headers: headers, body: bytes);
       if (put.statusCode < 200 || put.statusCode >= 300) {

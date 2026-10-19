@@ -46,6 +46,18 @@ WHERE NOT EXISTS (
   WHERE x.inspection_id = p.inspection_id AND x.section_id = s.id
 );
 
+-- Findings that count: those not in an excluded section. A finding left in a
+-- section that was later put out of scope neither blocks nor supports a
+-- certificate (review, 19 Oct 2026).
+CREATE OR REPLACE VIEW finding_in_scope AS
+SELECT f.*
+FROM finding f
+WHERE NOT EXISTS (
+  SELECT 1 FROM inspection_section_excluded x
+  JOIN checksheet_item it ON it.section_id = x.section_id
+  WHERE x.inspection_id = f.inspection_id AND it.id = f.item_id
+);
+
 CREATE OR REPLACE FUNCTION assert_can_issue_certificate(p_job_id bigint)
 RETURNS void
 LANGUAGE plpgsql
@@ -71,7 +83,7 @@ BEGIN
 
   -- IPS 21(1)(f): every non-compliance must state why it failed.
   SELECT count(*) INTO v_incomplete
-  FROM finding f
+  FROM finding_in_scope f
   JOIN inspection i ON i.id = f.inspection_id
   WHERE i.job_id = p_job_id
     AND f.status = 'non_compliant'
@@ -88,7 +100,7 @@ BEGIN
   -- certificate says: an item marked pending, or an item in scope with no
   -- finding at all.
   SELECT count(*) INTO v_pending
-  FROM finding f
+  FROM finding_in_scope f
   JOIN inspection i ON i.id = f.inspection_id
   WHERE i.job_id = p_job_id AND f.status = 'pending';
 
@@ -106,7 +118,7 @@ BEGIN
   END IF;
 
   SELECT count(*) INTO v_open_nc
-  FROM finding f
+  FROM finding_in_scope f
   JOIN inspection i ON i.id = f.inspection_id
   LEFT JOIN corrective_action ca ON ca.finding_id = f.id
   WHERE i.job_id = p_job_id

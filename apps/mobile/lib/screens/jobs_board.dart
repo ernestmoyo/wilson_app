@@ -145,7 +145,11 @@ class _JobsBoardState extends State<JobsBoard> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
           title: const Text('New job'),
-          content: SingleChildScrollView(
+          // A fixed reading width: the scope chips wrap inside it instead of
+          // stretching the dialog across the screen.
+          content: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, spacing: 10, children: [
               DropdownButtonFormField<String>(
                 isExpanded: true,
@@ -301,7 +305,7 @@ class _JobsBoardState extends State<JobsBoard> {
               TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)')),
               TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)')),
             ]),
-          ),
+          )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             FilledButton(

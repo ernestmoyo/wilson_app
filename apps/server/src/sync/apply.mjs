@@ -132,6 +132,11 @@ const handlers = {
       e.code = '22P02';
       throw e;
     }
+    // A section outside this job's scope is not assessed: no finding lands there.
+    const out = await db.query(
+      `SELECT 1 FROM inspection_section_excluded x JOIN checksheet_item i ON i.section_id = x.section_id
+       WHERE x.inspection_id = $1 AND i.id = $2`, [p.inspectionId, itemId]);
+    if (out.rows.length) throw reject('this item is not assessed on this job: its section is outside the scope chosen at job start');
     const r = await db.query(
       `INSERT INTO finding
          (inspection_id, item_id, status, comment, verification_method, failure_reason,
@@ -142,8 +147,11 @@ const handlers = {
          comment             = EXCLUDED.comment,
          verification_method = EXCLUDED.verification_method,
          failure_reason      = EXCLUDED.failure_reason,
-         general_comment     = EXCLUDED.general_comment,
-         na_reason           = EXCLUDED.na_reason,
+         -- An event that does not carry a field leaves it as stored; an
+         -- older device must not wipe what a newer one recorded.
+         general_comment     = CASE WHEN $11::boolean THEN EXCLUDED.general_comment ELSE finding.general_comment END,
+         na_reason           = CASE WHEN EXCLUDED.status <> 'not_applicable' THEN NULL
+                                    WHEN $12::boolean THEN EXCLUDED.na_reason ELSE finding.na_reason END,
          decided_by          = EXCLUDED.decided_by,
          decided_at          = EXCLUDED.decided_at,
          updated_at          = now()
@@ -151,13 +159,24 @@ const handlers = {
       [p.inspectionId, itemId, p.status ?? 'pending',
        p.comment ?? null, p.verificationMethod ?? null, p.failureReason ?? null,
        ctx.userId ?? null, p.decidedAt ?? new Date().toISOString(),
-       textOrNull(p.generalComment), p.status === 'not_applicable' ? textOrNull(p.naReason) : null]
+       textOrNull(p.generalComment), p.status === 'not_applicable' ? textOrNull(p.naReason) : null,
+       'generalComment' in p, 'naReason' in p]
     );
     return { findingId: r.rows[0].id, itemId, status: r.rows[0].status };
   },
 
   /** Attach captured evidence. IPS 21(4) provenance is enforced by the schema. */
   async 'evidence.attach'(db, p, ctx) {
+    // The record points at the content-addressed object for its own hash and
+    // nothing else: a key is never a path (review, 19 Oct 2026).
+    const digest = typeof p.sha256 === 'string' ? p.sha256.toLowerCase() : '';
+    if (!/^[0-9a-f]{64}$/.test(digest)) throw reject('sha256 must be the 64-hex digest of the evidence bytes');
+    p.sha256 = digest;
+    if (p.storageKey != null) {
+      // The full hash, or the 16+ character prefix the migrated workbook images use.
+      const m = /^(?:evidence\/)?([0-9a-f]{16,64})\.[a-z0-9]{1,4}$/.exec(String(p.storageKey));
+      if (!m || !digest.startsWith(m[1])) throw reject('storageKey must be the stored object of this sha256 (evidence/<sha256>.<ext>)');
+    }
     if (p.inspectionId) {
       const own = await db.query(`SELECT job_id FROM inspection WHERE id = $1`, [p.inspectionId]);
       if (!own.rows.length) throw reject(`inspection ${p.inspectionId} not found`);

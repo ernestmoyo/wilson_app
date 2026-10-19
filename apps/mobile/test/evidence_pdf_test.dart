@@ -128,6 +128,20 @@ void main() {
     expect(attachEvent()['originalName'], 'Big site plan.pdf');
   });
 
+  testWidgets('already stored: no PUT at all, the server re-hashes what is there, then attach', (t) async {
+    server.evidenceMode = 'direct';
+    server.stored['$pdfSha.pdf'] = pdf;
+    await pump(t, pick: PickedDocument('Site plan.pdf', pdf));
+    await t.tap(find.text('Attach PDF'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Attach as record'));
+    await t.pumpAndSettle();
+
+    expect(server.requests, containsAllInOrder(['POST /api/evidence/upload-url', 'POST /api/evidence/confirm', 'POST /api/sync']));
+    expect(server.requests.where((r) => r.startsWith('PUT ')), isEmpty);
+    expect(attachEvent()['storageKey'], 'evidence/$pdfSha.pdf');
+  });
+
   testWidgets('over 50 MB is refused on the device, before any upload', (t) async {
     await pump(t, pick: PickedDocument('huge.pdf', Uint8List(evidenceMaxBytes + 1)));
     await t.tap(find.text('Attach PDF'));

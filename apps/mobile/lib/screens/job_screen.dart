@@ -223,7 +223,7 @@ class _JobScreenState extends State<JobScreen> {
   // ── Now: the one thing this job needs, and the button that does it ───────
 
   Widget _nowCard(JobRecord j) {
-    final total = j.inspectionId == null ? 0 : itemTotalFor(j.classKey);
+    final total = j.inspectionId == null ? 0 : (j.itemsInScope ?? itemTotalFor(j.classKey));
     final text = ProcessStage.nextAction(
       j.stage,
       kind: j.kind,

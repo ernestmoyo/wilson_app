@@ -7,7 +7,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createHash } from 'crypto';
-import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { applyEvents, EVENT_TYPES } from './sync/apply.mjs';
@@ -117,6 +117,11 @@ async function storeEvidence(sha256, ext, buf, mime) {
 }
 
 async function readEvidence(storageKey) {
+  // Only a content-addressed key is ever read: a value from the evidence
+  // table is not trusted as a path (review, 19 Oct 2026).
+  const bareKey = String(storageKey ?? '').replace(/^evidence\//, '');
+  if (!/^[0-9a-f]{16,64}(\.[a-z0-9]{1,4})?$/.test(bareKey)) return null;
+  storageKey = bareKey;
   if (SPACES) {
     const { GetObjectCommand } = await import('@aws-sdk/client-s3');
     const Key = storageKey.startsWith('evidence/') ? storageKey : 'evidence/' + storageKey;
@@ -163,6 +168,8 @@ export const EVIDENCE_MAX_BYTES = 50 * 1024 * 1024;
 /** Vercel's function body limit is 4.5 MB; elsewhere the server takes up to the evidence cap. */
 const SERVER_UPLOAD_LIMIT = process.env.VERCEL ? 4 * 1024 * 1024 : EVIDENCE_MAX_BYTES;
 const PUT_TTL_MS = 15 * 60 * 1000;
+/** A job bundle is built in memory; beyond this it is refused (413). */
+const BUNDLE_MAX_BYTES = 150 * 1024 * 1024;
 const LINK_TTL_MS = 10 * 60 * 1000;
 const EVIDENCE_KEY_RE = /^[0-9a-f]{64}\.[a-z0-9]{1,4}$/;
 
@@ -202,6 +209,10 @@ export function diskEvidenceStore() {
     name: 'disk',
     direct: false,
     async presignPut() { throw new Error('disk storage takes uploads through /api/evidence/upload'); },
+    async stat(key) {
+      const file = join(evidenceDir(), bareEvidenceKey(key));
+      return existsSync(file) ? { bytes: statSync(file).size } : null;
+    },
     // Not a presigned URL: the server's own route, which needs the session.
     async presignGet(key) { return { url: `/api/evidence/${bareEvidenceKey(key)}`, expiresAt: null }; },
     async hashStored(key) {
@@ -229,16 +240,16 @@ export function blobEvidenceStore({ sdk } = {}) {
       const { presignedUrl } = await b.presignUrl(token, {
         operation: 'put', access: 'private', pathname, validUntil,
         allowedContentTypes: [mime], maximumSizeInBytes: bytes,
-        // Content-addressed: the same bytes again are harmless, and refusing
-        // would fail a retry.
-        addRandomSuffix: false, allowOverwrite: true,
+        // Never overwrite: an object already stored is evidence on record.
+        // upload-url answers "exists" for it instead of signing a PUT.
+        addRandomSuffix: false, allowOverwrite: false,
       });
       // The headers @vercel/blob's own put() sends with a presigned URL.
       const headers = {
         'x-vercel-blob-access': 'private',
         'x-content-type': mime,
         'x-add-random-suffix': '0',
-        'x-allow-overwrite': '1',
+        'x-allow-overwrite': '0',
         'x-api-version': process.env.VERCEL_BLOB_API_VERSION_OVERRIDE ?? '12',
       };
       try { headers['x-vercel-blob-store-id'] = b.parseStoreIdFromDelegationToken(token.delegationToken); } catch { /* optional */ }
@@ -258,6 +269,10 @@ export function blobEvidenceStore({ sdk } = {}) {
       return { ...(await hashStream(r.stream)), mime: r.blob?.contentType ?? null };
     },
     async remove(key) { await (await lib()).del(fullEvidenceKey(key)); },
+    async stat(key) {
+      const h = await (await lib()).head(fullEvidenceKey(key)).catch(() => null);
+      return h ? { bytes: h.size } : null;
+    },
   };
 }
 
@@ -282,10 +297,11 @@ export function spacesEvidenceStore({ bucket, client, getSignedUrl, commands } =
   return {
     name: 'spaces',
     direct: true,
-    async presignPut({ key, mime, validUntil }) {
+    async presignPut({ key, mime, bytes, validUntil }) {
       const { cmds, sign, c } = await deps();
       const expiresIn = Math.max(60, Math.floor((validUntil - Date.now()) / 1000));
-      const url = await sign(c, new cmds.PutObjectCommand({ Bucket, Key: fullEvidenceKey(key), ContentType: mime }), { expiresIn });
+      // ContentLength is signed: the device cannot store more than it declared.
+      const url = await sign(c, new cmds.PutObjectCommand({ Bucket, Key: fullEvidenceKey(key), ContentType: mime, ContentLength: bytes }), { expiresIn });
       return { url, headers: { 'content-type': mime } };
     },
     async presignGet(key, validUntil) {
@@ -308,6 +324,16 @@ export function spacesEvidenceStore({ bucket, client, getSignedUrl, commands } =
       const { cmds, c } = await deps();
       await c.send(new cmds.DeleteObjectCommand({ Bucket, Key: fullEvidenceKey(key) }));
     },
+    async stat(key) {
+      const { cmds, c } = await deps();
+      try {
+        const r = await c.send(new cmds.HeadObjectCommand({ Bucket, Key: fullEvidenceKey(key) }));
+        return { bytes: Number(r.ContentLength ?? 0) };
+      } catch (e) {
+        if (e?.name === 'NotFound' || e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
+        throw e;
+      }
+    },
   };
 }
 
@@ -327,6 +353,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   const app = express();
   const evidenceBackend = evidenceStore ?? defaultEvidenceStore();
   app.use(express.json({ limit: '2mb' }));
+  // A signed link carries ?token= (documents opened in a new tab); never let
+  // the browser pass that address on to another site.
+  app.use((_req, res, next) => { res.set('Referrer-Policy', 'no-referrer'); next(); });
   app.use(cors({ origin: allowedOrigin ?? true, credentials: true }));
 
   const wrap = (fn) => (req, res, next) => fn(req, res).catch(next);
@@ -720,6 +749,11 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       events: events.rows,
       units: units.rows,
       excludedSections: excluded.rows,
+      // What the latest inspection must answer: its pinned sheets less the
+      // sections outside the job's scope. Null before an inspection opens.
+      itemsInScope: insp.rows.length
+        ? (await db.query(`SELECT count(*)::int AS n FROM inspection_item_in_scope WHERE inspection_id = $1`, [insp.rows[0].id])).rows[0].n
+        : null,
       kind: kindFor(j.rows[0].class_key),
     });
   }));
@@ -733,7 +767,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   async function unresolvedNonCompliances(jobId) {
     const nc = await db.query(`
       SELECT count(*)::int AS n
-      FROM finding f JOIN inspection i ON i.id = f.inspection_id
+      FROM finding_in_scope f JOIN inspection i ON i.id = f.inspection_id
       LEFT JOIN corrective_action ca ON ca.finding_id = f.id
       WHERE i.job_id = $1 AND f.status = 'non_compliant'
         AND (ca.id IS NULL OR ca.status <> 'verified')`, [jobId]);
@@ -756,7 +790,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     }
     const nc = await db.query(`
       SELECT count(*)::int AS n
-      FROM finding f JOIN inspection i ON i.id = f.inspection_id
+      FROM finding_in_scope f JOIN inspection i ON i.id = f.inspection_id
       LEFT JOIN corrective_action ca ON ca.finding_id = f.id
       WHERE i.job_id = $1 AND f.status = 'non_compliant'
         AND (ca.id IS NULL OR ca.status <> 'verified')`, [id]);
@@ -1147,6 +1181,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (!out) return null;
     const ncData = await nonComplianceData(id);
     const certificateHtml = await fetchCertificateHtml(id);
+    // The whole bundle is built in memory inside one function call: past this
+    // size it is refused with a clear message rather than running out.
+    const total = out.data.evidence.reduce((n, e) => n + Number(e.bytes ?? 0), 0);
+    if (total > BUNDLE_MAX_BYTES) return { tooLarge: total };
     const evidence = [], missing = [];
     for (const e of out.data.evidence) {
       const found = await readEvidence(e.storage_key);
@@ -1171,6 +1209,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const id = Number(req.params.id);
     const b = await jobBundle(id);
     if (!b) return res.status(404).json({ error: 'job not found' });
+    if (b.tooLarge) {
+      return res.status(413).json({ error: `this job's evidence is ${Math.round(b.tooLarge / 1048576)} MB, more than one download can carry (${BUNDLE_MAX_BYTES / 1048576} MB): download the checksheet PDF and the evidence separately` });
+    }
     const store = exportStore();
     if (!store) {
       res.set('Content-Disposition', contentDisposition(b.fileName));
@@ -1290,6 +1331,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (refuseSize(bytes, res)) return;
     const key = `${sha256}.${EVIDENCE_MIME[mime]}`;
     if (evidenceBackend.direct) {
+      // Already stored: nothing to upload, and no PUT that could replace it.
+      if (await evidenceBackend.stat?.(key)) {
+        return res.json({ mode: 'exists', storageKey: fullEvidenceKey(key) });
+      }
       const validUntil = Date.now() + PUT_TTL_MS;
       const signed = await evidenceBackend.presignPut({ key, mime, bytes, validUntil });
       return res.json({ mode: 'direct', method: 'PUT', url: signed.url, headers: signed.headers ?? {},
@@ -1318,15 +1363,29 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     if (typeof b.storageKey !== 'string' || bareEvidenceKey(b.storageKey) !== key) {
       return res.status(400).json({ error: `storageKey must be evidence/${key}` });
     }
+    // Evidence already on record under this key is never deleted from here.
+    const onRecord = (await db.query(
+      `SELECT 1 FROM evidence WHERE storage_key IN ($1, $2) LIMIT 1`, [key, fullEvidenceKey(key)])).rows.length > 0;
+    // Size before reading: an oversized object is refused without hashing it.
+    const st = evidenceBackend.stat ? await evidenceBackend.stat(key) : null;
+    if (evidenceBackend.stat && !st) return res.status(404).json({ error: 'nothing has been uploaded under that key' });
+    if (st && st.bytes > EVIDENCE_MAX_BYTES) {
+      if (!onRecord) await evidenceBackend.remove(key);
+      return refuseSize(st.bytes, res);
+    }
     const stored = await evidenceBackend.hashStored(key);
     if (!stored) return res.status(404).json({ error: 'nothing has been uploaded under that key' });
     if (stored.sha256 !== sha256) {
+      if (onRecord) {
+        return res.status(409).json({ error: 'sha256 mismatch on evidence already on record: nothing was deleted; tell the certifier',
+                                      clause: 'IPS 21(4)', claimed: sha256, received: stored.sha256 });
+      }
       await evidenceBackend.remove(key);
       return res.status(409).json({ error: 'sha256 mismatch: the stored bytes differ from the hash computed at capture; the upload was deleted',
                                     clause: 'IPS 21(4)', claimed: sha256, received: stored.sha256 });
     }
     if (stored.bytes > EVIDENCE_MAX_BYTES) {
-      await evidenceBackend.remove(key);
+      if (!onRecord) await evidenceBackend.remove(key);
       return refuseSize(stored.bytes, res);
     }
     const storageKey = evidenceBackend.name === 'disk' ? key : fullEvidenceKey(key);

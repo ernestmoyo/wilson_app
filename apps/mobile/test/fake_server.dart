@@ -438,6 +438,10 @@ class FakeServer {
           final ext = switch (b['mime']) { 'application/pdf' => 'pdf', 'image/png' => 'png', 'image/jpeg' => 'jpg', _ => null };
           if (ext == null) return http.Response('{"error":"not accepted as evidence"}', 415);
           final key = '${b['sha256']}.$ext';
+          // Already stored (same bytes from another device): no PUT URL.
+          if (stored.containsKey(key) && evidenceMode == 'direct') {
+            return http.Response(jsonEncode({'mode': 'exists', 'storageKey': 'evidence/$key'}), 200);
+          }
           return http.Response(
               jsonEncode(evidenceMode == 'direct'
                   ? {
