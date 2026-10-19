@@ -147,6 +147,49 @@ await step('a set without choices refuses scopeChoices', async () => {
   expect(r.status === 400, `${r.status} ${r.text}`);
 });
 
+await step('class 2/3.1 asks for a scope choice, refuses an unknown one, and is authorised through its choices', async () => {
+  const body = (scopeChoices) => ({ client: { legalName: 'Scope Test Paints Limited' }, site: { address: '2 Scope Road' },
+    location: { name: 'Paint store' }, classKey: 'class_2_3', ...(scopeChoices ? { scopeChoices } : {}) });
+  const none = await api.post('/api/jobs').set(H).send(body());
+  expect(none.status === 400 && /pick at least one scope/.test(none.text), `${none.status} ${none.text}`);
+  const bogus = await api.post('/api/jobs').set(H).send(body(['3_1_cabinet', 'nope']));
+  expect(bogus.status === 400 && /unknown scope choice/.test(bogus.text), `${bogus.status} ${bogus.text}`);
+  const sets = await api.get('/api/sheet-sets').set(H);
+  expect(sets.body.sets.find((x) => x.key === 'class_2_3').authorised === true, 'class_2_3 not authorised');
+});
+
+await step('a cabinet-only 3.1 job assesses the cabinet section and the general ones, not the other arrangements', async () => {
+  const c = (await api.post('/api/jobs').set(H).send({ client: { legalName: 'Scope Test Cabinet Limited' }, site: { address: '3 Scope Road' },
+    location: { name: 'Flammables cabinet' }, classKey: 'class_2_3', scopeChoices: ['3_1_cabinet'] })).body;
+  const o = await sync([ev('inspection.open', { jobId: c.jobId, hsLocationId: c.hsLocationId, equipmentUsed: 'iPad',
+    templateCodes: ['wks17-general', 'wks17-class-2-and-3-1-substances'] })]);
+  const i = o.body.applied[0].result.inspectionId;
+  const j = await api.get(`/api/jobs/${c.jobId}`).set(H);
+  expect(JSON.stringify(j.body.scope_choices) === '["3_1_cabinet"]', `scope_choices: ${JSON.stringify(j.body.scope_choices)}`);
+  const out = new Set(j.body.excludedSections.filter((x) => x.template_code === 'wks17-class-2-and-3-1-substances').map((x) => x.section_ordinal));
+  for (const n of [4, 7, 13, 15, 18, 22]) expect(out.has(n), `section ${n} should be excluded: ${[...out]}`);
+  for (const n of [1, 2, 3, 10, 12]) expect(!out.has(n), `section ${n} should be assessed: ${[...out]}`);
+  expect(j.body.excludedSections.every((x) => x.reason === 'not_chosen'), 'reason');
+  // The issuance check counts only what is in scope.
+  const inScope = (await db.query(`SELECT count(*)::int AS n FROM inspection_item_in_scope WHERE inspection_id = $1`, [i])).rows[0].n;
+  const all = (await db.query(`SELECT count(*)::int AS n FROM checksheet_item it JOIN checksheet_section s ON s.id = it.section_id
+                                JOIN inspection_template p ON p.template_id = s.template_id WHERE p.inspection_id = $1`, [i])).rows[0].n;
+  expect(inScope < all, `in scope ${inScope} of ${all}`);
+  await sync([ev('interest.declare', { jobId: c.jobId, conflictFound: false })]);
+  const chk = await api.get(`/api/jobs/${c.jobId}/issuance-check`).set(H);
+  expect(chk.body.blockers.some((b) => String(b.reason).includes(`${inScope} check sheet item(s)`)), JSON.stringify(chk.body.blockers));
+});
+
+await step('a workroom job keeps the shared use section (18) as well as 19 to 21', async () => {
+  const c = (await api.post('/api/jobs').set(H).send({ client: { legalName: 'Scope Test Workroom Limited' }, site: { address: '4 Scope Road' },
+    location: { name: 'Paint mixing room' }, classKey: 'class_2_3', scopeChoices: ['3_1_workroom'] })).body;
+  await sync([ev('inspection.open', { jobId: c.jobId, hsLocationId: c.hsLocationId, equipmentUsed: 'iPad',
+    templateCodes: ['wks17-general', 'wks17-class-2-and-3-1-substances'] })]);
+  const j = await api.get(`/api/jobs/${c.jobId}`).set(H);
+  const out = new Set(j.body.excludedSections.map((x) => x.section_ordinal));
+  for (const n of [18, 19, 20, 21]) expect(!out.has(n), `section ${n} should be assessed`);
+});
+
 await db.close();
 console.log(`\n${pass} passed, ${problems.length} failed`);
 if (problems.length) { console.error(problems.join('\n')); process.exit(1); }

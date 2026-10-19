@@ -42,6 +42,10 @@ const sheetSetFor = (classKey) => SHEET_SETS.sets.find((x) => x.key === classKey
 const kindFor = (classKey) => sheetSetFor(classKey).kind ?? 'location';
 const templatesForClass = (classKey) =>
   (SHEET_SETS.sets.find((x) => x.key === classKey) ?? SHEET_SETS.sets[0]).templates;
+/** The sheet set catalogue as loaded (tests add a temporary set to it). */
+export const sheetSetCatalogue = SHEET_SETS;
+// Whether a set is authorised (its own register entry, or one per scope
+// choice) is setAuthorised in scope.mjs.
 
 /** The letterhead images as data URLs, shared by every rendered document. */
 function letterheadImages() {

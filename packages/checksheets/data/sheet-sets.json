@@ -1,5 +1,5 @@
 {
-  "note": "A sheet set is what a job inspects against. Named by what it is, not by a code. `kind` tells the app which subject the sheet is about: a location (client/site/hazardous substance location), a handler (an applicant), or cylinders (a PCBU importing batches). `authorisation` points at the WorkSafe register entry that permits it; null means outside the certifier's authorisation and the app will not open a job on it.",
+  "note": "A sheet set is what a job inspects against. Named by what it is, not by a code. `kind` tells the app which subject the sheet is about: a location (client/site/hazardous substance location), a handler (an applicant), or cylinders (a PCBU importing batches). `authorisation` points at the WorkSafe register entry that permits it. A set may instead carry `choices`, picked at job start: a section listed under a choice appears only when that choice is picked; a section listed under no choice always appears; `notInScope` sections are never assessed. A set is authorised when its `authorisation` resolves, or when it has choices and every choice's `authorisation` resolves; otherwise the app will not open a job on it. Why each section sits where it does: CHOICES.md.",
   "sets": [
     {
       "key": "class_6_8",
@@ -13,9 +13,43 @@
       "key": "class_2_3",
       "kind": "location",
       "name": "Location: classes 2 and 3.1",
-      "detail": "Flammable gases and liquids. Extracted from the workbook; not within TST100250's authorisation",
+      "detail": "Flammable gases (2.1.1), aerosols (2.1.2) and flammable liquids (3.1). Pick what is present; only those sections are assessed",
       "templates": ["wks17-general", "wks17-class-2-and-3-1-substances"],
-      "authorisation": null
+      "authorisation": null,
+      "choices": [
+        { "key": "2_1_1_gases", "label": "Class 2.1.1: flammable gases in packages or cylinders (up to 2,000 kg)",
+          "authorisation": "location-2-1-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [4, 5, 6, 23] }] },
+        { "key": "2_1_2_aerosols", "label": "Class 2.1.2: aerosols (up to 100,000 L aggregate water capacity)",
+          "authorisation": "location-2-1-2",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [7, 8, 9] }] },
+        { "key": "3_1_cabinet", "label": "Class 3.1: packages in one or more cabinets",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [12] }] },
+        { "key": "3_1_separate_building", "label": "Class 3.1: separate building (types A to D) or external storage area (up to 10,000 L)",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [13, 14, 17] }] },
+        { "key": "3_1_store_in_building", "label": "Class 3.1: store inside a building (up to 10,000 L)",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [15, 16] }] },
+        { "key": "3_1_retail", "label": "Class 3.1: retail shop (regulations 11.32 and 11.33)",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [22] }] },
+        { "key": "3_1_workroom", "label": "Class 3.1: workroom or paint mixing room (AS/NZS 4114)",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [18, 19, 20, 21] }] },
+        { "key": "3_1_use", "label": "Class 3.1: used or in open containers in a building",
+          "authorisation": "location-3-1",
+          "sections": [{ "template": "wks17-class-2-and-3-1-substances", "ordinals": [18] }] }
+      ]
+    },
+    {
+      "key": "class_5_1",
+      "kind": "location",
+      "name": "Location: class 5.1.1 and 5.1.2",
+      "detail": "Oxidising substances: packages up to 30,000 kg or L, stationary containers up to 30,000 L",
+      "templates": ["wks17-general", "wks17-class-5-1-1-and-5-1-2"],
+      "authorisation": "location-5-1-1"
     },
     {
       "key": "handler_6",
@@ -44,6 +78,10 @@
   ],
   "planned": [
     { "name": "Certified handler: fumigants", "authorisation": "handler-fumigants", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" },
-    { "name": "Certified handler: vertebrate toxic agents", "authorisation": "handler-vta", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" }
+    { "name": "Certified handler: vertebrate toxic agents", "authorisation": "handler-vta", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" },
+    { "name": "Location: class 4.1.1", "authorisation": "location-4-1-1", "status": "the Argenta workbook assesses a 4.1.1 substance; waiting on confirmation that it is the 4.1.1 sheet (Q2)" },
+    { "name": "Class 3.1 in stationary container systems (up to 10,000 L)", "authorisation": "location-3-1", "status": "sheet to be supplied (Q1); becomes a class 3.1 choice" },
+    { "name": "Class 3.1 use up to 450 L", "authorisation": "location-3-1", "status": "sheet to be supplied (Q1); adds to the class 3.1 use choice" },
+    { "name": "Stationary container systems: existing tanks, dispensers, process containers", "authorisation": "scs-existing-tanks", "status": "SAT 201 received; its design, construction, fabricator and repair rows are excluded work (C8). Waiting on Q1 for the existing-tank, dispenser and process-container sheets" }
   ]
 }

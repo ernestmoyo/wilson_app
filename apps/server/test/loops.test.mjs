@@ -57,7 +57,8 @@ await step('the sheet-set catalogue marks what TST100250 may certify', async () 
   const c23 = r.body.sets.find((x) => x.key === 'class_2_3');
   expect(c68.authorised === true && c68.name === 'Location: classes 6 or 8', JSON.stringify(c68));
   expect(c68.authorisationEntry.regulation.includes('13.38'), 'register entry missing');
-  expect(c23.authorised === false, 'class 2/3.1 is outside the authorisation');
+  // Appendix A (19 Oct 2026): 2.1.1, 2.1.2 and 3.1 are on the register, one entry per choice.
+  expect(c23.authorised === true && c23.choices?.length > 0 && c23.choices.every((c) => c.authorisation), 'class 2/3.1 authorised through its choices');
   expect(r.body.certifier.number === 'TST100250', 'certifier number');
   return `${r.body.sets.length} sets, ${r.body.planned.length} planned`;
 });

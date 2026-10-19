@@ -48,9 +48,21 @@
       "sectionOrdinal": 3,
       "itemOrdinal": 1,
       "itemNumber": "1",
-      "status": "compliant",
-      "statusSource": "inferred:text",
+      "status": "non_compliant",
+      "statusSource": "runs:FF305496+FFFF0000",
       "comment": "Evidence of regulation 4.5 training reviewed with the following: training and instruction in the following: (i) the physico-chemical and health hazards associated with the hazardous substances the worker uses at work: (ii) the procedures (if applicable) for the safe use, handling, manufacture, storage, and disposal of the hazardous substances: (iii) practice in the safe use of plant (including personal protective equipment) necessary to manage the hazardous substances: (iiia) the worker’s obligations under these regulations: (iv) the actions that the worker should take in an emergency involving the hazardous substances; PCBU to complete training records schedule",
+      "runs": [
+        {
+          "text": "Evidence of regulation 4.5 training reviewed with the following: training and instruction in the following: (i) the physico-chemical and health hazards associated with the hazardous substances the worker uses at work: (ii) the procedures (if applicable) for the safe use, handling, manufacture, storage, and disposal of the hazardous substances: (iii) practice in the safe use of plant (including personal protective equipment) necessary to manage the hazardous substances: (iiia) the worker’s obligations under these regulations: (iv) the actions that the worker should take in an emergency involving the hazardous substances;",
+          "colour": "FF305496",
+          "role": "blue"
+        },
+        {
+          "text": "PCBU to complete training records schedule",
+          "colour": "FFFF0000",
+          "role": "finding"
+        }
+      ],
       "row": 23
     },
     {
@@ -210,9 +222,21 @@
       "sectionOrdinal": 6,
       "itemOrdinal": 6,
       "itemNumber": null,
-      "status": "compliant",
-      "statusSource": "inferred:text",
+      "status": "non_compliant",
+      "statusSource": "runs:theme4+FFFF0000",
       "comment": "ERP provides a compliant inventory, and a partially compliant site plan",
+      "runs": [
+        {
+          "text": "ERP provides a compliant inventory, and",
+          "colour": "theme4",
+          "role": "blue"
+        },
+        {
+          "text": "a partially compliant site plan",
+          "colour": "FFFF0000",
+          "role": "finding"
+        }
+      ],
       "row": 44
     },
     {
@@ -265,8 +289,25 @@
       "itemOrdinal": 12,
       "itemNumber": null,
       "status": "non_compliant",
-      "statusSource": "font:FFFF0000",
+      "statusSource": "runs:FFFF0000+FF000000",
       "comment": "ERP has not been tested It can be verified that new persons are competent, that new procedures are workable, and There are no records of the tests held (new implementation).",
+      "runs": [
+        {
+          "text": "ERP has not been tested",
+          "colour": "FFFF0000",
+          "role": "finding"
+        },
+        {
+          "text": "It can be verified that new persons are competent, that new procedures are workable, and",
+          "colour": "FF000000",
+          "role": "text"
+        },
+        {
+          "text": "There are no records of the tests held (new implementation).",
+          "colour": "FFFF0000",
+          "role": "finding"
+        }
+      ],
       "row": 50
     },
     {
@@ -282,9 +323,31 @@
       "sectionOrdinal": 7,
       "itemOrdinal": 2,
       "itemNumber": "2",
-      "status": "compliant",
-      "statusSource": "inferred:text",
+      "status": "non_compliant",
+      "statusSource": "runs:FF7030A0+FF000000+FFFF0000",
       "comment": "a. Maximum pooling potential is 17,350 L, made of 5,850 of containers less than 60L and 11,500L made of containers between 60L and 450L,including Class 6, 8 and 9 hazardous substances b. Prescribed capacity of the secondary containment is 8,250L, determined using WKS-17-secondary-containment-calculation-tool c. Actual capacity 5,000 L d. Secondary containment is part of the Type B storage container e. The (secondary containment) bund was visually inspected for its impevious nature and it was established to be of such standard to hold any hazardous substance in the event of accidental release. f. The bund is fillted with a drain valve through which hazardous substances can be recovered g. There is HAZCHEM signage with a flammable symbol to notify people that flammable substances are present in this location, with the waring words: FIRE, NAKED FLAME and SMOKING PROHIBITED. h. A door secures Bund and lock; only authorised personnel are allowed into the bund. There is adequate signage around the bund to improve awareness and prevent people from being exposed",
+      "runs": [
+        {
+          "text": "a. Maximum pooling potential is 17,350 L, made of 5,850 of containers less than 60L and 11,500L made of containers between 60L and 450L,including Class 6, 8 and 9 hazardous substances",
+          "colour": "FF7030A0",
+          "role": "text"
+        },
+        {
+          "text": "b. Prescribed capacity of the secondary containment is 8,250L, determined using WKS-17-secondary-containment-calculation-tool",
+          "colour": "FF000000",
+          "role": "text"
+        },
+        {
+          "text": "c. Actual capacity 5,000 L",
+          "colour": "FFFF0000",
+          "role": "finding"
+        },
+        {
+          "text": "d. Secondary containment is part of the Type B storage container e. The (secondary containment) bund was visually inspected for its impevious nature and it was established to be of such standard to hold any hazardous substance in the event of accidental release. f. The bund is fillted with a drain valve through which hazardous substances can be recovered g. There is HAZCHEM signage with a flammable symbol to notify people that flammable substances are present in this location, with the waring words: FIRE, NAKED FLAME and SMOKING PROHIBITED. h. A door secures Bund and lock; only authorised personnel are allowed into the bund. There is adequate signage around the bund to improve awareness and prevent people from being exposed",
+          "colour": "FF000000",
+          "role": "text"
+        }
+      ],
       "row": 53
     },
     {
@@ -336,8 +399,8 @@
       "sectionOrdinal": 8,
       "itemOrdinal": 2,
       "itemNumber": "2",
-      "status": "non_compliant",
-      "statusSource": "font:FFFF0000",
+      "status": "compliant",
+      "statusSource": "inferred:text",
       "comment": "Site plan has the following: a. a scale that enables the plan to meet its purpose a legend or key that defines b. colours, shaded areas, symbols, abbreviations, etc.",
       "row": 60
     }

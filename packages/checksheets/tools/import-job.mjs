@@ -25,6 +25,7 @@ if (!file || !flag('api') || !flag('passcode')) {
 
 const CODES = [
   [/general/i, 'wks17-general'],
+  [/5\.1\.1|5\.1\.2|class 5/i, 'wks17-class-5-1-1-and-5-1-2'],
   [/6\.1|8\.2|class 6|class 8/i, 'wks17-class-6-1a-6-1b-6-1c-8-2a-8'],
   [/class 2|3\.1/i, 'wks17-class-2-and-3-1-substances'],
 ];
@@ -45,6 +46,7 @@ for (const ws of wb.worksheets) {
     findings.push({
       templateCode: code, sectionOrdinal: f.sectionOrdinal, itemOrdinal: f.itemOrdinal,
       status: f.status ?? 'pending', comment: f.comment ?? null, failureReason: f.failureReason ?? f.reason ?? null,
+      generalComment: f.generalComment ?? null,
     });
   }
   const dateCell = ex.siteBlock?.['Date of Inspection/Site Visit'];

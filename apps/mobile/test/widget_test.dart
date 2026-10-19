@@ -24,12 +24,29 @@ SessionStore signedIn() => MemorySessionStore()
 void main() {
   group('generated WKS-17 templates', () {
     test('all three templates load with the expected shape', () {
-      expect(kChecksheetTemplates.length, 6);
+      expect(kChecksheetTemplates.length, 7);
       final general = kTemplatesByCode['wks17-general']!;
       expect(general.sections.length, 8);
       expect(general.itemCount, 36);
       expect(kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!.itemCount, 18);
       expect(kTemplatesByCode['wks17-class-2-and-3-1-substances']!.itemCount, 43);
+      expect(kTemplatesByCode['wks17-class-5-1-1-and-5-1-2']!.itemCount, 18);
+    });
+
+    test('sheet sets carry their scope choices (class 2/3.1, 19 Oct 2026)', () {
+      final set = kSheetSetsByKey['class_2_3']!;
+      expect(set.hasChoices, isTrue);
+      expect(set.choices.every((c) => c.authorisation != null), isTrue);
+      const code = 'wks17-class-2-and-3-1-substances';
+      // Under no choice: always assessed (section 1, substances to be secured).
+      expect(set.sectionInScope(code, 1, const []), isTrue);
+      // Under a choice: only when it is picked (section 12, storage cabinet).
+      expect(set.sectionInScope(code, 12, const ['3_1_cabinet']), isTrue);
+      expect(set.sectionInScope(code, 12, const ['2_1_1_gases']), isFalse);
+      // No choices recorded (a job from before choices): the whole set.
+      expect(set.sectionInScope(code, 12, null), isTrue);
+      expect(kSheetSetsByKey['class_5_1']!.authorisation, 'location-5-1-1');
+      expect(kSheetSetsByKey['class_6_8']!.hasChoices, isFalse);
     });
 
     test('item text is the verbatim Performance Standard wording', () {
@@ -46,17 +63,19 @@ void main() {
       final general = kTemplatesByCode['wks17-general']!;
       final item1 = general.sections.first.items.first;
 
-      // Shared base: the reference every class family cites.
-      expect(item1.regulationRefs, ['10.34']);
+      // Shared base: the references every class family cites. Since class 5.1
+      // (12.17 only, 19 Oct 2026) joined, none is common to all three.
+      expect(item1.regulationRefs, isEmpty);
 
       // Class 6/8 cites four more regulations for the same requirement.
       expect(item1.regulationRefsFor('class_6_8'),
           ['10.34', '10.36', '12.17', '12.42', '13.38']);
       expect(item1.regulationRefsFor('class_2_3'), ['10.34']);
+      expect(item1.regulationRefsFor('class_5_1'), ['12.17']);
 
       // An unknown class key must fall back to the base, never throw.
-      expect(item1.regulationRefsFor('class_9_9'), ['10.34']);
-      expect(item1.regulationRefsFor(null), ['10.34']);
+      expect(item1.regulationRefsFor('class_9_9'), item1.regulationRefs);
+      expect(item1.regulationRefsFor(null), item1.regulationRefs);
     });
 
     test('curly apostrophes survive codegen escaping', () {

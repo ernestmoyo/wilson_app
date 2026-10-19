@@ -264,6 +264,9 @@ Future<Inspection> openInspectionForJob(ApiClient api, SyncService sync, int job
     insp.inspectionId = job.inspectionId;
   } else {
     await sync.openInspection(insp, jobId: job.jobId, hsLocationId: job.hsLocationId);
+    // Opening decides which sections are out of scope; read them back so the
+    // sheet hides them from its first frame.
+    job = await fetchJob(api, jobId);
   }
   applyJobToInspection(insp, job);
   return insp;

@@ -39,8 +39,8 @@
       "sectionOrdinal": 3,
       "itemOrdinal": 1,
       "itemNumber": "1",
-      "status": "compliant",
-      "statusSource": "inferred:text",
+      "status": "non_compliant",
+      "statusSource": "runs:FFFF0000",
       "comment": "Hazardous area not established A hazardous atmosphere zone should be established for flammable liquids in 100 L quantities in closed packages, according to the Interpretive Guide: Storing up to 2,000 L of Flammable Liquid in Closed Packages",
       "row": 22
     },
@@ -162,15 +162,6 @@
       "row": 39
     },
     {
-      "sectionOrdinal": 7,
-      "itemOrdinal": 2,
-      "itemNumber": "1",
-      "status": "not_applicable",
-      "statusSource": "inferred:text",
-      "comment": "Not Applicable",
-      "row": 40
-    },
-    {
       "sectionOrdinal": 8,
       "itemOrdinal": 1,
       "itemNumber": "2",
@@ -255,9 +246,21 @@
       "sectionOrdinal": 14,
       "itemOrdinal": 1,
       "itemNumber": "1",
-      "status": "compliant",
-      "statusSource": "inferred:text",
+      "status": "non_compliant",
+      "statusSource": "runs:FF00B050+FFFF0000",
       "comment": "The type B strage building stores 3,350 Class 3.1 substances in 5 and 20L containers. 3,000L are in 20L containers and 350L is stored in 5L containers. The prescribed separation distance, based on the Separation distances calculation tool provided by Worksafe, is more than 4.18m The separation distance verified on site visit was XXX, which is more than the 4.35m separation idndicated on the site plan",
+      "runs": [
+        {
+          "text": "The type B strage building stores 3,350 Class 3.1 substances in 5 and 20L containers. 3,000L are in 20L containers and 350L is stored in 5L containers. The prescribed separation distance, based on the Separation distances calculation tool provided by Worksafe, is more than 4.18m",
+          "colour": "FF00B050",
+          "role": "compliant"
+        },
+        {
+          "text": "The separation distance verified on site visit was XXX, which is more than the 4.35m separation idndicated on the site plan",
+          "colour": "FFFF0000",
+          "role": "finding"
+        }
+      ],
       "row": 57
     },
     {

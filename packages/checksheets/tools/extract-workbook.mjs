@@ -27,15 +27,32 @@ import { basename, join } from 'path';
 const require2 = createRequire(new URL('../package.json', import.meta.url));
 const ExcelJS = require2('exceljs');
 
-const EXTRACTOR_VERSION = '1.0.0';
+const EXTRACTOR_VERSION = '1.1.0';
 
 // Font colours the workbook uses to encode a finding's result.
 const STATUS_BY_COLOUR = {
   FFFF0000: 'non_compliant', // red   — "NB: Non compliances are in red"
-  FF00B050: 'compliant',     // green — resolved on re-verification
+  FF00B050: 'compliant',     // green — resolved on re-verification, or a reviewer's correction
 };
 
+/**
+ * What a run's colour means. Red and green carry a result; blue is how the
+ * reviewer writes, and is ALSO the default comment colour of several sheets
+ * (theme accent 1 for whole cells), so blue alone never makes a general
+ * comment: the "General comment" label does. Blue is kept on the run so a
+ * reviewer can see it.
+ */
+const ROLE_BY_COLOUR = {
+  FFFF0000: 'finding',
+  FF00B050: 'compliant',
+  FF0070C0: 'blue',
+  FF305496: 'blue',
+  theme4: 'blue',
+};
+const roleOf = (colour) => ROLE_BY_COLOUR[colour] ?? 'text';
+
 const NA_PATTERN = /^\s*(n\/?a\b|not applicable)/i;
+const GENERAL_COMMENT = /\(?\s*general comment\s*[:\-–]?\s*/i;
 
 /** Flatten every shape ExcelJS can hand back into plain text. */
 function text(value) {
@@ -63,10 +80,83 @@ function text(value) {
  */
 const clean = (v) => text(v).replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 
-function fontColour(cell) {
-  const c = cell?.font?.color;
+function colourOf(font) {
+  const c = font?.color;
   if (!c) return null;
   return c.argb || (c.theme !== undefined ? `theme${c.theme}` : null);
+}
+
+function fontColour(cell) {
+  return colourOf(cell?.font);
+}
+
+/**
+ * The cell as coloured runs. A rich-text cell carries one colour per run
+ * (a red finding beside green or blue text in the same cell); a run with no
+ * colour of its own takes the cell's. A plain cell is one run.
+ */
+function runsOf(cell) {
+  const v = cell?.value;
+  const cellColour = fontColour(cell);
+  if (v && typeof v === 'object' && Array.isArray(v.richText)) {
+    return v.richText.map((r) => ({ text: r.text ?? '', colour: colourOf(r.font) ?? cellColour }));
+  }
+  return [{ text: text(v), colour: cellColour }];
+}
+
+/**
+ * The finding recorded in a Comments cell, read run by run.
+ *
+ *   - a run labelled "General comment" is the general comment (advisory),
+ *     whatever its colour;
+ *   - any red run left is a finding: non-compliant;
+ *   - otherwise, all coloured text green: compliant (font colour);
+ *   - otherwise the text decides, exactly as for a single-colour cell.
+ *
+ * A plain (single-run) cell gives the same result as extractor 1.0.0.
+ * Mixed cells keep their runs so a reviewer can see what was read.
+ */
+function readFinding(cell) {
+  const runs = runsOf(cell).map((r) => ({ ...r, text: r.text.replace(/ /g, ' ') }));
+  const solid = runs.filter((r) => r.text.trim() !== '');
+  const general = [];
+  const rest = [];
+  for (const r of solid) {
+    if (GENERAL_COMMENT.test(r.text)) {
+      general.push(r.text.replace(GENERAL_COMMENT, '').replace(/\)\s*$/, ''));
+    } else {
+      rest.push(r);
+    }
+  }
+  // Whitespace-only runs carry no colour that matters but do carry the line
+  // break between two runs, so the comment text keeps them.
+  const comment = clean(runs.filter((r) => !GENERAL_COMMENT.test(r.text)).map((r) => r.text).join('')) || null;
+  const generalComment = clean(general.join(' ')) || null;
+
+  let status = null;
+  let statusSource = 'inferred:text';
+  const plain = runs.length === 1;
+  if (plain) {
+    const colour = runs[0].colour;
+    if (STATUS_BY_COLOUR[colour]) { status = STATUS_BY_COLOUR[colour]; statusSource = `font:${colour}`; }
+  } else {
+    const colours = [...new Set(rest.map((r) => r.colour ?? 'none'))];
+    if (rest.some((r) => roleOf(r.colour) === 'finding')) {
+      status = 'non_compliant'; statusSource = `runs:${colours.join('+')}`;
+    } else if (rest.length && rest.every((r) => roleOf(r.colour) === 'compliant')) {
+      status = 'compliant'; statusSource = `runs:${colours.join('+')}`;
+    }
+  }
+  if (!status) status = NA_PATTERN.test(comment ?? '') ? 'not_applicable' : comment || generalComment ? 'compliant' : 'pending';
+
+  const mixed = new Set(solid.map((r) => roleOf(r.colour))).size > 1 || general.length > 0;
+  return {
+    status,
+    statusSource,
+    comment,
+    ...(generalComment ? { generalComment } : {}),
+    ...(mixed ? { runs: solid.map((r) => ({ text: clean(r.text), colour: r.colour ?? null, role: GENERAL_COMMENT.test(r.text) ? 'general_comment' : roleOf(r.colour) })) } : {}),
+  };
 }
 
 /**
@@ -177,11 +267,24 @@ function extractSheet(ws, workbookName) {
     const d = clean(ws.getCell(`D${r}`).value);
     const e = clean(ws.getCell(`E${r}`).value);
 
-    if (!a && !b && !c) { inDocControl = false; continue; }
+    if (!a && !b && !c) {
+      // Document control's last row can hold only the scope confirmation (E).
+      if (inDocControl && meta.scopeOfAuthorisation && /^I can confirm/i.test(e)) {
+        meta.scopeOfAuthorisation.confirmation = e;
+        continue;
+      }
+      inDocControl = false;
+      continue;
+    }
 
     // Trailing blocks close the table.
     if (/^NB:/i.test(a)) { meta.note = a; trailing.note = a; continue; }
-    if (/^Declaration:/i.test(a)) { meta.declaration = a; trailing.declaration = a; continue; }
+    // The declaration, with or without its "Declaration:" label (the class 5
+    // sheet drops it). A merged row repeats it; keep the first.
+    if (/^(Declaration:\s*)?I verify that I have examined/i.test(a)) {
+      if (!meta.declaration) { meta.declaration = a; trailing.declaration = a; }
+      continue;
+    }
     if (/^Decision:/i.test(a)) { trailing.decision = a; continue; }
     if (/^Reference:/i.test(a)) {
       const ref = clean(ws.getCell(`A${r + 1}`).value) || null;
@@ -197,7 +300,7 @@ function extractSheet(ws, workbookName) {
     if (/^Document Control$/i.test(a)) {
       inDocControl = true;
       meta.documentControl = {};
-      if (/^Scope of Authorisation$/i.test(d)) {
+      if (/^Scope( of Authorisation)?$/i.test(d)) {
         meta.scopeOfAuthorisation = { heading: d, text: null, confirmation: null };
       }
       continue;
@@ -265,17 +368,18 @@ function extractSheet(ws, workbookName) {
       evidenceRequired: inferEvidenceRequired(d),
     });
 
-    // Instance layer: the finding recorded against this item in this workbook.
-    const colour = fontColour(ws.getCell(`E${r}`));
-    let status = STATUS_BY_COLOUR[colour];
-    if (!status) status = NA_PATTERN.test(e) ? 'not_applicable' : e ? 'compliant' : 'pending';
+    // Instance layer: the finding recorded against this item in this workbook,
+    // read run by run (a cell can hold a red finding beside green text).
+    const f = readFinding(ws.getCell(`E${r}`));
     findings.push({
       sectionOrdinal: section.ordinal,
       itemOrdinal,
       itemNumber: a || null,
-      status,
-      statusSource: STATUS_BY_COLOUR[colour] ? `font:${colour}` : 'inferred:text',
-      comment: e || null,
+      status: f.status,
+      statusSource: f.statusSource,
+      comment: f.comment,
+      ...(f.generalComment ? { generalComment: f.generalComment } : {}),
+      ...(f.runs ? { runs: f.runs } : {}),
       row: r,
     });
   }
@@ -299,8 +403,28 @@ function extractSheet(ws, workbookName) {
   meta.title = fix('A1', meta.title,
     meta.title.replace(/\b(\w+)\s+\1\b/i, '$1'), 'duplicated word');
 
+  if (meta.declaration) {
+    if (!/^Declaration:/i.test(meta.declaration)) {
+      meta.declaration = fix('Declaration', meta.declaration, `Declaration: ${meta.declaration}`,
+        'the "Declaration:" label every other sheet carries was missing');
+    }
+    // "Regulation 112.17": the Regulations have no part 112; the leading digit is doubled.
+    meta.declaration = fix('Declaration', meta.declaration,
+      meta.declaration.replace(/Regulation\s+(\d)(\1\d)\.(\d+)/i, (m, _d, part, n) => `Regulation ${part}.${n}`),
+      'regulation number with a doubled leading digit (no such part of the Regulations)');
+    trailing.declaration = meta.declaration;
+  }
+  if (meta.scopeOfAuthorisation && /^Scope$/i.test(meta.scopeOfAuthorisation.heading ?? '')) {
+    meta.scopeOfAuthorisation.heading = fix('Scope of Authorisation heading', meta.scopeOfAuthorisation.heading,
+      'Scope of Authorisation', 'heading shortened in this sheet; named as on every other sheet');
+  }
+
+  // B5: every location sheet's scope text was copied from the class 6/8 sheet
+  // ("classes 6 or 8 … Regulation 13.38"). It names this sheet's own classes,
+  // and the regulation this sheet's own declaration cites.
   const declReg = meta.declaration?.match(/Regulation\s+([\d.]+)/i)?.[1] ?? null;
   const classPhrase = /class\s+2\s+and\s+3\.1/i.test(meta.title) ? 'classes 2 or 3.1'
+    : /class\s+5\.1\.1/i.test(meta.title) ? 'classes 5.1.1 or 5.1.2'
     : /6\.1A|class(es)?\s+6/i.test(meta.title) ? 'classes 6 or 8' : null;
   if (meta.scopeOfAuthorisation?.text && classPhrase && declReg) {
     const t = meta.scopeOfAuthorisation.text;
@@ -311,19 +435,81 @@ function extractSheet(ws, workbookName) {
       'scope text copied from the class 6/8 sheet; class and regulation aligned to this sheet’s own declaration');
   }
 
+  // A full-width row holding nothing but a number, after the last item, is a
+  // stray cell (the class 5 general sheet has "8" under the NB note).
+  for (let k = sections.length - 1; k >= 0; k--) {
+    const s = sections[k];
+    if (s.items.length || !/^\d+$/.test(s.title)) break;
+    corrections.push({ where: `section ${s.ordinal}`, from: s.title, to: null,
+      reason: 'a lone number in a full-width row after the last item; not a section' });
+    sections.splice(k, 1);
+  }
+
+  // One requirement split across two rows that carry the same number, the
+  // first ending mid-sentence ("… present and"). Merged into one item; the
+  // second row's line breaks become sentence breaks.
+  for (const s of sections) {
+    for (let k = 0; k + 1 < s.items.length; k++) {
+      const i = s.items[k];
+      const nxt = s.items[k + 1];
+      if (!(i.number && i.number === nxt.number && /\band$/i.test(i.action))) continue;
+      // The second row is a list of instructions, one per line, without full
+      // stops: a stop goes before each instruction verb that starts a new one.
+      const tail = (nxt.action.charAt(0).toLowerCase() + nxt.action.slice(1))
+        .replace(/([^.;:])\s+(?=(?:Determine|Confirm|Verify|Establish|Ascertain|Review|Check)\b)/g, '$1. ');
+      const merged = `${i.action} ${tail}`;
+      corrections.push({ where: `${s.title}, items ${i.number} and ${nxt.number}`,
+        from: `${i.action} | ${nxt.action}`, to: merged,
+        reason: 'one requirement split across two rows in the workbook, both numbered ' + i.number + '; merged, references combined' });
+      i.action = merged;
+      i.regulationRefs = [...new Set([...i.regulationRefs, ...parseRegulations(nxt.regulationRaw).refs])];
+      i._mergedRefs = i.regulationRefs;
+      i.records = i.records === nxt.records ? i.records : clean(`${i.records} ${nxt.records}`);
+      i.evidenceRequired = i.evidenceRequired || nxt.evidenceRequired;
+      s.items.splice(k + 1, 1);
+      // The instance follows: the second row's comment joins the first's.
+      const fi = findings.findIndex((f) => f.sectionOrdinal === s.ordinal && f.itemOrdinal === k + 1);
+      const fn = findings[fi + 1];
+      if (fi >= 0 && fn) {
+        const f = findings[fi];
+        f.comment = [...new Set([f.comment, fn.comment].filter(Boolean))].join(' ') || null;
+        if (fn.status === 'non_compliant' || f.status === 'pending') { f.status = fn.status; f.statusSource = fn.statusSource; }
+        findings.splice(fi + 1, 1);
+        for (const g of findings) if (g.sectionOrdinal === s.ordinal && g.itemOrdinal > k + 1) g.itemOrdinal -= 1;
+      }
+      s.items.forEach((it, x) => { it.ordinal = x + 1; });
+      k -= 1;
+    }
+  }
+
   for (const s of sections) {
     const isErp = /emergency response/i.test(s.title);
     for (const i of s.items) {
       if (i.regulationRaw?.includes('©')) {
         i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, i.regulationRaw,
-          i.regulationRaw.replace(/©/g, '(c)'), 'copyright symbol autocorrected from "(c)"');
+          i.regulationRaw.replace(/\s*©/g, '(c)'), 'copyright symbol autocorrected from "(c)"');
+      }
+      for (const field of ['action', 'records']) {
+        if (/—\(/.test(i[field])) {
+          i[field] = fix(`section ${s.ordinal} item ${i.ordinal} ${field}`, i[field],
+            i[field].replace(/—\(/g, '— ('), 'missing space after a dash before a list marker, as written everywhere else in the Performance Standard text');
+        }
+      }
+      if (i.regulationRaw?.includes('€')) {
+        i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, i.regulationRaw,
+          i.regulationRaw.replace(/\s*€/g, '(e)'), 'euro sign autocorrected from "(e)"');
+      }
+      if (i.regulationRaw && /\)\)/.test(i.regulationRaw)) {
+        i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, i.regulationRaw,
+          i.regulationRaw.replace(/\)\)+/g, ')'), 'unbalanced closing parenthesis');
       }
       if (isErp && i.regulationRaw === '5.1') {
         i.regulationRaw = fix(`section ${s.ordinal} item ${i.ordinal} regulation`, '5.1', '5.10',
           'sits between 5.9 and 5.11; Excel dropped the trailing zero');
       }
       const { refs, url } = parseRegulations(i.regulationRaw);
-      i.regulationRefs = refs;
+      i.regulationRefs = i._mergedRefs ? [...new Set([...refs, ...i._mergedRefs])] : refs;
+      delete i._mergedRefs;
       i.guidanceUrl = url;
       if (i.number === null) {
         i.number = fix(`section ${s.ordinal} item ${i.ordinal} number`, null, String(i.ordinal),

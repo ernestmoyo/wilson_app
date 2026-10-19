@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 import request from 'supertest';
 
 import { connect, migrate } from '../src/db.mjs';
-import { buildApp } from '../src/app.mjs';
+import { buildApp, sheetSetCatalogue } from '../src/app.mjs';
 import { hashPasscode } from '../src/auth.mjs';
 
 let pass = 0;
@@ -194,8 +194,26 @@ await step('granted needs every non-compliance closed; conditional does not; a m
   expect(granted.status === 422 && /reg 13.39/.test(granted.text), `granted over open NC: ${granted.status} ${granted.text}`);
   const cond = await api.post(`/api/jobs/${E.jobId}/certificate`).set(cert).send({ inspectionId: insp, decision: 'conditional', conditions: ['Close the finding within 30 days'], certificateNumber: 'TST100250-E', issuedTo: 'x', appliesTo: 'x', issueDate: '2026-09-11' });
   expect(cond.status === 201, `conditional: ${cond.status} ${cond.text}`);
-  const outside = await api.post('/api/jobs').set(cert).send({ client: { legalName: 'x' }, site: { address: 'x' }, location: { name: 'x' }, classKey: 'class_2_3' });
-  expect(outside.status === 400 && /authorisation/.test(outside.text), `outside authorisation: ${outside.status}`);
+  // Every real set is now authorised (Appendix A), so the refusal is proved on
+  // temporary sets: one with no register entry, one whose choices are not all
+  // on the register. They are removed again before anything else runs.
+  const temp = [
+    { key: 'test_unauthorised', kind: 'location', name: 'Test: outside authorisation', templates: ['wks17-general'], authorisation: null },
+    { key: 'test_choice_unauthorised', kind: 'location', name: 'Test: one choice outside authorisation', templates: ['wks17-general'], authorisation: null,
+      choices: [{ key: 'a', label: 'a', authorisation: 'location-6-8', sections: [] }, { key: 'b', label: 'b', authorisation: 'not-on-the-register', sections: [] }] },
+  ];
+  sheetSetCatalogue.sets.push(...temp);
+  try {
+    for (const t of temp) {
+      const outside = await api.post('/api/jobs').set(cert).send({ client: { legalName: 'x' }, site: { address: 'x' }, location: { name: 'x' }, classKey: t.key });
+      expect(outside.status === 400 && /authorisation/.test(outside.text), `${t.key} outside authorisation: ${outside.status}`);
+    }
+    const listed = (await api.get('/api/sheet-sets').set(cert)).body.sets;
+    expect(temp.every((t) => listed.find((x) => x.key === t.key)?.authorised === false), 'unauthorised sets listed as such');
+    expect(listed.find((x) => x.key === 'class_2_3')?.authorised === true, 'class 2/3.1 authorised through its choices');
+  } finally {
+    sheetSetCatalogue.sets.splice(sheetSetCatalogue.sets.length - temp.length, temp.length);
+  }
   const unknown = await api.post('/api/jobs').set(cert).send({ client: { legalName: 'x' }, site: { address: 'x' }, location: { name: 'x' }, classKey: 'nope' });
   expect(unknown.status === 400, `unknown set: ${unknown.status}`);
 });
