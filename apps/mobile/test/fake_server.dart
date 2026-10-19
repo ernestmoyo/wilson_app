@@ -92,6 +92,19 @@ class FakeServer {
   /// When true, class_2_3 is authorised and offers scope choices (19 Oct 2026).
   bool class23WithChoices = false;
 
+  // ── evidence ──────────────────────────────────────────────────────────────
+  /// Evidence rows as GET /api/jobs/:id returns them.
+  final List<Map<String, dynamic>> evidence = [];
+
+  /// 'server' (disk: bytes POSTed here) or 'direct' (Blob/Spaces: PUT to storage).
+  String evidenceMode = 'server';
+
+  /// Bytes as they reached the server route or the storage PUT, by key.
+  final Map<String, List<int>> stored = {};
+
+  /// Headers each storage PUT carried (must not include our session token).
+  final List<Map<String, String>> storagePutHeaders = [];
+
   /// A board row for another job, shaped like the real /api/jobs row.
   static Map<String, dynamic> row(int id, int clientId, String client, String location,
           {String stage = 'site_inspection', String? address, String? lastActivity}) =>
@@ -212,6 +225,7 @@ class FakeServer {
                 ? ['compliance_evaluation']
                 : ['gap_closure', 'site_inspection', 'certificate_issued'],
         'communications': comms,
+        'evidence': evidence,
         'events': [
           for (final e in events.reversed)
             {
@@ -305,6 +319,23 @@ class FakeServer {
           units.add({'ordinal': units.length + 1, 'fields': <String, dynamic>{}});
         }
         (units[ord - 1]['fields'] as Map).addAll((p['fields'] as Map? ?? const {}).cast<String, dynamic>());
+      case 'evidence.attach':
+        final f = findings.where((x) =>
+            x['template_code'] == p['templateCode'] &&
+            x['section_ordinal'] == p['sectionOrdinal'] &&
+            x['item_ordinal'] == p['itemOrdinal']);
+        evidence.add({
+          'id': 500 + evidence.length,
+          'finding_id': f.isEmpty ? null : f.first['id'],
+          'kind': p['kind'] ?? 'photo',
+          'sha256': p['sha256'],
+          'storage_key': p['storageKey'],
+          'original_name': p['originalName'],
+          'mime': p['mime'],
+          'bytes': p['bytes'],
+          'captured_by_name': p['capturedByName'],
+          'captured_at': p['capturedAt'],
+        });
       case 'job.unit.remove':
         units.removeWhere((u) => u['ordinal'] == p['ordinal']);
       case 'finding.upsert':
@@ -347,6 +378,12 @@ class FakeServer {
         }
         if (path == '/api/auth/logout') return http.Response('{"ok":true}', 200);
         if (path == '/api/health') return http.Response('{"ok":true}', 200);
+        // Object storage, for a direct (presigned) upload.
+        if (req.url.host == 'storage.invalid' && req.method == 'PUT') {
+          storagePutHeaders.add(req.headers);
+          stored[req.url.pathSegments.last] = req.bodyBytes;
+          return http.Response('{}', 200);
+        }
         if (requireLogin && req.headers['authorization'] != 'Bearer $token') {
           return http.Response('{"error":"login required"}', 401);
         }
@@ -394,6 +431,54 @@ class FakeServer {
           sent.add(b);
           comms.add({'id': comms.length + 1, 'direction': 'outbound', 'medium': 'email', 'party': b['to'], 'summary': 'Prepared the ${b['document'] == 'certificate' ? 'certificate' : 'non-compliance report'} for ${b['to']} (email not sent: SMTP_URL not configured)', 'occurred_at': '2026-09-10T00:00:00Z'});
           return http.Response(jsonEncode({'sent': false, 'reason': 'SMTP_URL not configured', 'summary': 'Prepared for ${b['to']}'}), 200);
+        }
+        if (path == '/api/evidence/upload-url' && req.method == 'POST') {
+          if (role == 'viewer') return http.Response('{"error":"a viewer cannot upload evidence","clause":"Role"}', 403);
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          final ext = switch (b['mime']) { 'application/pdf' => 'pdf', 'image/png' => 'png', 'image/jpeg' => 'jpg', _ => null };
+          if (ext == null) return http.Response('{"error":"not accepted as evidence"}', 415);
+          final key = '${b['sha256']}.$ext';
+          return http.Response(
+              jsonEncode(evidenceMode == 'direct'
+                  ? {
+                      'mode': 'direct',
+                      'method': 'PUT',
+                      'url': 'https://storage.invalid/evidence/$key?sig=1',
+                      'headers': {'x-content-type': b['mime']},
+                      'storageKey': 'evidence/$key',
+                    }
+                  : {
+                      'mode': 'server',
+                      'method': 'POST',
+                      'url': '/api/evidence/upload',
+                      'headers': {'content-type': b['mime'], 'x-sha256': b['sha256']},
+                      'storageKey': key,
+                    }),
+              200);
+        }
+        if (path == '/api/evidence/upload' && req.method == 'POST') {
+          final sha = req.headers['x-sha256']!;
+          final ext = req.headers['content-type'] == 'application/pdf' ? 'pdf' : 'jpg';
+          stored['$sha.$ext'] = req.bodyBytes;
+          return http.Response(
+              jsonEncode({'sha256': sha, 'bytes': req.bodyBytes.length, 'mime': req.headers['content-type'], 'storageKey': '$sha.$ext', 'url': null, 'backend': 'disk'}),
+              201);
+        }
+        if (path == '/api/evidence/confirm' && req.method == 'POST') {
+          final b = jsonDecode(req.body) as Map<String, dynamic>;
+          final key = (b['storageKey'] as String).replaceFirst('evidence/', '');
+          if (!stored.containsKey(key)) return http.Response('{"error":"nothing has been uploaded under that key"}', 404);
+          return http.Response(
+              jsonEncode({'sha256': b['sha256'], 'bytes': stored[key]!.length, 'mime': b['mime'], 'storageKey': b['storageKey'], 'url': null, 'backend': 'fake-direct'}),
+              201);
+        }
+        final lm = RegExp(r'^/api/evidence/([0-9a-f]{64}\.[a-z]+)/link$').firstMatch(path);
+        if (lm != null && req.method == 'GET') {
+          return http.Response(
+              jsonEncode(evidenceMode == 'direct'
+                  ? {'url': 'https://storage.invalid/evidence/${lm.group(1)}?sig=get', 'expiresAt': '2026-10-19T00:10:00Z'}
+                  : {'url': '/api/evidence/${lm.group(1)}', 'expiresAt': null}),
+              200);
         }
         if (path == '/api/sync') {
           final body = jsonDecode(req.body) as Map<String, dynamic>;

@@ -126,6 +126,56 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  /// A file of any accepted size (PDF or photo, up to 50 MB):
+  ///   1. POST /api/evidence/upload-url says where the bytes go;
+  ///   2. `direct`: PUT them straight to storage with the returned headers
+  ///      (no session token: storage is not our server), then
+  ///      POST /api/evidence/confirm so the server re-hashes what landed;
+  ///      `server`: POST them to the server's own upload route.
+  /// Returns the upload record ({sha256, bytes, mime, storageKey, ...}).
+  Future<Map<String, dynamic>> uploadEvidenceFile(
+    Uint8List bytes, {
+    required String mime,
+    required String sha256,
+    String? name,
+  }) async {
+    final plan = (await postJson('/api/evidence/upload-url', {
+      'sha256': sha256,
+      'mime': mime,
+      'bytes': bytes.length,
+      'name': ?name,
+    })) as Map<String, dynamic>;
+    final headers = ((plan['headers'] as Map?) ?? const {}).map((k, v) => MapEntry('$k', '$v'));
+    if (plan['mode'] == 'direct') {
+      final put = await _http.put(Uri.parse(plan['url'] as String), headers: headers, body: bytes);
+      if (put.statusCode < 200 || put.statusCode >= 300) {
+        throw ApiException(put.statusCode, 'storage refused the upload: ${put.body}');
+      }
+      return (await postJson('/api/evidence/confirm', {
+        'sha256': sha256,
+        'storageKey': plan['storageKey'],
+        'mime': mime,
+        'bytes': bytes.length,
+      })) as Map<String, dynamic>;
+    }
+    final res = await _http.post(
+      _u(plan['url'] as String? ?? '/api/evidence/upload'),
+      headers: {..._headers, 'content-type': mime, 'x-sha256': sha256, ...headers},
+      body: bytes,
+    );
+    if (res.statusCode != 201) throw ApiException(res.statusCode, _reason(res.body));
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// GET /api/evidence/:key/link — where to open a stored file. A presigned
+  /// storage URL as is; the server's own route with the token attached.
+  Future<Uri> evidenceLink(String storageKey) async {
+    final key = storageKey.replaceFirst(RegExp(r'^evidence/'), '');
+    final j = (await getJson('/api/evidence/$key/link')) as Map<String, dynamic>;
+    final url = j['url'] as String;
+    return url.startsWith('/') ? authedUri(url) : Uri.parse(url);
+  }
+
   /// Absolute URL for a server path, for things the browser opens itself
   /// (the rendered certificate).
   Uri uri(String path) => _u(path);

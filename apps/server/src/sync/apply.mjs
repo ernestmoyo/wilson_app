@@ -185,15 +185,18 @@ const handlers = {
       `INSERT INTO evidence
          (job_id, inspection_id, finding_id, kind, sha256, storage_key, mime, bytes,
           captured_by_name, captured_by_occupation, captured_at, captured_where,
-          gps_lat, gps_lon, device_info, provenance, appendix_category)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          gps_lat, gps_lon, device_info, provenance, appendix_category, original_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        RETURNING id`,
       [p.jobId, p.inspectionId ?? null, findingId,
        p.kind ?? 'photo', p.sha256, p.storageKey ?? p.sha256, p.mime, p.bytes,
        p.capturedByName ?? null, p.capturedByOccupation ?? null,
        p.capturedAt ?? null, p.capturedWhere ?? null,
        p.gpsLat ?? null, p.gpsLon ?? null, p.deviceInfo ?? ctx.deviceId ?? null,
-       p.provenance ?? 'app', p.appendixCategory ?? null]
+       p.provenance ?? 'app', p.appendixCategory ?? null,
+       // The name a document arrived with ("ERP rev 2.pdf"), so lists and the
+       // export bundle can show it instead of a hash.
+       textOrNull(p.originalName)]
     );
     return { evidenceId: r.rows[0].id, findingId };
   },

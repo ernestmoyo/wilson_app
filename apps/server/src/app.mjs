@@ -7,7 +7,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createHash } from 'crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { applyEvents, EVENT_TYPES } from './sync/apply.mjs';
@@ -143,13 +143,182 @@ async function readEvidence(storageKey) {
   return { buf: readFileSync(file), mime: null };
 }
 
+// ── evidence: PDFs and large files (scope of work 19 Oct 2026) ─────────────
+// Photos and PDFs are accepted as evidence. A Vercel function body stops at
+// 4.5 MB, so with Blob or Spaces the device PUTs the bytes straight to
+// storage through a short-lived presigned URL, then asks the server to
+// confirm: the server reads the stored object back, hashes it itself and
+// deletes it on a mismatch (IPS 21(4)). On disk (tests, local, DigitalOcean
+// without Spaces) the bytes still come through POST /api/evidence/upload.
+
+export const EVIDENCE_MIME = Object.freeze({ 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' });
+export const EVIDENCE_MAX_BYTES = 50 * 1024 * 1024;
+/** Vercel's function body limit is 4.5 MB; elsewhere the server takes up to the evidence cap. */
+const SERVER_UPLOAD_LIMIT = process.env.VERCEL ? 4 * 1024 * 1024 : EVIDENCE_MAX_BYTES;
+const PUT_TTL_MS = 15 * 60 * 1000;
+const LINK_TTL_MS = 10 * 60 * 1000;
+const EVIDENCE_KEY_RE = /^[0-9a-f]{64}\.[a-z0-9]{1,4}$/;
+
+/** "image/JPG; charset=x" → "image/jpeg"; null when nothing usable. */
+export function normaliseEvidenceMime(m) {
+  if (typeof m !== 'string') return null;
+  const t = m.split(';')[0].trim().toLowerCase();
+  return t === 'image/jpg' || t === 'image/pjpeg' ? 'image/jpeg' : t || null;
+}
+const bareEvidenceKey = (k) => String(k).replace(/^evidence\//, '');
+const fullEvidenceKey = (k) => 'evidence/' + bareEvidenceKey(k);
+
+/** Hash an async iterable of byte chunks without holding it all in memory. */
+async function hashStream(chunks) {
+  const h = createHash('sha256');
+  let bytes = 0;
+  for await (const c of chunks) {
+    const b = Buffer.isBuffer(c) ? c : Buffer.from(c);
+    bytes += b.length;
+    h.update(b);
+  }
+  return { sha256: h.digest('hex'), bytes };
+}
+
+const evidenceDir = () =>
+  process.env.EVIDENCE_DIR ??
+  (process.env.VERCEL ? '/tmp/evidence' : join(process.cwd(), 'data', 'evidence'));
+
+/**
+ * An evidence store is { name, direct, presignPut, presignGet, hashStored, remove }.
+ * `direct` stores take the bytes from the device (presignPut); the others take
+ * them through the server's own upload route. Each backend's SDK is injectable
+ * so the presign branch is tested without touching real storage.
+ */
+export function diskEvidenceStore() {
+  return {
+    name: 'disk',
+    direct: false,
+    async presignPut() { throw new Error('disk storage takes uploads through /api/evidence/upload'); },
+    // Not a presigned URL: the server's own route, which needs the session.
+    async presignGet(key) { return { url: `/api/evidence/${bareEvidenceKey(key)}`, expiresAt: null }; },
+    async hashStored(key) {
+      const file = join(evidenceDir(), bareEvidenceKey(key));
+      if (!existsSync(file)) return null;
+      return { ...(await hashStream(createReadStream(file))), mime: null };
+    },
+    async remove(key) { rmSync(join(evidenceDir(), bareEvidenceKey(key)), { force: true }); },
+  };
+}
+
+/** Vercel Blob, private store. `sdk` defaults to @vercel/blob. */
+export function blobEvidenceStore({ sdk } = {}) {
+  const lib = async () => sdk ?? (await import('@vercel/blob'));
+  return {
+    name: 'vercel-blob',
+    direct: true,
+    async presignPut({ key, mime, bytes, validUntil }) {
+      const b = await lib();
+      const pathname = fullEvidenceKey(key);
+      // Scoped to this one object, this one type, this many bytes, for 15 minutes.
+      const token = await b.issueSignedToken({
+        pathname, operations: ['put'], validUntil, allowedContentTypes: [mime], maximumSizeInBytes: bytes,
+      });
+      const { presignedUrl } = await b.presignUrl(token, {
+        operation: 'put', access: 'private', pathname, validUntil,
+        allowedContentTypes: [mime], maximumSizeInBytes: bytes,
+        // Content-addressed: the same bytes again are harmless, and refusing
+        // would fail a retry.
+        addRandomSuffix: false, allowOverwrite: true,
+      });
+      // The headers @vercel/blob's own put() sends with a presigned URL.
+      const headers = {
+        'x-vercel-blob-access': 'private',
+        'x-content-type': mime,
+        'x-add-random-suffix': '0',
+        'x-allow-overwrite': '1',
+        'x-api-version': process.env.VERCEL_BLOB_API_VERSION_OVERRIDE ?? '12',
+      };
+      try { headers['x-vercel-blob-store-id'] = b.parseStoreIdFromDelegationToken(token.delegationToken); } catch { /* optional */ }
+      return { url: presignedUrl, headers };
+    },
+    async presignGet(key, validUntil) {
+      const b = await lib();
+      const pathname = fullEvidenceKey(key);
+      const token = await b.issueSignedToken({ pathname, operations: ['get'], validUntil });
+      const { presignedUrl } = await b.presignUrl(token, { operation: 'get', access: 'private', pathname, validUntil });
+      return { url: presignedUrl, expiresAt: new Date(validUntil).toISOString() };
+    },
+    async hashStored(key) {
+      const b = await lib();
+      const r = await b.get(fullEvidenceKey(key), { access: 'private', useCache: false }).catch(() => null);
+      if (!r || r.statusCode !== 200 || !r.stream) return null;
+      return { ...(await hashStream(r.stream)), mime: r.blob?.contentType ?? null };
+    },
+    async remove(key) { await (await lib()).del(fullEvidenceKey(key)); },
+  };
+}
+
+/** DigitalOcean Spaces (S3). `client`, `getSignedUrl` and `commands` are injectable. */
+export function spacesEvidenceStore({ bucket, client, getSignedUrl, commands } = {}) {
+  let presignClient = null;
+  const deps = async () => {
+    const cmds = commands ?? (await import('@aws-sdk/client-s3'));
+    const sign = getSignedUrl ?? (await import('@aws-sdk/s3-request-presigner')).getSignedUrl;
+    if (!client && !presignClient) {
+      // A presigned PUT must not carry the SDK's default CRC32 checksum: the
+      // device sends plain bytes, and the signature would not match.
+      presignClient = new cmds.S3Client({
+        region: SPACES.region, endpoint: SPACES.endpoint, forcePathStyle: false,
+        credentials: { accessKeyId: SPACES.key, secretAccessKey: SPACES.secret },
+        requestChecksumCalculation: 'WHEN_REQUIRED', responseChecksumValidation: 'WHEN_REQUIRED',
+      });
+    }
+    return { cmds, sign, c: client ?? presignClient };
+  };
+  const Bucket = bucket ?? SPACES?.bucket;
+  return {
+    name: 'spaces',
+    direct: true,
+    async presignPut({ key, mime, validUntil }) {
+      const { cmds, sign, c } = await deps();
+      const expiresIn = Math.max(60, Math.floor((validUntil - Date.now()) / 1000));
+      const url = await sign(c, new cmds.PutObjectCommand({ Bucket, Key: fullEvidenceKey(key), ContentType: mime }), { expiresIn });
+      return { url, headers: { 'content-type': mime } };
+    },
+    async presignGet(key, validUntil) {
+      const { cmds, sign, c } = await deps();
+      const expiresIn = Math.max(60, Math.floor((validUntil - Date.now()) / 1000));
+      const url = await sign(c, new cmds.GetObjectCommand({ Bucket, Key: fullEvidenceKey(key) }), { expiresIn });
+      return { url, expiresAt: new Date(validUntil).toISOString() };
+    },
+    async hashStored(key) {
+      const { cmds, c } = await deps();
+      try {
+        const r = await c.send(new cmds.GetObjectCommand({ Bucket, Key: fullEvidenceKey(key) }));
+        return { ...(await hashStream(r.Body)), mime: r.ContentType ?? null };
+      } catch (e) {
+        if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
+        throw e;
+      }
+    },
+    async remove(key) {
+      const { cmds, c } = await deps();
+      await c.send(new cmds.DeleteObjectCommand({ Bucket, Key: fullEvidenceKey(key) }));
+    },
+  };
+}
+
+/** The store the environment names: Spaces, then Blob, then disk (as storeEvidence). */
+export function defaultEvidenceStore() {
+  if (SPACES) return spacesEvidenceStore();
+  if (process.env.BLOB_READ_WRITE_TOKEN) return blobEvidenceStore();
+  return diskEvidenceStore();
+}
+
 /** Routes a device may call before it has signed in. */
 const PUBLIC_PATHS = new Set(['/api/health', '/api/auth/login', '/api/templates', '/api/sync/event-types']);
 const isPublic = (req) =>
   PUBLIC_PATHS.has(req.path) || req.path.startsWith('/api/templates/') || !req.path.startsWith('/api/');
 
-export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQUIRED === '1' } = {}) {
+export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQUIRED === '1', evidenceStore } = {}) {
   const app = express();
+  const evidenceBackend = evidenceStore ?? defaultEvidenceStore();
   app.use(express.json({ limit: '2mb' }));
   app.use(cors({ origin: allowedOrigin ?? true, credentials: true }));
 
@@ -460,7 +629,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 JOIN checksheet_section s ON s.id = i.section_id
                 JOIN checksheet_template t ON t.id = s.template_id
                 WHERE ins.job_id = $1 ORDER BY t.code, s.ordinal, i.ordinal`, [id]),
-      db.query(`SELECT id, finding_id, kind, sha256, mime, bytes, provenance,
+      db.query(`SELECT id, finding_id, kind, sha256, storage_key, original_name, mime, bytes, provenance,
                        captured_by_name, captured_by_occupation, captured_at, captured_where, retain_until
                 FROM evidence WHERE job_id = $1 ORDER BY created_at`, [id]),
       db.query(`SELECT id, decision, register_number, certificate_number, issue_date, in_force_date,
@@ -1023,11 +1192,91 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // Content-addressed: the client hashes at capture, the server verifies the
   // hash on receipt, and the object is stored under it. The evidence.attach
   // sync event then references the sha256 — same key on both sides.
-  app.post('/api/evidence/upload', express.raw({ type: '*/*', limit: '4mb' }), wrap(async (req, res) => {
-    if (!canRecord(req.ctx.role)) return res.status(403).json({ error: 'a viewer cannot upload evidence', clause: 'Role' });
+  //
+  // Accepted: photographs (JPEG, PNG) and PDFs, up to 50 MB. Every upload is
+  // kept; nothing is overwritten except by the identical bytes.
+  const refuseViewer = (req, res) =>
+    canRecord(req.ctx.role) ? false : (res.status(403).json({ error: 'a viewer cannot upload evidence', clause: 'Role' }), true);
+  const refuseMime = (mime, res) =>
+    EVIDENCE_MIME[mime] ? false
+      : (res.status(415).json({ error: `${mime ?? 'no content type'} is not accepted as evidence: photographs (JPEG, PNG) or PDF only` }), true);
+  const refuseSize = (bytes, res) =>
+    bytes > EVIDENCE_MAX_BYTES
+      ? (res.status(413).json({ error: `evidence is limited to ${EVIDENCE_MAX_BYTES / 1024 / 1024} MB` }), true) : false;
+  const SHA_RE = /^[0-9a-f]{64}$/;
+
+  // Step 1: where do the bytes go? Blob/Spaces: straight to storage. Disk: here.
+  app.post('/api/evidence/upload-url', wrap(async (req, res) => {
+    if (refuseViewer(req, res)) return;
+    const b = req.body ?? {};
+    const sha256 = typeof b.sha256 === 'string' ? b.sha256.toLowerCase() : '';
+    if (!SHA_RE.test(sha256)) return res.status(400).json({ error: 'sha256 must be the 64-hex digest computed at capture' });
+    const mime = normaliseEvidenceMime(b.mime);
+    if (refuseMime(mime, res)) return;
+    const bytes = Number(b.bytes);
+    if (!Number.isInteger(bytes) || bytes <= 0) return res.status(400).json({ error: 'bytes must be the file size' });
+    if (refuseSize(bytes, res)) return;
+    const key = `${sha256}.${EVIDENCE_MIME[mime]}`;
+    if (evidenceBackend.direct) {
+      const validUntil = Date.now() + PUT_TTL_MS;
+      const signed = await evidenceBackend.presignPut({ key, mime, bytes, validUntil });
+      return res.json({ mode: 'direct', method: 'PUT', url: signed.url, headers: signed.headers ?? {},
+                        storageKey: fullEvidenceKey(key), expiresAt: new Date(validUntil).toISOString() });
+    }
+    if (bytes > SERVER_UPLOAD_LIMIT) {
+      return res.status(413).json({ error: `without object storage this server takes at most ${SERVER_UPLOAD_LIMIT / 1024 / 1024} MB` });
+    }
+    res.json({ mode: 'server', method: 'POST', url: '/api/evidence/upload',
+               headers: { 'content-type': mime, 'x-sha256': sha256 }, storageKey: key });
+  }));
+
+  // Step 2 (direct only): the server reads the object back and hashes it
+  // itself. The device's word is not the record (IPS 21(4)).
+  app.post('/api/evidence/confirm', wrap(async (req, res) => {
+    if (refuseViewer(req, res)) return;
+    const b = req.body ?? {};
+    const sha256 = typeof b.sha256 === 'string' ? b.sha256.toLowerCase() : '';
+    if (!SHA_RE.test(sha256)) return res.status(400).json({ error: 'sha256 must be the 64-hex digest computed at capture' });
+    const mime = normaliseEvidenceMime(b.mime);
+    if (refuseMime(mime, res)) return;
+    if (b.bytes != null && refuseSize(Number(b.bytes), res)) return;
+    const key = `${sha256}.${EVIDENCE_MIME[mime]}`;
+    // Only the content-addressed key for this hash may be confirmed (and, on
+    // a mismatch, deleted): never an arbitrary object.
+    if (typeof b.storageKey !== 'string' || bareEvidenceKey(b.storageKey) !== key) {
+      return res.status(400).json({ error: `storageKey must be evidence/${key}` });
+    }
+    const stored = await evidenceBackend.hashStored(key);
+    if (!stored) return res.status(404).json({ error: 'nothing has been uploaded under that key' });
+    if (stored.sha256 !== sha256) {
+      await evidenceBackend.remove(key);
+      return res.status(409).json({ error: 'sha256 mismatch: the stored bytes differ from the hash computed at capture; the upload was deleted',
+                                    clause: 'IPS 21(4)', claimed: sha256, received: stored.sha256 });
+    }
+    if (stored.bytes > EVIDENCE_MAX_BYTES) {
+      await evidenceBackend.remove(key);
+      return refuseSize(stored.bytes, res);
+    }
+    const storageKey = evidenceBackend.name === 'disk' ? key : fullEvidenceKey(key);
+    res.status(201).json({ sha256, bytes: stored.bytes, mime, storageKey, url: null, backend: evidenceBackend.name });
+  }));
+
+  // A short-lived link to the bytes, for documents the device opens itself.
+  app.get('/api/evidence/:key/link', wrap(async (req, res) => {
+    const key = req.params.key;
+    if (!EVIDENCE_KEY_RE.test(key)) return res.status(404).json({ error: 'not found' });
+    if (!req.ctx.userId && !req.ctx.authenticated) return res.status(401).json({ error: 'not signed in' });
+    const known = await db.query(`SELECT 1 FROM evidence WHERE storage_key IN ($1, $2) LIMIT 1`, [key, fullEvidenceKey(key)]);
+    if (!known.rows.length) return res.status(404).json({ error: 'not found' });
+    res.json(await evidenceBackend.presignGet(key, Date.now() + LINK_TTL_MS));
+  }));
+
+  app.post('/api/evidence/upload', express.raw({ type: '*/*', limit: SERVER_UPLOAD_LIMIT }), wrap(async (req, res) => {
+    if (refuseViewer(req, res)) return;
     const buf = req.body;
     if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'empty body' });
-    const mime = req.header('content-type') ?? 'application/octet-stream';
+    const mime = normaliseEvidenceMime(req.header('content-type'));
+    if (refuseMime(mime, res)) return;
     const sha256 = createHash('sha256').update(buf).digest('hex');
     const claimed = req.header('x-sha256');
     if (claimed && claimed.toLowerCase() !== sha256) {
@@ -1036,9 +1285,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       return res.status(409).json({ error: 'sha256 mismatch: bytes differ from the hash computed at capture',
                                     clause: 'IPS 21(4)', claimed, received: sha256 });
     }
-    const ext = mime.includes('png') ? 'png' : mime.includes('jpeg') || mime.includes('jpg') ? 'jpg'
-              : mime.includes('mp4') ? 'mp4' : mime.includes('pdf') ? 'pdf' : 'bin';
-    const stored = await storeEvidence(sha256, ext, buf, mime);
+    const stored = await storeEvidence(sha256, EVIDENCE_MIME[mime], buf, mime);
     res.status(201).json({ sha256, bytes: buf.length, mime, ...stored });
   }));
 
@@ -1047,7 +1294,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const found = await readEvidence(req.params.key);
     if (!found) return res.status(404).json({ error: 'not found' });
     const ext = req.params.key.split('.').pop();
-    res.type(found.mime ?? (ext === 'png' ? 'image/png' : ext === 'jpg' ? 'image/jpeg' : 'application/octet-stream'));
+    res.type(found.mime ?? (ext === 'png' ? 'image/png' : ext === 'jpg' ? 'image/jpeg' : ext === 'pdf' ? 'application/pdf' : 'application/octet-stream'));
     res.send(found.buf);
   }));
 
