@@ -10,6 +10,12 @@ import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
 
+/// Opens a server document in the browser. The token rides as ?token= (see
+/// [ApiClient.authedUri]) because a page the browser opens carries no header.
+/// Tests replace this to see the URL instead of launching one.
+Future<bool> Function(Uri uri) openExternalDocument =
+    (uri) => launchUrl(uri, mode: LaunchMode.externalApplication);
+
 /// The job through the Assure Safety compliance certification process flow.
 ///
 /// The check sheet screen is stage 4. This screen is the rest of the
@@ -267,6 +273,23 @@ class _JobScreenState extends State<JobScreen> {
                 icon: const Icon(Icons.open_in_new, size: 16),
                 label: const Text('Open certificate'),
               ),
+            // Exports: anyone signed in, a viewer included, may download.
+            if (j.inspectionId != null) ...[
+              OutlinedButton.icon(
+                key: const ValueKey('checksheet-pdf'),
+                onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/checksheet.pdf')),
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                label: const Text('Checksheet (PDF)'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('bundle-zip'),
+                // GET twin of POST /bundle: streams the ZIP on disk, or
+                // redirects to the stored copy's presigned link on Blob/Spaces.
+                onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/bundle.zip')),
+                icon: const Icon(Icons.folder_zip_outlined, size: 16),
+                label: const Text('Download all (ZIP)'),
+              ),
+            ],
           ]),
         ]),
       ),
