@@ -94,9 +94,9 @@ const itemId = (await db.query(`
 
 // ── the template layer actually loaded ─────────────────────────────────────
 console.log('\nTEMPLATE LAYER');
-await check('149 items seeded across 6 templates', async () => {
+await check('167 items seeded across 7 templates', async () => {
   const r = await db.query('SELECT count(*)::int AS n FROM checksheet_item');
-  if (r.rows[0].n !== 149) throw new Error(`expected 149 items, got ${r.rows[0].n}`);
+  if (r.rows[0].n !== 167) throw new Error(`expected 167 items, got ${r.rows[0].n}`);
 });
 
 await check('class-conditional regulation refs survived the seed', async () => {
@@ -109,12 +109,15 @@ await check('class-conditional regulation refs survived the seed', async () => {
   `);
   const row = r.rows[0];
   if (!row) throw new Error('item not found');
-  if (JSON.stringify(row.regulation_refs) !== JSON.stringify(['10.34']))
+  // Base refs are what every class shares; with class 5.1 (12.17 only) nothing is shared.
+  if (JSON.stringify(row.regulation_refs) !== JSON.stringify([]))
     throw new Error(`base refs wrong: ${JSON.stringify(row.regulation_refs)}`);
   const byClass = typeof row.regulation_refs_by_class === 'string'
     ? JSON.parse(row.regulation_refs_by_class) : row.regulation_refs_by_class;
   if (byClass.class_6_8.length !== 5)
     throw new Error(`class_6_8 overlay wrong: ${JSON.stringify(byClass.class_6_8)}`);
+  if (JSON.stringify(byClass.class_2_3) !== '["10.34"]' || JSON.stringify(byClass.class_5_1) !== '["12.17"]')
+    throw new Error(`class 2/3.1 or 5.1 overlay wrong: ${JSON.stringify(byClass)}`);
 });
 
 // ── guards ─────────────────────────────────────────────────────────────────

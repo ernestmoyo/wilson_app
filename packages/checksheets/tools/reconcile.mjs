@@ -24,6 +24,8 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs';
+import { basename, isAbsolute } from 'path';
+import { withRevision } from './revision.mjs';
 
 const args = process.argv.slice(2);
 const outPath = args[args.indexOf('--out') + 1];
@@ -40,7 +42,45 @@ if (!outPath || inputs.length < 2) {
   process.exit(1);
 }
 
-const loaded = inputs.map((i) => ({ ...i, doc: JSON.parse(readFileSync(i.path, 'utf8')) }));
+/**
+ * An input may itself be a reconciled template (data/wks17-general.template.json).
+ * It is read as the view one class family had of it: that class's regulation
+ * refs and sheet overlay, and that class's corrections. This is how a new
+ * class family joins the canonical template when the earlier families'
+ * workbooks are not to hand: the canonical text already went through review.
+ */
+function project(doc, classKey) {
+  if (!doc.source?.reconciledFrom) return doc;
+  const out = structuredClone(doc);
+  const overlay = doc.sheetByClass?.[classKey];
+  if (!overlay) throw new Error(`${doc.code} has no "${classKey}" view; reconciled from ${doc.source.reconciledFrom.map((r) => r.classKey).join(', ')}`);
+  out.sheet = { ...doc.sheet, ...overlay };
+  delete out.sheetByClass;
+  const corrections = (doc.source.corrections ?? []).filter((c) => c.classKey === classKey).map(({ classKey: _k, ...c }) => c);
+  for (const s of out.sections) {
+    for (const it of s.items) {
+      if (it.regulationRefsByClass?.[classKey]) it.regulationRefs = it.regulationRefsByClass[classKey];
+      delete it.regulationRefsByClass;
+      // The same mechanical fix extract-workbook.mjs now applies to every sheet.
+      if (it.regulationRaw && /\)\)/.test(it.regulationRaw)) {
+        const to = it.regulationRaw.replace(/\)\)+/g, ')');
+        corrections.push({ where: `section ${s.ordinal} item ${it.ordinal} regulation`, from: it.regulationRaw, to, reason: 'unbalanced closing parenthesis' });
+        it.regulationRaw = to;
+      }
+    }
+  }
+  const origin = doc.source.reconciledFrom.find((r) => r.classKey === classKey) ?? {};
+  out.source = {
+    sheet: origin.sheet ?? null,
+    ...(origin.workbook ? { workbook: origin.workbook } : {}),
+    // Carried from the earlier revision: this class's text is as reviewed then.
+    via: `${doc.code} revision ${doc.revision ?? 1}`,
+    corrections,
+  };
+  return out;
+}
+
+const loaded = inputs.map((i) => ({ ...i, doc: project(JSON.parse(readFileSync(i.path, 'utf8')), i.classKey) }));
 const [base, ...rest] = loaded;
 
 const flatten = (doc) =>
@@ -142,7 +182,12 @@ canonical.code = 'wks17-general';
 canonical.title = 'General location requirements';
 canonical.classScope = [];
 canonical.source = {
-  reconciledFrom: loaded.map((l) => ({ path: l.path, classKey: l.classKey, sheet: l.doc.source?.sheet })),
+  // Scratch folders mean nothing to the next reader: keep the file name only.
+  reconciledFrom: loaded.map((l) => ({
+    path: isAbsolute(l.path) ? basename(l.path) : l.path.replace(/\\/g, '/'), classKey: l.classKey, sheet: l.doc.source?.sheet,
+    ...(l.doc.source?.workbook ? { workbook: l.doc.source.workbook } : {}),
+    ...(l.doc.source?.via ? { via: l.doc.source.via } : {}),
+  })),
   reconciledAt: new Date().toISOString(),
   // Every correction applied to any input, tagged with the class family it
   // came from, so the canonical template's provenance is complete.
@@ -150,7 +195,12 @@ canonical.source = {
     (l.doc.source?.corrections ?? []).map((c) => ({ classKey: l.classKey, ...c }))),
 };
 
-writeFileSync(outPath, JSON.stringify(canonical, null, 2) + '\n');
+// A changed canonical template is revision n+1 of what is in --out, never an
+// edit in place (tools/revision.mjs).
+const noteAt = args.indexOf('--note');
+const written = withRevision(outPath, canonical, { note: noteAt >= 0 ? args[noteAt + 1] : undefined });
+writeFileSync(outPath, JSON.stringify(written, null, 2) + '\n');
+console.log(`  revision ${written.revision}${written.source?.supersedes ? ` (supersedes ${written.source.supersedes.revision})` : ''}`);
 
 const items = flatten(canonical).length;
 console.log(`\nreconciled ${loaded.length} extractions → ${outPath}`);

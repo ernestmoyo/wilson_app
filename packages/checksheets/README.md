@@ -52,8 +52,8 @@ npm run verify
 |---|---|---|
 | `checksheets.ts` | `tsc --noEmit --strict` | compiles clean |
 | `checksheets.g.dart` | `dart analyze` | *No issues found* |
-| `checksheets.g.dart` | `dart run` — loads and resolves class overlays | 149 items, overlays correct |
-| all three | round-trip vs canonical JSON | 195 strings, 149 items, all match |
+| `checksheets.g.dart` | `flutter test` (widget_test) — loads, resolves class overlays and scope choices | 167 items, overlays and choices correct |
+| all three | round-trip vs canonical JSON (`npm run verify`) | 284 strings, 167 items, all match; 6 sets, 8 choices resolve |
 
 The round-trip check exists because the PS text is full of apostrophes (`worker's`), curly quotes, em dashes and `$`. Mis-escaping those either fails to compile or — far worse — compiles into subtly wrong regulatory text that gets shown to an inspector. `npm run verify` re-escapes every string independently and asserts it appears in each output.
 
@@ -67,6 +67,37 @@ The workbook conflates three layers in one grid — template, instance, and pres
 There is no status column anywhere in the workbook. IPS cl. 21(1)(c) requires *"the result of any inquiry, inspection, assessment, or examination"* to be recorded — and a font colour is unqueryable, uncountable, unvalidatable, and silently destroyed by a copy-paste or a theme change. The extractor lifts it into an explicit `status` field once, on import; nothing downstream ever reads colour again.
 
 Each finding records `statusSource` (`font:FFFF0000` vs `inferred:text`) so a human can review anything that was guessed rather than read.
+
+**Colour is read per run, not per cell (extractor 1.1.0).** A reviewed cell often holds several colours: green or blue text beside a red finding. A rich-text cell is read run by run:
+
+- a run labelled "General comment" becomes the finding's `generalComment` (advisory), whatever its colour;
+- any other red run makes the item non-compliant (`statusSource: runs:<colours>`);
+- all coloured text green means compliant;
+- otherwise the text decides, as for a plain cell.
+
+Mixed cells keep their `runs` (text, colour, role) in the instance JSON. Blue alone never makes a general comment: theme blue is the default comment colour of whole columns in several sheets. A plain cell reads exactly as before.
+
+Re-extracting the Abecca workbook with 1.1.0 corrected six readings that 1.0.0 got wrong:
+
+- four red findings sat inside otherwise blue, green or purple cells and were read as compliant (general 3.1, 6.6, 7.2; class 14.1);
+- class 3.1 is red text in a rich cell;
+- general 8.2 is blue text in a cell whose cell-level font is red. Only a blank run was red, so it now reads compliant.
+
+The instance also lost the second row of the split aerosol item, matching the 43-item template.
+
+## Revisions and sets
+
+```bash
+npm run extract -- "<workbook>.xlsx" --code wks17 --out <scratch>     # read the logged corrections
+node tools/adopt.mjs <scratch>/<code>.template.json --note "<what changed>"
+node tools/reconcile.mjs --out data/wks17-general.template.json \
+  --input data/wks17-general.template.json:class_6_8 \
+  --input <scratch>/wks17-locations-general.template.json:class_2_3 ...
+```
+
+Adopting or reconciling onto an existing code never edits it in place. If the content changed, the file becomes revision n+1 with `source.supersedes` (`tools/revision.mjs`). The seed then inserts a new row and marks the old one superseded. A reconciled template can itself be an input: it is read as one class family's view, which is how class 5.1 joined `wks17-general` without the G2 Chiller workbook to hand.
+
+`data/sheet-sets.json` gives each set its templates and register entry. A set may instead carry scope `choices`, each with its own entry and sections. The section-by-section reasoning is in `data/CHOICES.md`. `npm run verify` checks that every set, choice and section reference resolves, and that the generated Dart carries every choice.
 
 ## Verified findings
 

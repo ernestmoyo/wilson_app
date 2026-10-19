@@ -3,15 +3,15 @@
   "title": "Check sheet Location Class 2 and 3.1 substances",
   "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
   "classScope": [],
-  "revision": 1,
+  "revision": 2,
   "effectiveFrom": null,
   "supersededBy": null,
   "status": "draft",
   "source": {
-    "workbook": "Abecca Class 2 and 3 location checksheets with feedback.xlsx",
+    "workbook": "Class 3.1 r10.34 LCC Mock Assessment Checksheet.xlsx",
     "sheet": "Class 2 and 3.1 substances",
-    "extractedAt": "2026-09-09T21:38:02.039Z",
-    "extractorVersion": "1.0.0",
+    "extractedAt": "2026-10-19T14:41:47.566Z",
+    "extractorVersion": "1.1.0",
     "corrections": [
       {
         "where": "A1",
@@ -22,22 +22,36 @@
       {
         "where": "Scope of Authorisation",
         "from": "Locations where classes 6 or 8 substances are present [Regulation 13.38, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
-        "to": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "to": "Locations where classes 2 or 3.1 substances are present [Regulation 10.34, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
         "reason": "scope text copied from the class 6/8 sheet; class and regulation aligned to this sheet’s own declaration"
-      },
-      {
-        "where": "footer",
-        "from": null,
-        "to": "Section 2/2",
-        "reason": "sheet 2 of 2 in this workbook"
       },
       {
         "where": "Separation of class 2.1.2 aerosols, items 1 and 1",
         "from": "Establish the quantity of aerosols present and | Confirm the aggregate water capacity exceeds 3,000 L Determine the nature of any neighbouring property and verify the separation distance Determine which subclauses apply",
         "to": "Establish the quantity of aerosols present and confirm the aggregate water capacity exceeds 3,000 L. Determine the nature of any neighbouring property and verify the separation distance. Determine which subclauses apply",
         "reason": "one requirement split across two rows in the workbook, both numbered 1; merged, references combined"
+      },
+      {
+        "where": "section 3 item 1 regulation",
+        "from": "10.6(1)(a))",
+        "to": "10.6(1)(a)",
+        "reason": "unbalanced closing parenthesis"
+      },
+      {
+        "where": "footer",
+        "from": null,
+        "to": "Section 2/2",
+        "reason": "sheet 2 of 2 in this workbook"
       }
-    ]
+    ],
+    "supersedes": {
+      "revision": 1,
+      "contentHash": "15043433f27e2c873311a8e2af38e8d6e0372f5a4974c371a9f9bdada231dbf6",
+      "workbook": "Abecca Class 2 and 3 location checksheets with feedback.xlsx",
+      "sheet": "Class 2 and 3.1 substances",
+      "reconciledFrom": null
+    },
+    "revisionNote": "Class 3.1 r10.34 LCC workbook (doc control 2026-04-25): declaration and scope cite Regulation 10.34 (was 17.91); 11.33(1)€ reads 11.33(1)(e) in this workbook; 10.6(1)(a)) cleaned. Item wording unchanged. The Class 2.1.1 r10.34 workbook's class tab is identical apart from its doc control date (2026-03-25) and the uncorrected € sign."
   },
   "sheet": {
     "title": "Check sheet Location Class 2 and 3.1 substances",
@@ -51,17 +65,17 @@
       "Comments"
     ],
     "note": "NB: Non compliances are in red",
-    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.34 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
     "documentControl": {
       "Owner": "BW",
       "Revision": "1",
       "Status": "Current",
-      "Date of last revision": "2024-04-25",
+      "Date of last revision": "2026-04-25",
       "Frequency of revision": "less than 12 months"
     },
     "scopeOfAuthorisation": {
       "heading": "Scope of Authorisation",
-      "text": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+      "text": "Locations where classes 2 or 3.1 substances are present [Regulation 10.34, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
       "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
     },
     "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
@@ -117,7 +131,7 @@
           "regulationRefs": [
             "10.6(1)(a)"
           ],
-          "regulationRaw": "10.6(1)(a))",
+          "regulationRaw": "10.6(1)(a)",
           "guidanceUrl": null,
           "action": "Verify whether the hazardous area is delineated in accordance with AS/NZS 60079.10.1:2009",
           "records": "A note as to whether the hazardous area is compliant",
@@ -724,9 +738,9 @@
           "number": "5",
           "regulationRefs": [
             "11.33(1)(d)",
-            "11.33(1)"
+            "11.33(1)(e)"
           ],
-          "regulationRaw": "11.33(1)(d) 11.33(1)€",
+          "regulationRaw": "11.33(1)(d) 11.33(1)(e)",
           "guidanceUrl": null,
           "action": "Verify that the building is compliant",
           "records": "A record of the separation distances Where there is an intervening wall, a record of the FRR elements of the wall",

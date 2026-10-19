@@ -480,6 +480,22 @@ ${sections}
     })
     .join('\n\n');
 
+  // Sheet sets, with their scope choices and not-in-scope sections.
+  const dartRefs = (rs) =>
+    '[' + (rs ?? []).map((r) => `SheetSectionRef(${dartStr(r.template)}, [${r.ordinals.join(', ')}])`).join(', ') + ']';
+  const setsDart = sheetSets
+    .map((x) => {
+      const choices = (x.choices ?? [])
+        .map((c) => `\n      SheetSetChoice(${dartStr(c.key)}, ${dartStr(c.label)}, ${dartStr(c.authorisation ?? null)}, ${dartRefs(c.sections)}),`)
+        .join('');
+      const nis = (x.notInScope ?? [])
+        .map((r) => `\n      SheetNotInScope(${dartStr(r.template)}, [${r.ordinals.join(', ')}], ${dartStr(r.why ?? '')}),`)
+        .join('');
+      const named = [choices ? `choices: [${choices}\n    ]` : '', nis ? `notInScope: [${nis}\n    ]` : ''].filter(Boolean);
+      return `  SheetSetDef(${dartStr(x.key)}, ${dartStr(x.kind ?? 'location')}, ${dartStr(x.name)}, ${dartList(x.templates)}, ${dartStr(x.authorisation)}${named.length ? ', ' + named.join(', ') : ''}),`;
+    })
+    .join('\n');
+
   out.push(tmplSrc);
   out.push('');
   out.push(`const List<ChecksheetTemplate> kChecksheetTemplates = [
@@ -490,6 +506,34 @@ final Map<String, ChecksheetTemplate> kTemplatesByCode = {
   for (final t in kChecksheetTemplates) t.code: t,
 };
 
+/// Sections of one template, by ordinal.
+class SheetSectionRef {
+  final String template;
+  final List<int> ordinals;
+  const SheetSectionRef(this.template, this.ordinals);
+  bool has(String code, int ordinal) => template == code && ordinals.contains(ordinal);
+}
+
+/// A scope choice picked at job start (a class 3.1 arrangement, say). Its
+/// sections appear only when it is picked.
+class SheetSetChoice {
+  final String key;
+  final String label;
+  final String? authorisation;
+  final List<SheetSectionRef> sections;
+  const SheetSetChoice(this.key, this.label, this.authorisation, this.sections);
+  bool lists(String code, int ordinal) => sections.any((r) => r.has(code, ordinal));
+}
+
+/// Sections that are never assessed (excluded work), with the reason.
+class SheetNotInScope {
+  final String template;
+  final List<int> ordinals;
+  final String why;
+  const SheetNotInScope(this.template, this.ordinals, this.why);
+  bool has(String code, int ordinal) => template == code && ordinals.contains(ordinal);
+}
+
 /// A sheet set: what a job inspects against, named by what it is. From
 /// data/sheet-sets.json; the server publishes the same list with the
 /// authorisation resolved.
@@ -499,11 +543,27 @@ class SheetSetDef {
   final String name;
   final List<String> templates;
   final String? authorisation;
-  const SheetSetDef(this.key, this.kind, this.name, this.templates, this.authorisation);
+  final List<SheetSetChoice> choices;
+  final List<SheetNotInScope> notInScope;
+  const SheetSetDef(this.key, this.kind, this.name, this.templates, this.authorisation,
+      {this.choices = const [], this.notInScope = const []});
+
+  bool get hasChoices => choices.isNotEmpty;
+
+  /// Whether a section is assessed for the choices picked. A section under no
+  /// choice always is; a section under a choice is when a choice listing it
+  /// is picked; a section not in scope never is. [picked] null means the
+  /// whole set (a job from before choices existed).
+  bool sectionInScope(String code, int ordinal, Iterable<String>? picked) {
+    if (notInScope.any((r) => r.has(code, ordinal))) return false;
+    final listing = choices.where((c) => c.lists(code, ordinal)).toList();
+    if (listing.isEmpty || picked == null) return true;
+    return listing.any((c) => picked.contains(c.key));
+  }
 }
 
 const List<SheetSetDef> kSheetSets = [
-${sheetSets.map((x) => `  SheetSetDef(${dartStr(x.key)}, ${dartStr(x.kind ?? 'location')}, ${dartStr(x.name)}, ${dartList(x.templates)}, ${dartStr(x.authorisation)}),`).join('\n')}
+${setsDart}
 ];
 
 final Map<String, SheetSetDef> kSheetSetsByKey = {

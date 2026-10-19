@@ -62,7 +62,7 @@ let jobId, hsLocationId, inspectionId;
 console.log('BOOT');
 await step('health reports the template layer', async () => {
   const r = await api.get('/api/health');
-  expect(r.status === 200 && r.body.templateItems === 149, JSON.stringify(r.body));
+  expect(r.status === 200 && r.body.templateItems === 167, JSON.stringify(r.body));
   return `db=${r.body.db}, ${r.body.templateItems} template items`;
 });
 
@@ -351,7 +351,8 @@ await step('template meta carries the sheet-level nodes and the class overlay', 
   expect(m?.sheet?.note === 'NB: Non compliances are in red', JSON.stringify(m?.sheet).slice(0, 200));
   expect(m.sheet.columnHeaders.join('|') === 'Item|Regulation|Action|Records|Comments', 'column headers');
   expect(m.sheetByClass?.class_6_8?.declaration?.includes('Regulation 13.38'), 'class 6/8 declaration');
-  expect(m.sheetByClass?.class_2_3?.declaration?.includes('Regulation 17.91'), 'class 2/3 declaration');
+  expect(m.sheetByClass?.class_2_3?.declaration?.includes('Regulation 10.34'), 'class 2/3 declaration (r10.34 workbooks, 19 Oct)');
+  expect(m.sheetByClass?.class_5_1?.title?.includes('5.1.1'), 'class 5.1 overlay');
   const c68 = await api.get('/api/templates/wks17-class-6-1a-6-1b-6-1c-8-2a-8');
   expect(c68.body.meta.sheet.documentControl?.Owner === 'BW', 'document control');
   expect(c68.body.meta.sheet.footer === 'Section 2/2', 'footer');

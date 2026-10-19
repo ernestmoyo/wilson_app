@@ -38,6 +38,17 @@ const sheetSetFor = (classKey) => SHEET_SETS.sets.find((x) => x.key === classKey
 const kindFor = (classKey) => sheetSetFor(classKey).kind ?? 'location';
 const templatesForClass = (classKey) =>
   (SHEET_SETS.sets.find((x) => x.key === classKey) ?? SHEET_SETS.sets[0]).templates;
+/** The sheet set catalogue as loaded (tests add a temporary set to it). */
+export const sheetSetCatalogue = SHEET_SETS;
+/**
+ * A set is authorised when its own register entry resolves, or when it has
+ * scope choices and every choice's entry resolves (class 2/3.1: 2.1.1, 2.1.2
+ * and 3.1 are separate entries on the register).
+ */
+const hasAuthorisation = (key) => !!key && AUTHORISATION.authorisations.some((a) => a.key === key);
+export const setAuthorised = (set) => set.authorisation
+  ? hasAuthorisation(set.authorisation)
+  : (set.choices?.length ?? 0) > 0 && set.choices.every((c) => hasAuthorisation(c.authorisation));
 
 /** The letterhead images as data URLs, shared by every rendered document. */
 function letterheadImages() {
@@ -357,7 +368,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       return res.status(400).json({ error: 'client.legalName, site.address and location.name are required' });
     const set = SHEET_SETS.sets.find((x) => x.key === (b.classKey ?? 'class_6_8'));
     if (!set) return res.status(400).json({ error: `unknown check sheet set "${b.classKey}"` });
-    if (!set.authorisation || !AUTHORISATION.authorisations.some((a) => a.key === set.authorisation)) {
+    if (!setAuthorised(set)) {
       return res.status(400).json({ error: `"${set.name}" is outside the certifier's WorkSafe authorisation`, clause: 'IPS 8' });
     }
     if (b.client.id != null) {
@@ -719,7 +730,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     res.json({
       sets: SHEET_SETS.sets.map((x) => ({
         ...x,
-        authorised: !!(x.authorisation && byKey[x.authorisation]),
+        authorised: setAuthorised(x),
         authorisationEntry: x.authorisation ? byKey[x.authorisation] ?? null : null,
       })),
       planned: SHEET_SETS.planned,

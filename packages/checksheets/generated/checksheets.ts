@@ -1042,7 +1042,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "title": "Check sheet Location Class 2 and 3.1 substances",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
     "classScope": [],
-    "revision": 1,
+    "revision": 2,
     "status": "draft",
     "sheet": {
       "title": "Check sheet Location Class 2 and 3.1 substances",
@@ -1056,17 +1056,17 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         "Comments"
       ],
       "note": "NB: Non compliances are in red",
-      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.34 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
       "documentControl": {
         "Owner": "BW",
         "Revision": "1",
         "Status": "Current",
-        "Date of last revision": "2024-04-25",
+        "Date of last revision": "2026-04-25",
         "Frequency of revision": "less than 12 months"
       },
       "scopeOfAuthorisation": {
         "heading": "Scope of Authorisation",
-        "text": "Locations where classes 2 or 3.1 substances are present [Regulation 17.91, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "text": "Locations where classes 2 or 3.1 substances are present [Regulation 10.34, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
         "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
       },
       "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
@@ -1129,7 +1129,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "regulationRefs": [
               "10.6(1)(a)"
             ],
-            "regulationRaw": "10.6(1)(a))",
+            "regulationRaw": "10.6(1)(a)",
             "guidanceUrl": null,
             "action": "Verify whether the hazardous area is delineated in accordance with AS/NZS 60079.10.1:2009",
             "records": "A note as to whether the hazardous area is compliant",
@@ -1736,9 +1736,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "number": "5",
             "regulationRefs": [
               "11.33(1)(d)",
-              "11.33(1)"
+              "11.33(1)(e)"
             ],
-            "regulationRaw": "11.33(1)(d) 11.33(1)€",
+            "regulationRaw": "11.33(1)(d) 11.33(1)(e)",
             "guidanceUrl": null,
             "action": "Verify that the building is compliant",
             "records": "A record of the separation distances Where there is an intervening wall, a record of the FRR elements of the wall",
@@ -1761,6 +1761,320 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "guidanceUrl": null,
             "action": "Verify that the quantities of LPG, propane, butane, or isobutane are not more than the maximum",
             "records": "A record of the quantities",
+            "evidenceRequired": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "wks17-class-5-1-1-and-5-1-2",
+    "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
+    "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
+    "classScope": [],
+    "revision": 1,
+    "status": "draft",
+    "sheet": {
+      "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
+      "evidenceColumnLabel": "EVIDENCE PORTFOLIO",
+      "banner": "Requirements specific to class 5.1.1 and 5.1.2 substances",
+      "columnHeaders": [
+        "Item",
+        "Regulation",
+        "Action",
+        "Records",
+        "Comments"
+      ],
+      "note": null,
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 12.17 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)).The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+      "documentControl": {
+        "Owner": "BW",
+        "Revision": "1",
+        "Status": "Current",
+        "Date of last revision": "2024-04-25"
+      },
+      "scopeOfAuthorisation": {
+        "heading": "Scope of Authorisation",
+        "text": "Locations where classes 5.1.1 or 5.1.2 substances are present [Regulation 12.17, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "reference": null,
+      "footer": "Section 2/2",
+      "kind": "location",
+      "subjectBlockTitle": null,
+      "subjectBlock": [],
+      "unitBlockTitle": null,
+      "unitBlock": null,
+      "authorisation": null,
+      "certificate": null
+    },
+    "sections": [
+      {
+        "ordinal": 1,
+        "number": "1",
+        "title": "Class 5.1.1 and 5.1.2 substances to be secured",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.18(b)"
+            ],
+            "regulationRaw": "12.18(b)",
+            "guidanceUrl": null,
+            "action": "Verify— (a) that the quantity exceeds the threshold specified in Table 6 of Schedule 10 of the Regulations; and (b) that the hazardous substance location is secured from access by persons other than those permitted by the PCBU to access the substance",
+            "records": "Evidence to be provided: A record that— (a) identifies the hazardous substance location; and (b) identifies the means by which the substances are secured",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "number": "2",
+        "title": "Likelihood of unintended ignition to be reduced",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.9(1)(a)"
+            ],
+            "regulationRaw": "12.9(1)(a)",
+            "guidanceUrl": null,
+            "action": "Verify compliance with regulation 12.5(5)",
+            "records": "Evidence to be provided: A record of the temperature control details To also provide substance decomposition temperature and normal working temperature",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "12.9(1)(b)"
+            ],
+            "regulationRaw": "12.9(1)(b)",
+            "guidanceUrl": null,
+            "action": "Verify that the area around the class 5 substance is free of incompatible substances, as defined in regulation 12.1",
+            "records": "Evidence to be provided: A record of segregation details If there are 2 or more other substances provide their state and reactivity to confirm compatibility",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "12.9(1)(c)"
+            ],
+            "regulationRaw": "12.9(1)(c)",
+            "guidanceUrl": null,
+            "action": "Verify the details of separation from ignition sources",
+            "records": "Evidence to be provided: A record of the separation distance or walls Confirm requirements of table 4 Schedule 10 are met.",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "4",
+            "regulationRefs": [
+              "12.9(1)(d)"
+            ],
+            "regulationRaw": "12.9(1)(d)",
+            "guidanceUrl": null,
+            "action": "Verify separation of particulate matter or gas from ignition sources",
+            "records": "Evidence to be provided: A record of the separation distance or walls",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": "5",
+            "regulationRefs": [
+              "12.9(1)(f)"
+            ],
+            "regulationRaw": "12.9(1)(f)",
+            "guidanceUrl": null,
+            "action": "Verify that there is no ability to ingress electrical equipment",
+            "records": "Evidence to be provided: A record of the separation distance or walls All electrical equipment, level switches, transmitters e.t.c to be IP rated",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": "6",
+            "regulationRefs": [
+              "12.9(2)"
+            ],
+            "regulationRaw": "12.9(2)",
+            "guidanceUrl": null,
+            "action": "Verify that containers are closed",
+            "records": "Evidence to be provided: A note, photograph, or equivalent",
+            "evidenceRequired": true
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "number": "3",
+        "title": "Control adverse effects of unintended combustion of class 5.1.1 and 5.1.2 substances",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.12(1)(a)"
+            ],
+            "regulationRaw": "12.12(1)(a)",
+            "guidanceUrl": null,
+            "action": "Verify that a controlled zone is established and that persons not personally permitted within the controlled zone are excluded",
+            "records": "Evidence to be provided: Site plan to show a record of the controlled zone",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "12.12(1)(b)"
+            ],
+            "regulationRaw": "12.12(1)(b)",
+            "guidanceUrl": null,
+            "action": "Verify that the separation requirements comply with the requirements of regulation 12.9(1)(b)(i) and (c) or 12.9(1)(b)(ii) and (c)",
+            "records": "Evidence to be provided: A record of the means by which the separation is established State type and fire resistance of wall Pictures CCC to be attached if applicable If applicable check requirements of table 3 in Schedule 10 are met",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "12.12(2)"
+            ],
+            "regulationRaw": "12.12(2)",
+            "guidanceUrl": null,
+            "action": "Verify that regulations 12.9(1)(d), (e), (f), and (if a class 5.1.1 or 5.1.2 substance is manufactured or used) 12.10 are met any area where particulate matter or vapour from a substance in class 5.1.1 or a gas in class 5.1.2A is likely to form (including any ventilation outlet or aperture) is separated from any ignition source to the degree provided in paragraph (c); and arrangements are in place so that— (i) every person entering the location is free of any incompatible material; and (ii) direct contact by any person at the location with a class 5.1.1 or 5.1.2 substance is prevented; and (iii) accumulation of a class 5.1.1 or 5.1.2 substance on personal protective equipment inside the location is prevented, unless— (A) the personal protective equipment complies with regulation 12.6 or 12.11; and (B) any material that has accumulated is collected and removed from the location immediately; and (C) the requirements of regulation 12.7(2) and (4) are met; and (iv) the accumulation of incompatible substances at the location is prevented; and",
+            "records": "Evidence to be provided: A record of the means of compliance",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "4",
+            "regulationRefs": [
+              "12.12(3)"
+            ],
+            "regulationRaw": "12.12(3)",
+            "guidanceUrl": null,
+            "action": "Verify— (a) the separation of the interior of a proximate building that is a place of regular habitation and not dedicated to the use or manufacture of the hazardous substance; and (b) the separation of any place where a person may be legally present in the controlled zone",
+            "records": "Evidence to be provided: A record of the means of separation",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "number": "4",
+        "title": "Fixed structures to be compatible",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.18"
+            ],
+            "regulationRaw": "12.18",
+            "guidanceUrl": null,
+            "action": "Verify that any fixed structure or equipment within the location is constructed of compatible material and is not an ignition source",
+            "records": "Evidence to be provided: A record of material and construction details",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 5,
+        "number": "5",
+        "title": "PPE for class 5.1.1 and 5.1.2 substances",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.6(1)",
+              "12.6(2)",
+              "12.6(3)",
+              "12.6(4)",
+              "12.6(5)",
+              "12.6(6)"
+            ],
+            "regulationRaw": "12.6(1) 12.6(2) 12.6(3) 12.6(4) 12.6(5) 12.6(6)",
+            "guidanceUrl": null,
+            "action": "Review the hazardous substances and the nature of the activities and verify the PPE is suitable",
+            "records": "Evidence to be provided: A record that conveys— (a) the availability of the PPE; and (b) the nature of the PPE; and (c) the compatibility of the PPE with the substance; and (d) that the substance does not accumulate on the PPE; and (e) that the PPE does not cause the substance to combust A record that confirms— (a) that the PPE material cannot be degraded in the specified time; and (b) the suitability of the PPE for the operating temperatures; and (c) that the instructions are accessible; and (d) that the instructions are readily understandable",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "12.11"
+            ],
+            "regulationRaw": "12.11",
+            "guidanceUrl": null,
+            "action": "Unless the hazardous substance location has only 65-70% aqueous nitric acid, verify whether combustion is intended or contact with incompatible substances or ignition sources, or exposure to greater temperature than the limit, is anticipated",
+            "records": "Evidence to be provided: A record of whether— (a) combustion is intended; and (b) contact or exposure is intended or anticipated",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "12.11(1)"
+            ],
+            "regulationRaw": "12.11(1)",
+            "guidanceUrl": null,
+            "action": "Verify that the worker uses PPE at any time— (a) a class 5.1.1 or 5.1.2 substance comes into contact with an ignition source or an incompatible substance or material or may be exposed to a greater temperature than the limit set in regulation 12.5(5); and (b) that it is reasonable to expect that such contact or exposure might accidently occur",
+            "records": "Evidence to be provided: A record that refers to— (a) the availability and nature of the PPE; and (b) evidence that the PPE cannot be degraded; and (c) the maintenance documentation; and (d) the operating procedure; and (e) the accessibility of the documentation",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "4",
+            "regulationRefs": [
+              "12.11(2)"
+            ],
+            "regulationRaw": "12.11(2)",
+            "guidanceUrl": null,
+            "action": "Verify the PPE— (a) is designed, constructed, and operated so as to prevent the substance making direct contact with the wearer or user; and (b) meets the requirements of regulation 12.6(4), (5), and (6)",
+            "records": "Evidence to be provided: A record of— (a) the matters referred to in item three above; and (b) fit tests",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 6,
+        "number": "6",
+        "title": "Arrangements to prevent contact with and accumulation of class 5.1.1 and 5.1.2 substances and incompatible material",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.9(1)(e)"
+            ],
+            "regulationRaw": "12.9(1)(e)",
+            "guidanceUrl": null,
+            "action": "Verify that there are compliant PPE and handling procedures",
+            "records": "Evidence to be provided: A record of the following: (a) the documented procedure, a copy of the header and contents of the documented procedure, or a unique reference to identify the documented procedure: (b) confirmation that the procedural requirementsof regulation 12.9(1)(e) are complied with: (c) confirmation that the documented procedure is being implemented at the location",
+            "evidenceRequired": true
+          }
+        ]
+      },
+      {
+        "ordinal": 7,
+        "number": "7",
+        "title": "Locations where class 5.1.1 and 5.1.2 substances are manufactured or used",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "12.19"
+            ],
+            "regulationRaw": "12.19",
+            "guidanceUrl": null,
+            "action": "Verify that, if class 5.1.1 or 5.1.2 substances are manufactured or used, there are documented procedures to ensure that every person leaving the location is free of any class 5.1.1 or 5.1.2 substance",
+            "records": "",
             "evidenceRequired": false
           }
         ]
@@ -2100,7 +2414,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "title": "General location requirements",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
     "classScope": [],
-    "revision": 1,
+    "revision": 2,
     "status": "draft",
     "sheet": {
       "title": null,
@@ -2136,7 +2450,12 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
       "class_2_3": {
         "title": "Requirements for Class 2 and 3.1",
         "banner": null,
-        "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 17.91 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+        "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.34 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "class_5_1": {
+        "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
+        "banner": "General location requirements specific to class 5.1.1 and 5.1.2 substances",
+        "declaration": null
       }
     },
     "sections": [
@@ -2148,9 +2467,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           {
             "ordinal": 1,
             "number": "1",
-            "regulationRefs": [
-              "10.34"
-            ],
+            "regulationRefs": [],
             "regulationRefsByClass": {
               "class_6_8": [
                 "10.34",
@@ -2161,6 +2478,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_2_3": [
                 "10.34"
+              ],
+              "class_5_1": [
+                "12.17"
               ]
             },
             "regulationRaw": "10.34 10.36 12.17 12.42 13.38",
@@ -2189,9 +2509,18 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           {
             "ordinal": 1,
             "number": "1",
-            "regulationRefs": [
-              "13.34(4)"
-            ],
+            "regulationRefs": [],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "13.34(4)"
+              ],
+              "class_2_3": [
+                "10.34(1)(a)"
+              ],
+              "class_5_1": [
+                "12.8(4)"
+              ]
+            },
             "regulationRaw": "13.34(4)",
             "guidanceUrl": null,
             "action": "Verify— (a) either— (i) the notification that has been made; or (ii) the most recent location compliance certificate; and (b) the details of the notification or the most recent location compliance certificate including: (i) the name of the company and the PCBU; and (ii) the street address of the workplace; and (c) either— (i) that the maximum quantity and classification of hazardous substances held are consistent with the notification or most recent location compliance certificate; or (ii) if the quantity of hazardous substances held exceeds the quantity notified or set out in the location compliance certificate, that a new notification has been made",
@@ -2536,9 +2865,18 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           {
             "ordinal": 1,
             "number": "1",
-            "regulationRefs": [
-              "13.3"
-            ],
+            "regulationRefs": [],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "13.3"
+              ],
+              "class_2_3": [
+                "10.34(1)(h)"
+              ],
+              "class_5_1": [
+                "12.13"
+              ]
+            },
             "regulationRaw": "13.3",
             "guidanceUrl": null,
             "action": "Determine whether secondary containment is required",
@@ -2574,6 +2912,22 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
                 "10.31",
                 "10.32",
                 "10.33"
+              ],
+              "class_5_1": [
+                "10.31",
+                "10.32",
+                "10.33",
+                "12.14",
+                "12.15",
+                "12.16",
+                "12.39",
+                "12.40",
+                "12.41",
+                "13.31",
+                "13.32",
+                "13.33",
+                "17.100",
+                "17.101"
               ]
             },
             "regulationRaw": "10.31 10.32 10.33 12.14 12.15 12.16 12.39 12.40 12.41 13.31 13.32 13.33 17.100 17.101",
@@ -2586,11 +2940,25 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "ordinal": 3,
             "number": "3",
             "regulationRefs": [
-              "10.30",
-              "12.13",
-              "12.38",
-              "13.30"
+              "10.30"
             ],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "10.30",
+                "12.13",
+                "12.38",
+                "13.30"
+              ],
+              "class_2_3": [
+                "10.30"
+              ],
+              "class_5_1": [
+                "10.30",
+                "12.13",
+                "12.38",
+                "13.30"
+              ]
+            },
             "regulationRaw": "10.30 12.13 12.38 13.30",
             "guidanceUrl": null,
             "action": "If containers of different capacities are held at the place, verify that the secondary containment system has a capacity of at least the sum of each individual container category",
@@ -2601,11 +2969,25 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "ordinal": 4,
             "number": "4",
             "regulationRefs": [
-              "10.30",
-              "12.13",
-              "12.38",
-              "13.30"
+              "10.30"
             ],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "10.30",
+                "12.13",
+                "12.38",
+                "13.30"
+              ],
+              "class_2_3": [
+                "10.30"
+              ],
+              "class_5_1": [
+                "10.30",
+                "12.13",
+                "12.38",
+                "13.30"
+              ]
+            },
             "regulationRaw": "10.30 12.13 12.38 13.30",
             "guidanceUrl": null,
             "action": "Verify that the secondary containment is able to contain the leaked hazardous substance",
@@ -2632,7 +3014,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               "17.102(6)",
               "17.102(7)"
             ],
-            "regulationRaw": "17.102(6)) 17.102(7)",
+            "regulationRaw": "17.102(6) 17.102(7)",
             "guidanceUrl": null,
             "action": "Verify that any intermediate secondary containment system is compliant",
             "records": "A record of the details of the secondary containment system",
@@ -2648,9 +3030,18 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           {
             "ordinal": 1,
             "number": "1",
-            "regulationRefs": [
-              "13.34(5)(b)"
-            ],
+            "regulationRefs": [],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "13.34(5)(b)"
+              ],
+              "class_2_3": [
+                "10.26(4)(b)"
+              ],
+              "class_5_1": [
+                "13.34(5)(b)"
+              ]
+            },
             "regulationRaw": "13.34(5)(b)",
             "guidanceUrl": null,
             "action": "Verify that the site plan— (a) is of the relevant place and is specific to that place; and (b) is accurate and includes all prescribed information",
@@ -2660,9 +3051,18 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
           {
             "ordinal": 2,
             "number": "2",
-            "regulationRefs": [
-              "13.34(5)(b)"
-            ],
+            "regulationRefs": [],
+            "regulationRefsByClass": {
+              "class_6_8": [
+                "13.34(5)(b)"
+              ],
+              "class_2_3": [
+                "10.26(4)(b)"
+              ],
+              "class_5_1": [
+                "13.34(5)(b)"
+              ]
+            },
             "regulationRaw": "13.34(5)(b)",
             "guidanceUrl": null,
             "action": "Verify that the site plan has sufficient detail to determine its purpose",
