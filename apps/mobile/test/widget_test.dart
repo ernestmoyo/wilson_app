@@ -164,10 +164,12 @@ void main() {
     expect(find.textContaining('G2 Chiller'), findsWidgets);
     expect(find.textContaining('4 · Site inspection'), findsOneWidget);
     expect(find.text('Continue the site inspection: 2 of 54 items assessed'), findsOneWidget);
-    expect(find.textContaining('2/54'), findsOneWidget);
+    expect(find.textContaining('2 of 54 answered'), findsOneWidget);
     // Loop 1: what needs attention, and who did what, above the cards.
     expect(find.byKey(const ValueKey('attention')), findsOneWidget);
     expect(find.textContaining('Corrective action due 2026-09-15'), findsOneWidget);
+    // Activity sits after the clients (U4): below the fold on this small view.
+    await tester.scrollUntilVisible(find.byKey(const ValueKey('activity')), 200, scrollable: find.byType(Scrollable).first);
     expect(find.byKey(const ValueKey('activity')), findsOneWidget);
     expect(find.textContaining('signed the declaration'), findsOneWidget);
   });

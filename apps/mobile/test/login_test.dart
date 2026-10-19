@@ -46,6 +46,23 @@ void main() {
     expect(api.token, 'tok-123');
   });
 
+  testWidgets('sign-in is one centred card: logo, title, the IPS note, fields at 16', (t) async {
+    t.view.physicalSize = const Size(1200, 900);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.resetPhysicalSize);
+    final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: FakeServer().client_());
+    await t.pumpWidget(MaterialApp(home: LoginScreen(api: api, onSignedIn: (s) async {})));
+    final card = find.byKey(const ValueKey('login-card'));
+    expect(card, findsOneWidget);
+    expect(t.getSize(card).width, lessThanOrEqualTo(420));
+    expect((t.getCenter(card).dx - 600).abs(), lessThan(1), reason: 'centred');
+    expect(find.descendant(of: card, matching: find.byType(Image)), findsOneWidget);
+    expect(find.descendant(of: card, matching: find.text('Sign in')), findsWidgets);
+    expect(find.textContaining('IPS 21(4)'), findsOneWidget);
+    final email = t.widget<TextField>(find.byKey(const ValueKey('login-email')));
+    expect(email.style?.fontSize, 16);
+  });
+
   testWidgets('the gate shows sign-in with no session, the inspections after, and sign-out returns', (t) async {
     final store = MemorySessionStore();
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: FakeServer().client_());

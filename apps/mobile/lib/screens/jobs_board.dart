@@ -50,6 +50,14 @@ class _JobsBoardState extends State<JobsBoard> {
   /// Clients with nothing open (every job closed or referred), shown on request.
   bool _showPast = false;
 
+  /// The board search: client, trading name, location, applicant, address.
+  final _search = TextEditingController();
+  String _query = '';
+
+  /// The attention tile whose list is open: null for the first with
+  /// something in it, empty for none.
+  String? _attentionGroup;
+
   /// The empty board offers the G2 workbook job only in a demo build
   /// (--dart-define=DEMO=true), so a demo is never seeded on production.
   static const _demoBuild = bool.fromEnvironment('DEMO');
@@ -62,6 +70,12 @@ class _JobsBoardState extends State<JobsBoard> {
   void initState() {
     super.initState();
     _reload();
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -141,17 +155,33 @@ class _JobsBoardState extends State<JobsBoard> {
     _ClientGroup? picked;
     final legalFocus = FocusNode();
     String kindOf(String key) => sets.firstWhere((x) => x.key == key, orElse: () => sets.first).kind;
+    // Inline validation (UX U3/U4): Create with a required field empty shows
+    // what is missing instead of closing with nothing made.
+    var showErrors = false;
+    String? need(TextEditingController c, String message) => showErrors && c.text.trim().isEmpty ? message : null;
+    bool missing() => [legal, address, location].any((c) => c.text.trim().isEmpty);
+    final t = Theme.of(context).textTheme;
+    Widget section(String label) => Padding(
+          key: ValueKey('nj-section-$label'),
+          padding: const EdgeInsets.only(top: Space.sm),
+          child: Text(label, style: t.titleSmall?.copyWith(color: Brand.ribbon)),
+        );
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
+        builder: (ctx, setD) {
+          void recheck(String _) {
+            if (showErrors) setD(() {});
+          }
+          return AlertDialog(
           title: const Text('New job'),
           // A fixed reading width: the scope chips wrap inside it instead of
           // stretching the dialog across the screen.
           content: SizedBox(
             width: 560,
             child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, spacing: 10, children: [
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 10, children: [
+              section('Scope'),
               DropdownButtonFormField<String>(
                 isExpanded: true,
                 initialValue: classKey,
@@ -162,7 +192,7 @@ class _JobsBoardState extends State<JobsBoard> {
                       value: x.key,
                       enabled: x.authorised,
                       child: Text(x.authorised ? x.name : '${x.name} (outside authorisation)',
-                          style: TextStyle(color: x.authorised ? null : Colors.black38)),
+                          style: TextStyle(color: x.authorised ? null : Neutral.muted)),
                     ),
                 ],
                 onChanged: (v) => setD(() {
@@ -175,15 +205,14 @@ class _JobsBoardState extends State<JobsBoard> {
                   key: const ValueKey('nj-choices'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(chosen.isEmpty ? 'Scope: pick what this location is (one or more)' : 'Scope',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                            color: chosen.isEmpty ? Theme.of(ctx).colorScheme.error : Colors.black87)),
+                    Text(chosen.isEmpty ? 'Pick what this location is (one or more)' : 'What this location is',
+                        style: t.labelMedium?.copyWith(color: chosen.isEmpty ? Tone.bad.fg : Neutral.body)),
                     const SizedBox(height: 6),
                     Wrap(spacing: 6, runSpacing: 6, children: [
                       for (final c in choicesOf(classKey))
                         FilterChip(
                           key: ValueKey('nj-choice-${c.key}'),
-                          label: Text(c.label, style: const TextStyle(fontSize: 12)),
+                          label: Text(c.label),
                           selected: chosen.contains(c.key),
                           onSelected: (on) => setD(() => on ? chosen.add(c.key) : chosen.remove(c.key)),
                         ),
@@ -193,9 +222,9 @@ class _JobsBoardState extends State<JobsBoard> {
               if (sets.any((x) => x.key == classKey && x.regulation != null))
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(sets.firstWhere((x) => x.key == classKey).regulation!,
-                      style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                  child: Text(sets.firstWhere((x) => x.key == classKey).regulation!, style: t.bodySmall),
                 ),
+              section('Client'),
               RawAutocomplete<_ClientGroup>(
                 textEditingController: legal,
                 focusNode: legalFocus,
@@ -213,18 +242,20 @@ class _JobsBoardState extends State<JobsBoard> {
                   decoration: InputDecoration(
                     labelText: 'Client (legal entity name)',
                     helperText: picked != null ? 'Existing client: this job is added under it' : null,
+                    errorText: need(legal, 'Enter the client\'s legal name'),
                   ),
                   // Editing the name after picking means a different client.
-                  onChanged: (t) {
+                  onChanged: (text) {
                     final p = picked;
-                    if (p != null && t != p.name) setD(() => picked = null);
+                    if (p != null && text != p.name) setD(() => picked = null);
+                    recheck(text);
                   },
                 ),
                 optionsViewBuilder: (ctx, onSelect, options) => Align(
                   alignment: Alignment.topLeft,
                   child: Material(
                     elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(Radii.sm),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 260, maxWidth: 420),
                       child: ListView(padding: EdgeInsets.zero, shrinkWrap: true, children: [
@@ -242,29 +273,44 @@ class _JobsBoardState extends State<JobsBoard> {
                 ),
               ),
               TextField(controller: trading, decoration: const InputDecoration(labelText: 'Trading as (optional)')),
-              TextField(controller: address, key: const ValueKey('nj-address'), decoration: const InputDecoration(labelText: 'Site address')),
+              section('Site'),
+              TextField(
+                controller: address,
+                key: const ValueKey('nj-address'),
+                onChanged: recheck,
+                decoration: InputDecoration(labelText: 'Site address', errorText: need(address, 'Enter the site address')),
+              ),
+              Row(children: [
+                Expanded(child: TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)'))),
+                const SizedBox(width: Space.sm),
+                Expanded(child: TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)'))),
+              ]),
+              section('Location'),
               TextField(
                 controller: location,
                 key: const ValueKey('nj-location'),
+                onChanged: recheck,
                 decoration: InputDecoration(
                   labelText: switch (kindOf(classKey)) {
                     'handler' => 'Applicant (full name)',
                     'cylinder' => 'Shipment or batch reference',
                     _ => 'Hazardous substance location, e.g. G2 Chiller',
                   },
+                  errorText: need(location, switch (kindOf(classKey)) {
+                    'handler' => 'Enter the applicant\'s full name',
+                    'cylinder' => 'Enter the shipment or batch reference',
+                    _ => 'Enter the location',
+                  }),
                 ),
               ),
-              const SizedBox(height: 14),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  switch (kindOf(classKey)) {
-                    'handler' => 'Substances the applicant will handle',
-                    'cylinder' => 'Gas in the cylinders (optional)',
-                    _ => 'Hazardous substances at the location',
-                  },
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.black54),
-                ),
+              section('Substances'),
+              Text(
+                switch (kindOf(classKey)) {
+                  'handler' => 'Substances the applicant will handle',
+                  'cylinder' => 'Gas in the cylinders (optional)',
+                  _ => 'Hazardous substances at the location',
+                },
+                style: t.bodySmall,
               ),
               for (var k = 0; k < substances.length; k++) ...[
                 Row(children: [
@@ -298,23 +344,23 @@ class _JobsBoardState extends State<JobsBoard> {
                 child: TextButton.icon(
                   key: const ValueKey('nj-add-substance'),
                   onPressed: () => setD(() => substances.add((TextEditingController(), TextEditingController(), TextEditingController()))),
-                  icon: const Icon(Icons.add, size: 16),
+                  icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add substance'),
                 ),
               ),
-              const SizedBox(height: 6),
-              TextField(controller: manager, decoration: const InputDecoration(labelText: 'Site manager (optional)')),
-              TextField(controller: phone, decoration: const InputDecoration(labelText: 'Manager phone (optional)')),
             ]),
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             FilledButton(
                 key: const ValueKey('nj-create'),
-                onPressed: choicesOf(classKey).isNotEmpty && chosen.isEmpty ? null : () => Navigator.pop(ctx, true),
+                onPressed: choicesOf(classKey).isNotEmpty && chosen.isEmpty
+                    ? null
+                    : () => missing() ? setD(() => showErrors = true) : Navigator.pop(ctx, true),
                 child: const Text('Create')),
           ],
-        ),
+          );
+        },
       ),
     );
     if (ok != true || legal.text.trim().isEmpty || address.text.trim().isEmpty || location.text.trim().isEmpty) return;
@@ -438,6 +484,34 @@ class _JobsBoardState extends State<JobsBoard> {
     await _reload();
   }
 
+  /// Search: a client matches on its names; otherwise only its jobs whose
+  /// location, applicant or address match are kept under it.
+  List<_ClientGroup> _filter(List<_ClientGroup> groups) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return groups;
+    bool has(String? s) => (s ?? '').toLowerCase().contains(q);
+    final out = <_ClientGroup>[];
+    for (final c in groups) {
+      if (has(c.name) || has(c.trading)) {
+        out.add(c);
+        continue;
+      }
+      final jobs = c.jobs.where((j) => has(j.locationName) || has(j.subjectLine) || has(j.address)).toList();
+      if (jobs.isNotEmpty) out.add(_ClientGroup(id: c.id, name: c.name, trading: c.trading)..jobs.addAll(jobs));
+    }
+    return out;
+  }
+
+  /// Legal names carried by more than one client record (F4): a hint only,
+  /// never a merge.
+  static Set<String> _sharedNames(Iterable<_ClientGroup> groups) {
+    final ids = <String, Set<Object>>{};
+    for (final c in groups) {
+      ids.putIfAbsent(c.name.trim().toLowerCase(), () => {}).add(c.id ?? c.name);
+    }
+    return {for (final e in ids.entries) if (e.value.length > 1) e.key};
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobs = _jobs;
@@ -445,6 +519,10 @@ class _JobsBoardState extends State<JobsBoard> {
     final active = [for (final c in all) if (c.jobs.any(_isOpen)) c];
     final past = [for (final c in all) if (!c.jobs.any(_isOpen)) c];
     final archived = _groups(_archivedJobs ?? const []);
+    final shared = _sharedNames([...all, ...archived]);
+    final searching = _query.trim().isNotEmpty;
+    // While searching, clients with nothing open are searched too.
+    final shown = _filter(_showArchived ? archived : [...active, if (_showPast || searching) ...past]);
     final dash = _dash;
     return Scaffold(
       appBar: BrandBar(
@@ -475,34 +553,33 @@ class _JobsBoardState extends State<JobsBoard> {
         // A readable column on a desk screen; edge to edge on a phone.
         child: LayoutBuilder(
           builder: (context, box) {
-            final side = box.maxWidth > 992 ? (box.maxWidth - 960) / 2 : 16.0;
+            final side = box.maxWidth > 992 ? (box.maxWidth - 960) / 2 : Space.lg;
             return ListView(
-              padding: EdgeInsets.fromLTRB(side, 16, side, 48),
+              padding: EdgeInsets.fromLTRB(side, Space.lg, side, 48),
               children: [
                 _headerRow(_showArchived ? archived.length : active.length),
+                if ((jobs ?? const []).isNotEmpty || _showArchived) _searchField(),
                 if (_busy) const LinearProgressIndicator(minHeight: 2),
                 if (_error != null)
-                  Card(
-                    color: const Color(0xFFFDECEA),
-                    child: ListTile(
-                      leading: const Icon(Icons.cloud_off_outlined, color: Brand.nonCompliant),
-                      title: Text(_error!, style: const TextStyle(fontSize: 13)),
-                      trailing: TextButton(onPressed: _reload, child: const Text('Retry')),
-                    ),
+                  Notice(
+                    _error!,
+                    icon: Icons.cloud_off_outlined,
+                    action: TextButton(onPressed: _reload, child: const Text('Retry')),
                   ),
                 if (_showArchived) ...[
                   if (_archivedJobs != null && archived.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('No archived clients.', style: TextStyle(color: Colors.black54)),
-                    ),
-                  for (final c in archived) _clientCard(c, archivedView: true),
+                    const EmptyState(icon: Icons.inventory_2_outlined, title: 'No archived clients.'),
                 ] else ...[
-                  if (dash != null && dash.reminders.isNotEmpty) _attention(dash),
-                  if (jobs != null && active.isEmpty) _empty(),
-                  for (final c in active) _clientCard(c),
-                  if (_showPast) for (final c in past) _clientCard(c),
+                  if (dash != null && dash.reminders.isNotEmpty && !searching) _attention(dash),
+                  if (jobs != null && active.isEmpty && !searching) _empty(),
                 ],
+                if (searching && shown.isEmpty)
+                  EmptyState(
+                    icon: Icons.search_off,
+                    title: 'No clients match "${_query.trim()}"',
+                    message: 'Search looks at client names, trading names, locations and site addresses.',
+                  ),
+                for (final c in shown) _clientCard(c, archivedView: _showArchived, sharedName: shared.contains(c.name.trim().toLowerCase())),
                 _footer(past.length),
                 if (!_showArchived && dash != null && dash.activity.isNotEmpty) _activity(dash),
               ],
@@ -515,7 +592,7 @@ class _JobsBoardState extends State<JobsBoard> {
 
   /// What is listed, and New job where the eye lands.
   Widget _headerRow(int n) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(bottom: Space.md),
         child: Row(children: [
           Expanded(
             child: Text(
@@ -524,31 +601,56 @@ class _JobsBoardState extends State<JobsBoard> {
                   : _showArchived
                       ? 'Archived clients ($n)'
                       : '$n active client${n == 1 ? '' : 's'}',
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Brand.tealDark),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
           if (_showArchived)
             TextButton.icon(
               key: const ValueKey('show-active'),
               onPressed: _busy ? null : _toggleArchived,
-              icon: const Icon(Icons.arrow_back, size: 16),
+              icon: const Icon(Icons.arrow_back, size: 18),
               label: const Text('Active clients'),
             )
           else if (widget.session.canRecord)
             FilledButton.icon(
               key: const ValueKey('new-job'),
               onPressed: _busy ? null : _newJob,
-              icon: const Icon(Icons.add, size: 18),
+              icon: const Icon(Icons.add, size: 20),
               label: const Text('New job'),
             ),
         ]),
       );
 
+  Widget _searchField() => Padding(
+        padding: const EdgeInsets.only(bottom: Space.md),
+        child: TextField(
+          key: const ValueKey('board-search'),
+          controller: _search,
+          onChanged: (v) => setState(() => _query = v),
+          textInputAction: TextInputAction.search,
+          style: Theme.of(context).textTheme.bodyLarge,
+          decoration: InputDecoration(
+            hintText: 'Search clients, sites and locations',
+            prefixIcon: const Icon(Icons.search, color: Neutral.muted),
+            suffixIcon: _query.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear search',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() {
+                      _search.clear();
+                      _query = '';
+                    }),
+                  ),
+          ),
+        ),
+      );
+
   /// Quiet links under the list: clients with nothing open, and the archive.
   Widget _footer(int pastCount) => Padding(
-        padding: const EdgeInsets.only(top: 4, bottom: 12),
-        child: Wrap(spacing: 8, children: [
-          if (!_showArchived && pastCount > 0)
+        padding: const EdgeInsets.only(top: Space.xs, bottom: Space.md),
+        child: Wrap(spacing: Space.sm, children: [
+          if (!_showArchived && pastCount > 0 && _query.trim().isEmpty)
             TextButton(
               key: const ValueKey('show-past'),
               onPressed: () => setState(() => _showPast = !_showPast),
@@ -573,37 +675,146 @@ class _JobsBoardState extends State<JobsBoard> {
         _ => Icons.pause_circle_outline,
       };
 
-  /// What needs attention: renewals, RFIs waiting, actions due, idle inspections.
-  Widget _attention(DashboardData d) => Card(
-        key: const ValueKey('attention'),
-        margin: const EdgeInsets.only(bottom: 14),
-        color: const Color(0xFFFFF6E5),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Needs attention (${d.reminders.length})',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Brand.conditional)),
-            const SizedBox(height: 4),
-            for (final r in d.reminders.take(6))
-              InkWell(
-                onTap: _busy ? null : () => _open(r.jobId),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Icon(_reminderIcon(r.kind), size: 16, color: Brand.conditional),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text.rich(TextSpan(children: [
-                        TextSpan(text: '${r.client} · ${r.location}: ', style: const TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(text: r.text),
-                      ]), style: const TextStyle(fontSize: 12.5)),
-                    ),
-                  ]),
-                ),
+  /// The attention tiles, each a group of the server's reminder kinds. Only
+  /// what the dashboard reports is counted; nothing is inferred.
+  static const _attentionGroups = <({String key, String label, IconData icon, Tone tone})>[
+    (key: 'actions', label: 'Corrective actions', icon: Icons.build_outlined, tone: Tone.bad),
+    (key: 'renewals', label: 'Renewals due', icon: Icons.event_repeat, tone: Tone.warn),
+    (key: 'decide', label: 'Ready to decide', icon: Icons.gavel_outlined, tone: Tone.info),
+    (key: 'waiting', label: 'Waiting too long', icon: Icons.hourglass_bottom, tone: Tone.warn),
+  ];
+
+  static String _groupOf(String kind) => switch (kind) {
+        'action' || 'no_action' => 'actions',
+        'renewal' => 'renewals',
+        'decide' => 'decide',
+        _ => 'waiting', // rfi, stalled, triage
+      };
+
+  /// What needs attention: a tile per group with its count, and the lines of
+  /// the open tile under them (each opens its job).
+  Widget _attention(DashboardData d) {
+    final t = Theme.of(context).textTheme;
+    final byGroup = {for (final g in _attentionGroups) g.key: <Reminder>[]};
+    for (final r in d.reminders) {
+      byGroup[_groupOf(r.kind)]!.add(r);
+    }
+    final now = DateTime.now();
+    final overdue = byGroup['actions']!.where((r) => r.kind == 'action' && r.when != null && r.when!.isBefore(now)).length;
+    final open = _attentionGroup ?? _attentionGroups.firstWhere((g) => byGroup[g.key]!.isNotEmpty).key;
+    final lines = byGroup[open] ?? const <Reminder>[];
+    final openGroup = _attentionGroups.where((g) => g.key == open).firstOrNull;
+    return Padding(
+      key: const ValueKey('attention'),
+      padding: const EdgeInsets.only(bottom: Space.lg),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('Needs attention (${d.reminders.length})', style: t.titleSmall),
+        const SizedBox(height: Space.sm),
+        LayoutBuilder(builder: (context, box) {
+          // Four across on an iPad in landscape, two in portrait, one on a phone.
+          final across = box.maxWidth >= 840 ? 4 : box.maxWidth >= 480 ? 2 : 1;
+          final w = (box.maxWidth - Space.md * (across - 1)) / across;
+          return Wrap(spacing: Space.md, runSpacing: Space.md, children: [
+            // A group with nothing in it gets no tile: nothing shouts "0".
+            for (final g in _attentionGroups)
+              if (byGroup[g.key]!.isNotEmpty)
+              SizedBox(
+                width: w,
+                child: _attentionTile(g, byGroup[g.key]!.length, selected: g.key == open,
+                    note: g.key == 'actions' && overdue > 0 ? '$overdue overdue' : null),
               ),
-          ]),
+          ]);
+        }),
+        if (openGroup != null && lines.isNotEmpty)
+          Container(
+            key: const ValueKey('attention-list'),
+            margin: const EdgeInsets.only(top: Space.md),
+            padding: const EdgeInsets.symmetric(vertical: Space.xs),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(Radii.md),
+              border: Border.all(color: Neutral.line),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              for (final r in lines.take(8))
+                InkWell(
+                  onTap: _busy ? null : () => _open(r.jobId),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: kTouch),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.sm),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Icon(_reminderIcon(r.kind), size: 18, color: openGroup.tone.fg),
+                        ),
+                        const SizedBox(width: Space.md),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(children: [
+                              TextSpan(text: '${r.client} · ${r.location}: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              TextSpan(text: Wording.humanise(r.text)),
+                            ]),
+                            style: t.bodyMedium,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, size: 20, color: Neutral.faint),
+                      ]),
+                    ),
+                  ),
+                ),
+              if (lines.length > 8)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.lg, Space.xs, Space.lg, Space.sm),
+                  child: Text('+ ${lines.length - 8} more', style: t.bodySmall),
+                ),
+            ]),
+          ),
+      ]),
+    );
+  }
+
+  Widget _attentionTile(({String key, String label, IconData icon, Tone tone}) g, int n, {required bool selected, String? note}) {
+    final t = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${g.label}: $n${note == null ? '' : ', $note'}',
+      excludeSemantics: true,
+      child: Material(
+        color: selected ? g.tone.bg : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.md),
+          side: BorderSide(color: selected ? g.tone.fg : Neutral.line, width: selected ? 2 : 1),
         ),
-      );
+        child: InkWell(
+          key: ValueKey('attention-tile-${g.key}'),
+          borderRadius: BorderRadius.circular(Radii.md),
+          onTap: () => setState(() => _attentionGroup = selected ? '' : g.key),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.sm + 2),
+            child: Row(children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: selected ? Colors.white : g.tone.bg, shape: BoxShape.circle),
+                child: Icon(g.icon, size: 18, color: g.tone.fg),
+              ),
+              const SizedBox(width: Space.md),
+              Text('$n', style: t.headlineSmall),
+              const SizedBox(width: Space.sm + 2),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Text(g.label, style: t.labelMedium?.copyWith(color: Neutral.strong), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if (note != null) Text(note, style: t.labelSmall?.copyWith(color: Tone.bad.fg)),
+                ]),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Who did what, most recent first, across every job.
   /// A status change and a comment on the same item arrive as two events
@@ -620,170 +831,239 @@ class _JobsBoardState extends State<JobsBoard> {
     return out;
   }
 
-  Widget _activity(DashboardData d) => Padding(
-        key: const ValueKey('activity'),
-        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Recent activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.black54)),
-          const SizedBox(height: 4),
-          for (final a in _collapsed(d.activity).take(5))
-            InkWell(
-              onTap: _busy || a.jobId == null ? null : () => _open(a.jobId!),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(text: a.userName ?? 'Someone', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  TextSpan(text: ' ${a.verb}'),
+  Widget _activity(DashboardData d) {
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      key: const ValueKey('activity'),
+      padding: const EdgeInsets.fromLTRB(Space.xs, Space.sm, Space.xs, 0),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Recent activity', style: t.titleSmall?.copyWith(color: Neutral.muted)),
+        const SizedBox(height: Space.xs),
+        for (final a in _collapsed(d.activity).take(5))
+          InkWell(
+            onTap: _busy || a.jobId == null ? null : () => _open(a.jobId!),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.xs),
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: a.userName ?? 'Someone', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  TextSpan(text: ' ${Wording.humanise(a.verb)}'),
                   if (a.location != null || a.client != null)
-                    TextSpan(text: ' · ${a.location ?? a.client}', style: const TextStyle(color: Colors.black54)),
-                  TextSpan(text: '  ${_ago(a.at)}', style: const TextStyle(color: Colors.black45, fontSize: 11)),
-                ]), style: const TextStyle(fontSize: 12.5)),
+                    TextSpan(text: ' · ${a.location ?? a.client}', style: const TextStyle(color: Neutral.muted)),
+                  TextSpan(text: '  ${_ago(a.at)}', style: t.labelSmall),
+                ]),
+                style: t.bodyMedium,
               ),
             ),
-        ]),
-      );
+          ),
+      ]),
+    );
+  }
 
-  Widget _empty() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('No active clients yet', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            const Text('Start with New job: the client, the site and what is being certified.',
-                style: TextStyle(fontSize: 13, color: Colors.black54)),
-            if (_demoBuild) ...[
-              const SizedBox(height: 12),
-              OutlinedButton(
+  Widget _empty() => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(Radii.md),
+          border: Border.all(color: Neutral.line),
+        ),
+        child: EmptyState(
+          icon: Icons.business_outlined,
+          title: 'No active clients yet',
+          message: 'Start with New job: the client, the site and what is being certified.',
+          action: _demoBuild
+              ? OutlinedButton(
                   key: const ValueKey('create-demo'),
                   onPressed: _busy ? null : _createDemo,
-                  child: const Text('Load G2 Chiller (workbook)')),
-            ],
-          ]),
+                  child: const Text('Load G2 Chiller (workbook)'))
+              : null,
         ),
       );
 
+  /// "AM" for Argenta Manufacturing Limited.
+  static String _initials(String name) {
+    final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty && RegExp(r'[A-Za-z0-9]').hasMatch(w[0])).toList();
+    if (words.isEmpty) return '?';
+    return words.take(2).map((w) => w[0].toUpperCase()).join();
+  }
+
   /// One client: name, its open jobs as lines (each opens its hub), and for
   /// the certifier a menu to archive it or bring it back.
-  Widget _clientCard(_ClientGroup c, {bool archivedView = false}) {
+  Widget _clientCard(_ClientGroup c, {bool archivedView = false, bool sharedName = false}) {
+    final t = Theme.of(context).textTheme;
     final open = archivedView ? c.jobs : c.jobs.where(_isOpen).toList();
     final shown = open.isEmpty ? c.jobs : open;
     final finished = c.jobs.length - shown.length;
     final last = c.jobs.map((j) => j.lastActivity ?? j.openedAt).whereType<DateTime>().fold<DateTime?>(
         null, (a, b) => a == null || b.isAfter(a) ? b : a);
     final trading = (c.trading ?? '').trim();
-    return Card(
+    final sites = c.jobs.map((j) => (j.address ?? j.locationName).trim().toLowerCase()).toSet().length;
+    final sub = [
+      if (trading.isNotEmpty && trading != c.name) 'Trading as $trading',
+      '$sites site${sites == 1 ? '' : 's'}',
+    ].join(' · ');
+    return Container(
       key: ValueKey('client-${c.id ?? c.name}'),
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 14, 8, 10),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(c.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Brand.tealDark)),
-                if (trading.isNotEmpty && trading != c.name)
-                  Text('Trading as $trading', style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
-              ]),
-            ),
-            if (last != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 8),
-                child: Text(_ago(last), style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
-              ),
-            if (widget.session.canDecide && c.id != null)
-              PopupMenuButton<String>(
-                key: ValueKey('client-menu-${c.id}'),
-                tooltip: 'Client actions',
-                icon: const Icon(Icons.more_vert, size: 20, color: Colors.black45),
-                onSelected: (v) => _setArchived(c, v == 'archive'),
-                itemBuilder: (_) => [
-                  if (archivedView)
-                    const PopupMenuItem(value: 'restore', child: Text('Bring back'))
-                  else
-                    const PopupMenuItem(value: 'archive', child: Text('Archive client')),
-                ],
-              )
-            else
-              const SizedBox(width: 8),
-          ]),
-          const SizedBox(height: 6),
-          for (final j in shown) _jobLine(j),
-          if (finished > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, left: 4),
-              child: Text('+ $finished closed job${finished == 1 ? '' : 's'}',
-                  style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
-            ),
-        ]),
+      margin: const EdgeInsets.only(bottom: Space.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(Radii.md),
+        border: Border.all(color: Neutral.line),
       ),
-    );
-  }
-
-  Widget _jobLine(JobSummary j) {
-    final hasInspection = j.itemTotal > 0;
-    final where = [j.subjectLine, if ((j.address ?? '').isNotEmpty) j.address!].join('  ·  ');
-    return InkWell(
-      key: ValueKey('job-${j.id}'),
-      borderRadius: BorderRadius.circular(8),
-      onTap: _busy ? null : () => _open(j.id),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 8, 10, 8),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.xs, Space.sm),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 34,
-            height: 34,
-            margin: const EdgeInsets.only(right: 12, top: 1),
-            decoration: BoxDecoration(
-              color: StageChip.colorFor(j.stage).withValues(alpha: .12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              j.certificateDecision != null
-                  ? Icons.verified_outlined
-                  : switch (j.kind) { 'handler' => Icons.person_outline, 'cylinder' => Icons.propane_tank_outlined, _ => Icons.factory_outlined },
-              color: StageChip.colorFor(j.stage),
-              size: 19,
-            ),
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            margin: const EdgeInsets.only(right: Space.md),
+            decoration: const BoxDecoration(color: Neutral.tint, shape: BoxShape.circle),
+            child: Text(_initials(c.name), style: t.labelLarge?.copyWith(color: Brand.ribbon)),
           ),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(where, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Colors.black87)),
-              const SizedBox(height: 5),
-              // Stage, then what it needs now; wraps under on a phone.
-              Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                StageChip(stage: j.stage, dense: true),
-                Text(j.nextAction, style: const TextStyle(fontSize: 12.5, color: Brand.teal)),
-              ]),
-              if (hasInspection) ...[
-                const SizedBox(height: 6),
-                Row(children: [
-                  Expanded(
-                    flex: 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: j.assessed / j.itemTotal,
-                        minHeight: 4,
-                        backgroundColor: const Color(0xFFE3E8E8),
-                        valueColor: AlwaysStoppedAnimation(j.nonCompliant > 0 ? Brand.conditional : Brand.compliant),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    flex: 2,
-                    child: Text(
-                      '${j.assessed}/${j.itemTotal}${j.nonCompliant > 0 ? ' · ${j.nonCompliant} non-compliant' : ''}',
-                      style: const TextStyle(fontSize: 11, color: Colors.black54),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ]),
-              ],
+              Text(c.name, style: t.titleMedium),
+              Text(sub, style: t.bodySmall),
+              if (sharedName)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.info_outline, size: 14, color: Tone.warn.fg),
+                    const SizedBox(width: Space.xs),
+                    Flexible(child: Text('Same name as another client', style: t.labelSmall?.copyWith(color: Tone.warn.fg))),
+                  ]),
+                ),
             ]),
           ),
-          const Icon(Icons.chevron_right, size: 20, color: Colors.black26),
+          if (last != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Space.xs, left: Space.sm),
+              child: Text(_ago(last), style: t.labelSmall),
+            ),
+          if (widget.session.canDecide && c.id != null)
+            PopupMenuButton<String>(
+              key: ValueKey('client-menu-${c.id}'),
+              tooltip: 'Client actions',
+              icon: const Icon(Icons.more_vert, size: 20, color: Neutral.muted),
+              onSelected: (v) => _setArchived(c, v == 'archive'),
+              itemBuilder: (_) => [
+                if (archivedView)
+                  const PopupMenuItem(value: 'restore', child: Text('Bring back'))
+                else
+                  const PopupMenuItem(value: 'archive', child: Text('Archive client')),
+              ],
+            )
+          else
+            const SizedBox(width: Space.sm),
         ]),
+        const SizedBox(height: Space.sm),
+        for (final j in shown) _jobLine(j),
+        if (finished > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: Space.xs, left: Space.xs),
+            child: Text('+ $finished closed job${finished == 1 ? '' : 's'}', style: t.labelSmall),
+          ),
+      ]),
+    );
+  }
+
+  /// The sheet set in a few words, for the job row.
+  static String? _classLabel(JobSummary j) => switch (j.classKey) {
+        'class_6_8' => 'Classes 6 or 8',
+        'class_2_3' => 'Classes 2 and 3.1',
+        'class_5_1' => 'Class 5.1',
+        _ => switch (j.kind) { 'handler' => 'Certified handler', 'cylinder' => 'Cylinder importation', _ => null },
+      };
+
+  /// Answered so far, two-toned: met in green, not met in red, the rest
+  /// grey. Words beside it; never colour alone.
+  static Widget _progress(JobSummary j, TextTheme t) {
+    final total = j.itemTotal;
+    final bad = j.nonCompliant.clamp(0, total);
+    final good = (j.assessed - bad).clamp(0, total - bad);
+    final rest = total - good - bad;
+    final words = '${j.assessed} of $total answered'
+        '${j.nonCompliant > 0 ? ' · ${j.nonCompliant} finding${j.nonCompliant == 1 ? '' : 's'}' : ''}';
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: SizedBox(
+          height: 6,
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            if (good > 0) Expanded(flex: good, child: Container(color: Tone.good.fg)),
+            if (bad > 0) Expanded(flex: bad, child: Container(color: Tone.bad.fg)),
+            if (rest > 0) Expanded(flex: rest, child: Container(color: const Color(0xFFE3E9EA))),
+          ]),
+        ),
+      ),
+      const SizedBox(height: Space.xs),
+      Text(words, style: t.labelSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+    ]);
+  }
+
+  Widget _jobLine(JobSummary j) {
+    final t = Theme.of(context).textTheme;
+    final hasInspection = j.itemTotal > 0;
+    final cls = _classLabel(j);
+    final detail = [?cls, if ((j.address ?? '').isNotEmpty) j.address!].join(' · ');
+    final tone = StageChip.toneFor(j.stage);
+    final icon = Container(
+      width: 40,
+      height: 40,
+      margin: const EdgeInsets.only(right: Space.md),
+      decoration: BoxDecoration(color: tone.bg, borderRadius: BorderRadius.circular(Radii.sm)),
+      child: Icon(
+        j.certificateDecision != null
+            ? Icons.verified_outlined
+            : switch (j.kind) { 'handler' => Icons.person_outline, 'cylinder' => Icons.propane_tank_outlined, _ => Icons.factory_outlined },
+        color: tone.fg,
+        size: 20,
+      ),
+    );
+    final what = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(j.subjectLine, style: t.titleSmall),
+      if (detail.isNotEmpty) Text(detail, style: t.bodySmall),
+    ]);
+    final stage = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      StageChip(stage: j.stage, dense: true),
+      const SizedBox(height: Space.xs),
+      Text(j.nextAction, style: t.bodySmall?.copyWith(color: Brand.ribbon)),
+    ]);
+    return InkWell(
+      key: ValueKey('job-${j.id}'),
+      borderRadius: BorderRadius.circular(Radii.sm),
+      onTap: _busy ? null : () => _open(j.id),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, Space.sm, Space.sm, Space.sm),
+          child: LayoutBuilder(builder: (context, box) {
+            // Three columns on an iPad or desk; stacked on a phone.
+            if (box.maxWidth >= 640) {
+              return Row(children: [
+                icon,
+                Expanded(flex: 5, child: what),
+                const SizedBox(width: Space.md),
+                Expanded(flex: 5, child: stage),
+                const SizedBox(width: Space.md),
+                Expanded(flex: 3, child: hasInspection ? _progress(j, t) : const SizedBox.shrink()),
+                const Icon(Icons.chevron_right, size: 20, color: Neutral.faint),
+              ]);
+            }
+            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              icon,
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  what,
+                  const SizedBox(height: Space.sm),
+                  stage,
+                  if (hasInspection) ...[const SizedBox(height: Space.sm), _progress(j, t)],
+                ]),
+              ),
+              const Icon(Icons.chevron_right, size: 20, color: Neutral.faint),
+            ]);
+          }),
+        ),
       ),
     );
   }

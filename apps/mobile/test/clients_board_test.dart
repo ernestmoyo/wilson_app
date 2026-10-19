@@ -58,6 +58,128 @@ void main() {
     await open(tester, server: s);
     expect(find.byKey(const ValueKey('client-1')), findsOneWidget);
     expect(find.byKey(const ValueKey('client-14')), findsOneWidget);
+    // F4 (UX 19 Oct): no merging, only a hint on each that they may be one.
+    for (final id in [1, 14]) {
+      expect(find.descendant(of: find.byKey(ValueKey('client-$id')), matching: find.text('Same name as another client')), findsOneWidget);
+    }
+  });
+
+  testWidgets('a client with a unique name carries no same-name hint', (tester) async {
+    await open(tester, server: twoClients());
+    expect(find.text('Same name as another client'), findsNothing);
+  });
+
+  testWidgets('search narrows the board to matching clients, sites and jobs', (tester) async {
+    await open(tester, server: twoClients());
+    await tester.enterText(find.byKey(const ValueKey('board-search')), 'coat');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('client-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-1')), findsNothing);
+
+    // A location under a client: that client, only the matching job.
+    await tester.enterText(find.byKey(const ValueKey('board-search')), 'drum');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('client-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('job-8')), findsOneWidget);
+    expect(find.byKey(const ValueKey('job-7')), findsNothing);
+    expect(find.byKey(const ValueKey('client-2')), findsNothing);
+
+    // An address matches too; nothing matching says so.
+    await tester.enterText(find.byKey(const ValueKey('board-search')), 'nowhere at all');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('client-1')), findsNothing);
+    expect(find.textContaining('No clients match'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const ValueKey('board-search')), '');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('client-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-2')), findsOneWidget);
+  });
+
+  FakeServer withReminders() => twoClients()
+    ..extraReminders.addAll([
+      {'kind': 'action', 'jobId': 8, 'client': 'Argenta Manufacturing Limited', 'location': 'Drum store', 'when': '2026-01-10',
+       'text': 'Corrective action overdue 2026-01-10: Close wks17-class-2-and-3-1-substances 3/1'},
+      {'kind': 'renewal', 'jobId': 7, 'client': 'Argenta Manufacturing Limited', 'location': 'G2 Chiller', 'when': '2027-01-01',
+       'text': 'Certificate expires 2027-01-01: start the renewal'},
+      {'kind': 'decide', 'jobId': 9, 'client': 'Test Coatings Limited', 'location': 'Paint store', 'when': null,
+       'text': 'At final validation: run the issuance check and decide'},
+    ]);
+
+  testWidgets('Needs attention is summary tiles with counts; a tile opens its list', (tester) async {
+    await open(tester, server: withReminders());
+    expect(find.byKey(const ValueKey('attention')), findsOneWidget);
+    Finder inTile(String k, Finder f) => find.descendant(of: find.byKey(ValueKey('attention-tile-$k')), matching: f);
+    expect(inTile('actions', find.text('2')), findsOneWidget);
+    // Overdue is the server's own rule: a due date before now.
+    expect(inTile('actions', find.textContaining('overdue')), findsOneWidget);
+    expect(inTile('renewals', find.text('1')), findsOneWidget);
+    expect(inTile('decide', find.text('1')), findsOneWidget);
+    // A group with nothing in it has no tile.
+    expect(find.byKey(const ValueKey('attention-tile-waiting')), findsNothing);
+
+    // The first tile with something in it is open: its lines, in words.
+    expect(find.textContaining('Install compliant signage'), findsOneWidget);
+    expect(find.textContaining('wks17-'), findsNothing);
+    expect(find.textContaining('Close Class 2 & 3.1 3.1'), findsOneWidget);
+    expect(find.textContaining('start the renewal'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('attention-tile-renewals')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('start the renewal'), findsOneWidget);
+    expect(find.textContaining('Install compliant signage'), findsNothing);
+  });
+
+  testWidgets('the attention tiles sit four across on an iPad in landscape, two in portrait, one on a phone', (tester) async {
+    for (final (size, across) in [(const Size(1366, 1024), 4), (const Size(820, 1180), 2), (const Size(390, 844), 1)]) {
+      await open(tester, size: size, server: withReminders()
+        ..extraReminders.add({'kind': 'rfi', 'jobId': 9, 'client': 'Test Coatings Limited', 'location': 'Paint store', 'when': '2026-01-01',
+            'text': 'Waiting on further information for more than 7 days'}));
+      final a = tester.getTopLeft(find.byKey(const ValueKey('attention-tile-actions')));
+      final rowMates = ['renewals', 'decide', 'waiting']
+          .where((k) => tester.getTopLeft(find.byKey(ValueKey('attention-tile-$k'))).dy == a.dy)
+          .length;
+      expect(rowMates + 1, across, reason: '$size');
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('a job row is a comfortable target and shows answered and findings in words', (tester) async {
+    await open(tester);
+    expect(tester.getSize(find.byKey(const ValueKey('job-7'))).height, greaterThanOrEqualTo(56));
+    expect(find.textContaining('2 of 54 answered'), findsOneWidget);
+  });
+
+  testWidgets('New job with empty required fields shows what is missing and stays open', (tester) async {
+    final s = await open(tester, server: twoClients());
+    await tester.tap(find.byKey(const ValueKey('new-job')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nj-create')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('nj-create')), findsOneWidget, reason: 'the dialog stays open');
+    expect(find.text('Enter the client\'s legal name'), findsOneWidget);
+    expect(find.text('Enter the site address'), findsOneWidget);
+    expect(find.text('Enter the location'), findsOneWidget);
+    expect(s.created, isEmpty);
+
+    // Filling them in clears the errors and creates the job.
+    await tester.enterText(find.byKey(const ValueKey('nj-legal')), 'Brand New Limited');
+    await tester.enterText(find.byKey(const ValueKey('nj-address')), '1 New Road');
+    await tester.enterText(find.byKey(const ValueKey('nj-location')), 'Store');
+    await tester.pumpAndSettle();
+    expect(find.text('Enter the site address'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('nj-create')));
+    await tester.pumpAndSettle();
+    expect(s.created, hasLength(1));
+  });
+
+  testWidgets('the New job form is grouped under section labels', (tester) async {
+    await open(tester, server: twoClients());
+    await tester.tap(find.byKey(const ValueKey('new-job')));
+    await tester.pumpAndSettle();
+    for (final label in ['Scope', 'Client', 'Site', 'Location', 'Substances']) {
+      expect(find.byKey(ValueKey('nj-section-$label')), findsOneWidget, reason: label);
+    }
   });
 
   testWidgets('Needs attention appears only when something needs attention', (tester) async {

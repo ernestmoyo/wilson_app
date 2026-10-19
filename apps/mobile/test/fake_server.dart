@@ -85,6 +85,9 @@ class FakeServer {
   /// No reminders on the dashboard (the empty state of Needs attention).
   bool noReminders = false;
 
+  /// Further dashboard reminders, shaped as /api/dashboard returns them.
+  final List<Map<String, dynamic>> extraReminders = [];
+
   /// Sections the job does not assess (scope choices not picked, or work
   /// outside the authorisation), as GET /api/jobs/:id reports them.
   final List<Map<String, dynamic>> excludedSections = [];
@@ -261,6 +264,7 @@ class FakeServer {
   Map<String, dynamic> dashboard() => {
         'reminders': noReminders ? [] : [
           {'kind': 'action', 'jobId': 7, 'client': client['legalName'], 'location': location['name'], 'when': '2026-09-15', 'text': 'Corrective action due 2026-09-15: Install compliant signage'},
+          ...extraReminders,
         ],
         'activity': [
           {'type': 'inspection.sign', 'occurred_at': '2026-09-09T00:00:00Z', 'payload': {'inspectionId': 3, 'which': 'declaration'}, 'user_name': 'Bryan Wilson', 'job_id': 7, 'client': client['legalName'], 'location': location['name']},

@@ -6,6 +6,7 @@ import 'package:assure_field/auth/session.dart';
 import 'package:assure_field/screens/people_screen.dart';
 import 'package:assure_field/sync/api_client.dart';
 import 'package:assure_field/sync/outbox.dart';
+import 'package:assure_field/widgets/ui.dart';
 
 import 'fake_server.dart';
 
@@ -45,6 +46,7 @@ void main() {
     expect(server.users.last['role'], 'reviewer', reason: 'reviewer is the default role');
     expect(server.users.last['email'], 'tendai@assuresafety.co.nz');
     expect(find.text('Tendai Example'), findsOneWidget);
+    expect(find.text('Tendai Example added'), findsOneWidget, reason: 'the add is confirmed');
 
     // Change the role through the menu.
     final id = server.users.last['id'];
@@ -60,6 +62,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('p-save')));
     await tester.pumpAndSettle();
     expect(server.users.last['role'], 'viewer');
+    expect(find.text('Changes saved'), findsOneWidget);
+    // The role reads as a badge on the person's row.
+    expect(find.descendant(of: find.byKey(ValueKey('person-$id')), matching: find.widgetWithText(StatusBadge, 'Viewer')), findsOneWidget);
 
     // New passcode.
     await tester.tap(find.byKey(ValueKey('person-menu-$id')));
@@ -70,6 +75,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('p-passcode-save')));
     await tester.pumpAndSettle();
     expect(server.passcodesSet.single, {'id': id, 'passcode': 'another-1'});
+    expect(find.textContaining('Passcode set'), findsOneWidget);
   });
 
   testWidgets('a reviewer has no People button', (tester) async {
