@@ -33,6 +33,13 @@ void main() {
     sync = SyncService(outbox: Outbox(InMemoryOutboxStore()), api: api);
   });
 
+  // Findings, communications and history live in tabs (UX U3); Overview is
+  // the default.
+  Future<void> tab(WidgetTester t, String name) async {
+    await t.tap(find.byKey(ValueKey('tab-$name')));
+    await t.pumpAndSettle();
+  }
+
   Future<void> pump(WidgetTester t) async {
     // A ListView builds only what is on screen; give the test a tall viewport
     // so every card exists to be found and tapped.
@@ -101,6 +108,7 @@ void main() {
 
   testWidgets('verifying a corrective action sends corrective_action.update and re-reads the job', (t) async {
     await pump(t);
+    await tab(t, 'findings');
     expect(find.text('General 4.4'), findsOneWidget);
     expect(find.text('Install compliant signage'), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('verify-1')));
@@ -109,12 +117,14 @@ void main() {
     expect(ev['type'], 'corrective_action.update');
     expect(ev['payload'], {'correctiveActionId': 1, 'status': 'verified'});
     expect(find.byKey(const ValueKey('verify-1')), findsNothing);
-    expect(find.textContaining('verified 10/09/2026'), findsOneWidget);
+    expect(find.textContaining('Verified 10 Sep 2026'), findsOneWidget);
+    await tab(t, 'overview');
     expect(find.text('0 unresolved non-compliance(s) · 0 item(s) still pending'), findsOneWidget);
   });
 
   testWidgets('communications are listed; the RFI action appears only at document review', (t) async {
     await pump(t);
+    await tab(t, 'communications');
     expect(find.text('Sent application form, required documents checklist, terms and fee estimate'), findsOneWidget);
     expect(find.byKey(const ValueKey('record-communication')), findsOneWidget);
     expect(find.byKey(const ValueKey('send-rfi')), findsNothing);
@@ -140,6 +150,7 @@ void main() {
 
   testWidgets('history names the person on every event and keeps refusals', (t) async {
     await pump(t);
+    await tab(t, 'history');
     expect(find.textContaining('Bryan Wilson'), findsWidgets);
     expect(find.textContaining('signed the declaration'), findsWidgets);
     expect(find.textContaining('refused (Role)'), findsOneWidget);
@@ -147,6 +158,7 @@ void main() {
 
   testWidgets('emailing the non-compliance report records a communication', (t) async {
     await pump(t);
+    await tab(t, 'findings');
     expect(find.byKey(const ValueKey('nc-report')), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('nc-send')));
     await t.pumpAndSettle();
@@ -156,6 +168,8 @@ void main() {
     await t.pumpAndSettle();
     expect(server.sent.single['document'], 'non_compliance');
     expect(server.sent.single['to'], 'jesh@argenta.example');
+    // The server's record of it is on the Communications tab.
+    await tab(t, 'communications');
     expect(find.textContaining('Prepared the non-compliance report for jesh@argenta.example'), findsOneWidget);
   });
 
@@ -165,11 +179,13 @@ void main() {
     await pump(t);
     expect(find.byKey(const ValueKey('declare-none')), findsNothing);
     expect(find.text('Answered by the compliance certifier.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('verify-1')), findsNothing);
     expect(find.byKey(const ValueKey('issue-certificate')), findsNothing);
     expect(find.text('Issued by the compliance certifier.'), findsOneWidget);
     // Recording is still theirs: raise an action, record a communication.
+    await tab(t, 'findings');
+    expect(find.byKey(const ValueKey('verify-1')), findsNothing);
     expect(find.byKey(const ValueKey('raise-11')), findsOneWidget);
+    await tab(t, 'communications');
     expect(find.byKey(const ValueKey('record-communication')), findsOneWidget);
   });
 

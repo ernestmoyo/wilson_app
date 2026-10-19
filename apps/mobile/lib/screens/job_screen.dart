@@ -3,18 +3,23 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../bootstrap.dart' show CurrentUser, itemTotalFor;
+import '../generated/checksheets.g.dart' show kSheetSetsByKey;
 import '../models/job.dart';
 import '../sync/api_client.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
+import '../widgets/ui.dart';
 
 /// Opens a server document in the browser. The token rides as ?token= (see
 /// [ApiClient.authedUri]) because a page the browser opens carries no header.
 /// Tests replace this to see the URL instead of launching one.
 Future<bool> Function(Uri uri) openExternalDocument =
     (uri) => launchUrl(uri, mode: LaunchMode.externalApplication);
+
+/// What became of events sent from this screen.
+enum _Sent { sent, queued, refused }
 
 /// The job through the Assure Safety compliance certification process flow.
 ///
@@ -24,6 +29,10 @@ Future<bool> Function(Uri uri) openExternalDocument =
 /// check of stage 6, the certificate of stage 7 and the retention it sets.
 /// Nothing here is decided locally; every button asks the server and the
 /// screen re-reads the job.
+///
+/// Layout (UX change graph B7, 19 Oct 2026): the Next step card on top with
+/// one primary action, the eight stages as a task list (to the right on a
+/// wide screen, under Next step on a phone), and the rest in tabs.
 class JobScreen extends StatefulWidget {
   final int jobId;
   final SyncService sync;
@@ -37,27 +46,51 @@ class JobScreen extends StatefulWidget {
   State<JobScreen> createState() => _JobScreenState();
 }
 
-class _JobScreenState extends State<JobScreen> {
+class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMixin {
   JobRecord? _job;
   IssuanceCheck? _check;
   bool _busy = false;
+
+  /// A refusal (with its clause) or a failure the person can act on.
   String? _error;
+
+  /// Information, not a fault: saved offline, showing the last copy.
+  String? _note;
+
+  static const _queuedNote = 'Saved on this device; it will send when online';
+
+  late final TabController _tabs;
 
   ApiClient get api => widget.sync.api;
 
   @override
   void initState() {
     super.initState();
+    // Made here, not lazily: a screen disposed before the job loads must not
+    // create a ticker in dispose().
+    _tabs = TabController(length: 4, vsync: this)..addListener(_onTab);
     _reload();
+  }
+
+  @override
+  void dispose() {
+    _tabs.removeListener(_onTab);
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  void _onTab() {
+    if (mounted) setState(() {});
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Coming back from the sheet (a route pop) re-reads the job so the
-    // counts and the Now card reflect what was just recorded.
+    // counts and the Now card reflect what was just recorded. A dialog
+    // closing also lands here, so the re-read keeps any message on screen.
     final route = ModalRoute.of(context);
-    if (route != null && route.isCurrent && _job != null && !_busy) _reload();
+    if (route != null && route.isCurrent && _job != null && !_busy) _reload(keepError: true);
   }
 
   Future<void> _reload({bool keepError = false}) async {
@@ -74,7 +107,10 @@ class _JobScreenState extends State<JobScreen> {
       setState(() {
         _job = j;
         _check = c;
-        if (!keepError) _error = null;
+        if (!keepError) {
+          _error = null;
+          _note = null;
+        }
       });
     } on ApiException catch (e) {
       if (e.status == 401 && widget.onUnauthorized != null) {
@@ -83,40 +119,89 @@ class _JobScreenState extends State<JobScreen> {
       }
       if (mounted) setState(() => _error = e.message);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      // No connection: keep what is on screen and say so; only a job that
+      // never loaded is an error.
+      if (mounted) {
+        setState(() {
+          if (_job == null) {
+            _error = e.toString();
+          } else {
+            _note ??= 'Could not refresh: showing what was last loaded';
+          }
+        });
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  /// Send one event, wait for the server, surface a rejection with its
-  /// clause, then re-read the job.
-  Future<void> _send(String type, Map<String, dynamic> payload) async {
-    setState(() => _busy = true);
-    final ev = await widget.sync.outbox.enqueue(type, payload);
+  /// Send events that belong together in one flush; the server applies each
+  /// in its own savepoint, so a refused one is reported with its clause. An
+  /// event that could not leave the device stays queued and is said so, as
+  /// information, not as a failure. Then re-read the job.
+  Future<_Sent> _sendAll(List<(String, Map<String, dynamic>)> events) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _note = null;
+    });
+    final ids = <String>[];
+    for (final (type, payload) in events) {
+      ids.add((await widget.sync.outbox.enqueue(type, payload)).id);
+    }
     await widget.sync.flush();
-    var failed = false;
-    if (widget.sync.lastError != null && mounted) {
-      // Offline or the server errored: the event is queued, say so.
-      failed = true;
-      setState(() => _error = 'Not sent yet: ${widget.sync.lastError}. It will go with the next sync.');
+    final refused = <String>[];
+    for (final r in widget.sync.rejected.where((r) => ids.contains(r.id)).toList()) {
+      final o = r.outcome;
+      refused.add([if (o?.clause != null) o!.clause, o?.reason ?? 'rejected'].join(': '));
+      await widget.sync.dismissRejected(r.id);
     }
-    final rejected = widget.sync.rejected.where((r) => r.id == ev.id).toList();
-    if (rejected.isNotEmpty) {
-      final o = rejected.first.outcome;
-      final msg = [if (o?.clause != null) o!.clause, o?.reason ?? 'rejected'].join(': ');
-      await widget.sync.dismissRejected(ev.id);
-      failed = true;
-      if (mounted) setState(() => _error = msg);
+    final outcome = refused.isNotEmpty
+        ? _Sent.refused
+        : widget.sync.outbox.pending.any((e) => ids.contains(e.id))
+            ? _Sent.queued
+            : _Sent.sent;
+    if (mounted) {
+      setState(() {
+        if (outcome == _Sent.refused) _error = refused.join('\n');
+        if (outcome == _Sent.queued) _note = _queuedNote;
+      });
     }
-    await _reload(keepError: failed);
+    await _reload(keepError: outcome != _Sent.sent);
+    return outcome;
   }
 
+  /// One event; [done] confirms it once the server has taken it.
+  Future<void> _send(String type, Map<String, dynamic> payload, {String? done}) async {
+    final r = await _sendAll([(type, payload)]);
+    if (r == _Sent.sent && done != null && mounted) showDone(context, done);
+  }
+
+  Future<void> _syncNow() async {
+    await widget.sync.flush();
+    if (mounted) await _reload();
+  }
+
+  // ── Formatting ────────────────────────────────────────────────────────────
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  /// "1 Oct 2026": a date people read, not a database value.
   static String _d(DateTime? d) {
     if (d == null) return '';
     final l = d.toLocal();
-    return '${l.day.toString().padLeft(2, '0')}/${l.month.toString().padLeft(2, '0')}/${l.year}';
+    return '${l.day} ${_months[l.month - 1]} ${l.year}';
   }
+
+  /// "2026-10-01": what the server takes.
+  static String _iso(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  static String _ref(JobFinding f) => Wording.itemRef(f.templateCode, f.sectionOrdinal, f.itemOrdinal);
+
+  static String? _setName(JobRecord j) => kSheetSetsByKey[j.classKey]?.name;
+
+  // ── Screen ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +210,8 @@ class _JobScreenState extends State<JobScreen> {
       appBar: BrandBar(
         title: j == null ? 'Job' : j.locationName,
         subtitle: j?.clientName,
+        // The title names the location and the subtitle the client; the
+        // line under it carries what they do not.
         bottom: j == null
             ? null
             : JobContextBar(
@@ -132,18 +219,21 @@ class _JobScreenState extends State<JobScreen> {
                 locationName: j.locationName,
                 address: j.address,
                 stage: j.stage,
+                showNames: false,
+                detail: _setName(j),
                 trailing: 'Job ${j.id}',
               ),
         actions: [
+          SyncIndicator(sync: widget.sync, onTap: _busy ? null : _syncNow),
           TextButton.icon(
             key: const ValueKey('to-jobs'),
             onPressed: () => context.go('/'),
-            icon: const Icon(Icons.view_list_outlined, size: 18, color: Brand.teal),
-            label: const Text('Clients', style: TextStyle(color: Brand.teal, fontWeight: FontWeight.w700)),
+            icon: const Icon(Icons.view_list_outlined, size: 18),
+            label: const Text('Clients'),
           ),
           IconButton(
             tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh, color: Brand.teal),
+            icon: const Icon(Icons.refresh),
             onPressed: _busy ? null : _reload,
           ),
         ],
@@ -152,77 +242,56 @@ class _JobScreenState extends State<JobScreen> {
           ? Center(
               child: _error == null
                   ? const CircularProgressIndicator()
-                  : Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(_error!, style: const TextStyle(color: Brand.nonCompliant)),
-                    ),
+                  : Padding(padding: const EdgeInsets.all(Space.xl), child: Notice(_error!)),
             )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 48),
-              children: [
-                if (_busy) const LinearProgressIndicator(minHeight: 2),
-                if (_error != null) _errorBanner(),
-                _nowCard(j),
-                _stageCard(j),
-                if (j.substances.isNotEmpty) _substancesCard(j),
-                _communicationsCard(j),
-                _interestCard(j),
-                _correctiveActionsCard(j),
-                _issuanceCard(j),
-                _certificateCard(j),
-                _historyCard(j),
-              ],
-            ),
+          : LayoutBuilder(builder: (context, box) {
+              final wide = box.maxWidth >= 900;
+              final column = Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_error != null) Notice(_error!, onClose: () => setState(() => _error = null)),
+                  if (_note != null)
+                    Notice(_note!, tone: Tone.info, icon: Icons.cloud_queue, onClose: () => setState(() => _note = null)),
+                  _nowCard(j),
+                  if (!wide) _processCard(j),
+                  _tabBar(j),
+                  const SizedBox(height: Space.sm),
+                  ..._tabContent(j),
+                ],
+              );
+              return Column(
+                children: [
+                  SizedBox(height: 2, child: _busy ? const LinearProgressIndicator(minHeight: 2) : null),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.lg, Space.xxl + Space.lg),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1280),
+                          child: wide
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(child: column),
+                                    const SizedBox(width: Space.lg),
+                                    SizedBox(width: box.maxWidth >= 1100 ? 340 : 300, child: _processCard(j)),
+                                  ],
+                                )
+                              : column,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
     );
   }
 
-  Widget _errorBanner() => Card(
-        color: const Color(0xFFFDECEA),
-        child: ListTile(
-          leading: const Icon(Icons.gavel_outlined, color: Brand.nonCompliant),
-          title: Text(_error!, style: const TextStyle(fontSize: 13)),
-          trailing: IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            onPressed: () => setState(() => _error = null),
-          ),
-        ),
-      );
-
-  Widget _card(String title, List<Widget> children, {String? subtitle}) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Brand.tealDark)),
-              if (subtitle != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                ),
-              const SizedBox(height: 10),
-              ...children,
-            ],
-          ),
-        ),
-      );
-
-  /// HSLocation → Substance, as entered on New job: the names print on the
-  /// site block (row 13) and, for a handler, on the certificate's table.
-  Widget _substancesCard(JobRecord j) => _card(
-        'Substances',
-        [for (final x in j.substances) _kv(x.name, [x.hazardClass, if ((x.lifecycles ?? '').isNotEmpty) x.lifecycles!].join('  ·  '))],
-        subtitle: switch (j.kind) {
-          'handler' => 'What the applicant is certified to handle: class and lifecycles',
-          'cylinder' => 'Gas in the cylinders',
-          _ => 'Hazardous substances at this location',
-        },
-      );
-
-  // ── Now: the one thing this job needs, and the button that does it ───────
+  // ── Next step: the one thing this job needs, and the button that does it ─
 
   Widget _nowCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
     final total = j.inspectionId == null ? 0 : (j.itemsInScope ?? itemTotalFor(j.classKey));
     final text = ProcessStage.nextAction(
       j.stage,
@@ -236,63 +305,103 @@ class _JobScreenState extends State<JobScreen> {
       certificateDecision: j.certificate?.decision,
     );
     final n = ProcessStage.numberOf(j.stage);
+
+    // The one primary action for where the job sits.
+    final Widget? primary = switch (j.stage) {
+      'document_review' => FilledButton.icon(
+          key: const ValueKey('send-rfi'),
+          onPressed: _busy ? null : _sendRfi,
+          icon: const Icon(Icons.help_outline, size: 18),
+          label: const Text('Request further information'),
+        ),
+      'rfi' => FilledButton.icon(
+          key: const ValueKey('rfi-answered'),
+          onPressed: _busy ? null : _rfiAnswered,
+          icon: const Icon(Icons.mark_email_read_outlined, size: 18),
+          label: const Text('Information received'),
+        ),
+      'final_validation' when j.certificate == null && CurrentUser.canDecide => FilledButton.icon(
+          key: const ValueKey('issue-certificate'),
+          onPressed: _busy ? null : _issue,
+          icon: const Icon(Icons.verified_outlined, size: 18),
+          label: const Text('Issue certificate'),
+        ),
+      'certificate_issued' when j.certificate != null && CurrentUser.canDecide => _certSendButton(filled: true),
+      'compliance_evaluation' || 'gap_closure' when j.nonCompliances.isNotEmpty => FilledButton.icon(
+          key: const ValueKey('now-findings'),
+          onPressed: () => _tabs.animateTo(1),
+          icon: const Icon(Icons.rule, size: 18),
+          label: const Text('Go to findings'),
+        ),
+      _ => null,
+    };
+
+    final showSheet = n <= 4 || j.inspectionId != null;
+    final sheetIsPrimary = primary == null && n >= 1 && n <= 4;
     final sheetLabel = j.inspectionId == null
         ? switch (j.kind) { 'handler' => 'Start assessment', 'cylinder' => 'Start cylinder inspection', _ => 'Start site inspection' }
-        : n <= 4
-            ? 'Continue check sheet'
-            : 'Open check sheet';
-    final canIssue = j.stage == 'final_validation' && j.certificate == null;
-    return Card(
+        : n >= 1 && n <= 4
+            ? 'Continue ${Wording.checkSheet.toLowerCase()}'
+            : 'Open ${Wording.checkSheet.toLowerCase()}';
+
+    Widget sheetButton({required bool filled}) {
+      final onPressed = _busy || n == 0 ? null : _openSheet;
+      const icon = Icon(Icons.fact_check_outlined, size: 18);
+      final b = filled
+          ? FilledButton.icon(key: const ValueKey('open-sheet'), onPressed: onPressed, icon: icon, label: Text(sheetLabel))
+          : OutlinedButton.icon(key: const ValueKey('open-sheet'), onPressed: onPressed, icon: icon, label: Text(sheetLabel));
+      // A disabled button says why.
+      return n == 0 ? Tooltip(message: 'The job is closed', child: b) : b;
+    }
+
+    final secondary = <Widget>[
+      if (showSheet && !sheetIsPrimary) sheetButton(filled: false),
+      // Exports: anyone signed in, a viewer included, may download.
+      if (j.inspectionId != null) ...[
+        OutlinedButton.icon(
+          key: const ValueKey('checksheet-pdf'),
+          onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/checksheet.pdf')),
+          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+          label: const Text('Checksheet (PDF)'),
+        ),
+        OutlinedButton.icon(
+          key: const ValueKey('bundle-zip'),
+          // GET twin of POST /bundle: streams the ZIP on disk, or
+          // redirects to the stored copy's presigned link on Blob/Spaces.
+          onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/bundle.zip')),
+          icon: const Icon(Icons.folder_zip_outlined, size: 18),
+          label: const Text('Download all (ZIP)'),
+        ),
+      ],
+      if (j.certificate != null)
+        OutlinedButton.icon(
+          key: const ValueKey('open-certificate'),
+          onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/certificate.html')),
+          icon: const Icon(Icons.open_in_new, size: 18),
+          label: const Text('Open certificate'),
+        ),
+    ];
+
+    return Container(
       key: const ValueKey('now-card'),
-      margin: const EdgeInsets.only(bottom: 12),
-      color: const Color(0xFFE6F1F1),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('NOW', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: Brand.tealDark)),
-          const SizedBox(height: 4),
-          Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Brand.tealDark)),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            if (n <= 4 || j.inspectionId != null)
-              FilledButton.icon(
-                key: const ValueKey('open-sheet'),
-                onPressed: _busy || n == 0 ? null : _openSheet,
-                icon: const Icon(Icons.fact_check_outlined, size: 18),
-                label: Text(sheetLabel),
-              ),
-            if (canIssue && CurrentUser.canDecide)
-              FilledButton.icon(
-                onPressed: _busy ? null : _issue,
-                icon: const Icon(Icons.verified_outlined, size: 18),
-                label: const Text('Issue certificate'),
-              ),
-            if (j.certificate != null)
-              OutlinedButton.icon(
-                onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
-                icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Open certificate'),
-              ),
-            // Exports: anyone signed in, a viewer included, may download.
-            if (j.inspectionId != null) ...[
-              OutlinedButton.icon(
-                key: const ValueKey('checksheet-pdf'),
-                onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/checksheet.pdf')),
-                icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
-                label: const Text('Checksheet (PDF)'),
-              ),
-              OutlinedButton.icon(
-                key: const ValueKey('bundle-zip'),
-                // GET twin of POST /bundle: streams the ZIP on disk, or
-                // redirects to the stored copy's presigned link on Blob/Spaces.
-                onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/bundle.zip')),
-                icon: const Icon(Icons.folder_zip_outlined, size: 16),
-                label: const Text('Download all (ZIP)'),
-              ),
-            ],
-          ]),
-        ]),
+      margin: const EdgeInsets.symmetric(vertical: Space.sm),
+      padding: const EdgeInsets.all(Space.lg + 4),
+      decoration: BoxDecoration(
+        color: Neutral.tint,
+        borderRadius: BorderRadius.circular(Radii.md),
+        border: Border.all(color: Brand.ribbon.withValues(alpha: .25)),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('NEXT STEP', style: t.labelSmall?.copyWith(color: Brand.ribbon, letterSpacing: 1, fontWeight: FontWeight.w700)),
+        const SizedBox(height: Space.xs),
+        Text(text, style: t.titleLarge),
+        const SizedBox(height: Space.lg),
+        if (primary != null || sheetIsPrimary) ...[
+          primary ?? sheetButton(filled: true),
+          if (secondary.isNotEmpty) const SizedBox(height: Space.md),
+        ],
+        if (secondary.isNotEmpty) Wrap(spacing: Space.sm, runSpacing: Space.sm, children: secondary),
+      ]),
     );
   }
 
@@ -300,91 +409,231 @@ class _JobScreenState extends State<JobScreen> {
     context.go('/jobs/${widget.jobId}/sheet');
   }
 
-  // ── 1 to 8: where the job sits, and the legal next moves ─────────────────
+  // ── 1 to 8: the process as a task list, and the legal next moves ─────────
 
-  Widget _stageCard(JobRecord j) {
+  /// The furthest numbered stage a closed or referred job reached.
+  static int _reached(JobRecord j) {
+    var r = 0;
+    for (final t in j.transitions) {
+      for (final s in [t.from, t.to]) {
+        if (s == null) continue;
+        final n = ProcessStage.numberOf(s);
+        if (n > r) r = n;
+      }
+    }
+    return r;
+  }
+
+  Widget _processCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
     final current = ProcessStage.numberOf(j.stage);
-    return _card('Process flow', [
-      for (final s in ProcessStage.flow)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: s.number == current
-                      ? Brand.teal
-                      : s.number < current
-                          ? Brand.compliant
-                          : Colors.black12,
-                ),
-                child: Text('${s.number}',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: s.number <= current ? Colors.white : Colors.black54)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.title,
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: s.number == current ? FontWeight.w800 : FontWeight.w500)),
-                    if (s.number == current && j.stage != s.key)
-                      Text(ProcessStage.label(j.stage),
-                          style: const TextStyle(fontSize: 12, color: Brand.conditional, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      if (current == 0)
-        Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(ProcessStage.label(j.stage),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-        ),
-      const Divider(height: 20),
-      const Text('Move to', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 6),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
+    final waiting = j.stage == 'rfi' || j.stage == 'gap_closure';
+    final reached = current > 0 ? current : _reached(j);
+    final moves = j.allowedNext.where((n) => n != 'certificate_issued').toList();
+    return SectionCard(
+      key: const ValueKey('process-card'),
+      title: 'Process',
+      subtitle: current == 0 ? ProcessStage.label(j.stage) : 'Assure Safety certification process flow',
+      padding: const EdgeInsets.fromLTRB(Space.md, Space.lg, Space.md, Space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final next in j.allowedNext.where((n) => n != 'certificate_issued'))
-            OutlinedButton(
-              key: ValueKey('move-$next'),
-              onPressed: _busy ? null : () => _move(next),
-              child: Text(ProcessStage.moveLabel(j.stage, next), style: const TextStyle(fontSize: 12)),
+          for (final s in ProcessStage.flow)
+            _taskRow(
+              s,
+              status: current == 0
+                  ? (s.number <= reached ? 'Done' : 'Not started')
+                  : s.number < current
+                      ? 'Done'
+                      : s.number > current
+                          ? 'Not started'
+                          : waiting
+                              ? 'Waiting on client'
+                              : 'Now',
+              current: s.number == current,
+              sub: s.number == current && j.stage != s.key ? ProcessStage.label(j.stage) : null,
             ),
+          const Divider(height: Space.xl),
+          Text('Move to', style: t.labelMedium),
+          const SizedBox(height: Space.sm),
+          if (moves.isEmpty)
+            Text('No moves from here.', style: t.bodySmall)
+          else
+            Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
+              children: [
+                for (final next in moves)
+                  OutlinedButton(
+                    key: ValueKey('move-$next'),
+                    onPressed: _busy ? null : () => _move(next),
+                    child: Text(ProcessStage.moveLabel(j.stage, next)),
+                  ),
+              ],
+            ),
+          const SizedBox(height: Space.sm),
+          Text('Only the moves the process flow allows from here are offered. The server enforces the same table.',
+              style: t.bodySmall),
         ],
       ),
-      const SizedBox(height: 4),
-      const Text('Only the moves the process flow allows from here are offered. The server enforces the same table.',
-          style: TextStyle(fontSize: 11, color: Colors.black54)),
-    ]);
+    );
+  }
+
+  Widget _taskRow(ProcessStage s, {required String status, required bool current, String? sub}) {
+    final t = Theme.of(context).textTheme;
+    final (IconData icon, Tone tone) = switch (status) {
+      'Done' => (Icons.check_circle, Tone.good),
+      'Now' => (Icons.play_circle_fill, Tone.info),
+      'Waiting on client' => (Icons.hourglass_bottom, Tone.warn),
+      _ => (Icons.radio_button_unchecked, Tone.neutral),
+    };
+    final notStarted = status == 'Not started';
+    return Container(
+      key: ValueKey('task-${s.number}'),
+      margin: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: Space.sm),
+      decoration: current
+          ? BoxDecoration(color: Neutral.tint, borderRadius: BorderRadius.circular(Radii.sm))
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: notStarted ? Neutral.faint : tone.fg),
+          const SizedBox(width: Space.sm),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                SizedBox(width: 18, child: Text('${s.number}', style: t.labelSmall?.copyWith(height: 1.6))),
+                Expanded(
+                  child: Text(s.title,
+                      style: current ? t.titleSmall : t.bodyMedium?.copyWith(color: notStarted ? Neutral.muted : null)),
+                ),
+              ]),
+              // The current stage has the room: its status sits under the
+              // title, with what the loop is waiting for.
+              if (current)
+                Padding(
+                  padding: const EdgeInsets.only(left: 18, top: Space.xs),
+                  child: StatusBadge(label: status, tone: tone, icon: icon, dense: true),
+                ),
+              if (sub != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 18, top: Space.xs),
+                  child: Text(sub, style: t.bodySmall?.copyWith(color: Tone.warn.fg)),
+                ),
+            ]),
+          ),
+          if (!current) ...[
+            const SizedBox(width: Space.sm),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(status, style: t.labelSmall?.copyWith(color: notStarted ? Neutral.muted : tone.fg)),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _move(String next) async {
     final reason = await _askText(
       title: ProcessStage.moveLabel(_job?.stage ?? '', next),
       label: 'Reason (recorded against the move)',
-      hint: next == 'certificate_issued' ? 'Use the Certificate card to issue' : 'e.g. Site visit completed 10/09/2026',
+      hint: 'e.g. Site visit completed 10 Sep 2026',
     );
     if (reason == null) return;
-    await _send('job.transition', {'jobId': widget.jobId, 'toStage': next, if (reason.isNotEmpty) 'reason': reason});
+    await _send('job.transition', {'jobId': widget.jobId, 'toStage': next, if (reason.isNotEmpty) 'reason': reason},
+        done: 'Moved to ${ProcessStage.short(next)}');
   }
 
-  // ── Stages 1 to 3: communications, the application pack, the RFI loop ───
+  // ── Tabs ──────────────────────────────────────────────────────────────────
+
+  Widget _tabBar(JobRecord j) {
+    final nc = j.nonCompliances.length;
+    final needsWork = j.openActions > 0 || j.nonCompliances.any((f) => j.actionsFor(f.id).isEmpty);
+    final tone = needsWork ? Tone.bad : Tone.neutral;
+    return Padding(
+      padding: const EdgeInsets.only(top: Space.md),
+      // Four equal tabs when they fit; a phone scrolls them.
+      child: LayoutBuilder(builder: (context, box) {
+        final scroll = box.maxWidth < 560;
+        return TabBar(
+          controller: _tabs,
+          isScrollable: scroll,
+          tabAlignment: scroll ? TabAlignment.start : TabAlignment.fill,
+          labelPadding: const EdgeInsets.symmetric(horizontal: Space.md),
+          tabs: [
+            const Tab(key: ValueKey('tab-overview'), text: 'Overview'),
+            Tab(
+              key: const ValueKey('tab-findings'),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Flexible(child: Text('Findings', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                if (nc > 0) ...[
+                  const SizedBox(width: 6),
+                  Semantics(
+                    label: '$nc non-compliance${nc == 1 ? '' : 's'}',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                      decoration: BoxDecoration(color: tone.bg, borderRadius: BorderRadius.circular(Radii.pill)),
+                      child: Text('$nc', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tone.fg)),
+                    ),
+                  ),
+                ],
+              ]),
+            ),
+            const Tab(key: ValueKey('tab-communications'), text: 'Communications'),
+            const Tab(key: ValueKey('tab-history'), text: 'History'),
+          ],
+        );
+      }),
+    );
+  }
+
+  List<Widget> _tabContent(JobRecord j) => switch (_tabs.index) {
+        1 => [_findingsCard(j)],
+        2 => [_communicationsCard(j)],
+        3 => [_historyCard(j)],
+        _ => [
+            if (j.certificate != null) _certificateCard(j),
+            _issuanceCard(j),
+            _interestCard(j),
+            if (j.certificate == null) _certificateCard(j),
+            if (j.substances.isNotEmpty) _substancesCard(j),
+            _siteCard(j),
+          ],
+      };
+
+  // ── Overview: substances, site and scope ─────────────────────────────────
+
+  /// HSLocation → Substance, as entered on New job: the names print on the
+  /// site block (row 13) and, for a handler, on the certificate's table.
+  Widget _substancesCard(JobRecord j) => SectionCard(
+        title: 'Substances',
+        subtitle: switch (j.kind) {
+          'handler' => 'What the applicant is certified to handle: class and lifecycles',
+          'cylinder' => 'Gas in the cylinders',
+          _ => 'Hazardous substances at this location',
+        },
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          for (final x in j.substances)
+            KeyValueRow(x.name, [x.hazardClass, if ((x.lifecycles ?? '').isNotEmpty) x.lifecycles!].join('  ·  ')),
+        ]),
+      );
+
+  Widget _siteCard(JobRecord j) {
+    final total = j.inspectionId == null ? 0 : (j.itemsInScope ?? itemTotalFor(j.classKey));
+    return SectionCard(
+      title: 'Site and scope',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if ((j.address ?? '').isNotEmpty) KeyValueRow('Address', j.address!),
+        if (_setName(j) != null) KeyValueRow('Assessed against', _setName(j)!),
+        KeyValueRow('Items assessed', j.inspectionId == null ? 'Inspection not started' : '${j.assessedCount} of $total'),
+        if (j.managerEmail != null) KeyValueRow('Site contact', j.managerEmail!),
+      ]),
+    );
+  }
+
+  // ── Communications: stages 1 to 3 ────────────────────────────────────────
 
   /// The two email templates at the end of the process flow document, as
   /// prefilled summaries. The body stays with the email; the record is the
@@ -402,136 +651,159 @@ class _JobScreenState extends State<JobScreen> {
         ('outbound', 'Sent certificate with cover letter: what was assessed, conditions, renewal date'),
   };
 
-  Widget _communicationsCard(JobRecord j) => _card(
-        'Communications',
-        subtitle: 'IPS clause 21(2)(a). Stages 1 to 3: enquiry, application pack, request for further information.',
-        [
-          if (j.communications.isEmpty)
-            const Text('Nothing recorded yet.', style: TextStyle(fontSize: 13))
-          else
-            for (final c in j.communications)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(c.direction == 'inbound' ? Icons.call_received : Icons.call_made,
-                        size: 14, color: c.direction == 'inbound' ? Brand.compliant : Brand.teal),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(c.summary, style: const TextStyle(fontSize: 12.5)),
-                        Text('${_d(c.at)} · ${c.medium} · ${c.party}',
-                            style: const TextStyle(fontSize: 11, color: Colors.black54)),
-                        if ((c.body ?? '').isNotEmpty)
-                          Text(c.body!, style: const TextStyle(fontSize: 11.5, color: Colors.black87)),
-                      ]),
-                    ),
-                  ],
-                ),
+  Widget _communicationsCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    return SectionCard(
+      title: 'Communications',
+      subtitle: 'IPS clause 21(2)(a). Stages 1 to 3: enquiry, application pack, request for further information.',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (j.communications.isEmpty)
+          const EmptyState(
+            icon: Icons.mail_outline,
+            title: 'No communications recorded',
+            message: 'Record each enquiry, application pack and request for information here.',
+          )
+        else
+          for (final c in j.communications)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Tooltip(
+                    message: c.direction == 'inbound' ? 'Received from the client' : 'Sent to the client',
+                    child: Icon(c.direction == 'inbound' ? Icons.call_received : Icons.call_made,
+                        size: 18, color: c.direction == 'inbound' ? Tone.good.fg : Brand.ribbon),
+                  ),
+                  const SizedBox(width: Space.sm),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(c.summary, style: t.bodyMedium),
+                      Text([_d(c.at), c.medium, c.party].where((s) => s.isNotEmpty).join(' · '), style: t.bodySmall),
+                      if ((c.body ?? '').isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(c.body!, style: t.bodyMedium?.copyWith(color: Neutral.body)),
+                        ),
+                    ]),
+                  ),
+                ],
               ),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            OutlinedButton.icon(
-              key: const ValueKey('record-communication'),
-              onPressed: _busy ? null : _recordCommunication,
-              icon: const Icon(Icons.mail_outline, size: 16),
-              label: const Text('Record communication', style: TextStyle(fontSize: 12)),
             ),
-            if (j.stage == 'document_review')
-              FilledButton.tonalIcon(
-                key: const ValueKey('send-rfi'),
-                onPressed: _busy ? null : _sendRfi,
-                icon: const Icon(Icons.help_outline, size: 16),
-                label: const Text('Request further information', style: TextStyle(fontSize: 12)),
-              ),
-            if (j.stage == 'rfi')
-              FilledButton.tonalIcon(
-                key: const ValueKey('rfi-answered'),
-                onPressed: _busy ? null : _rfiAnswered,
-                icon: const Icon(Icons.mark_email_read_outlined, size: 16),
-                label: const Text('Information received', style: TextStyle(fontSize: 12)),
-              ),
-          ]),
-        ],
-      );
+        const SizedBox(height: Space.sm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const ValueKey('record-communication'),
+            onPressed: _busy ? null : _recordCommunication,
+            icon: const Icon(Icons.mail_outline, size: 18),
+            label: const Text('Record communication'),
+          ),
+        ),
+      ]),
+    );
+  }
 
   Future<void> _recordCommunication() async {
     var direction = 'outbound';
     var medium = 'email';
+    final form = GlobalKey<FormState>();
     final party = TextEditingController(text: _job?.clientName ?? '');
     final summary = TextEditingController();
     final body = TextEditingController();
+    const gap = SizedBox(height: Space.md);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
           title: const Text('Record a communication'),
-          content: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Template (optional)'),
-                items: [
-                  for (final e in _templates.entries) DropdownMenuItem(value: e.key, child: Text(e.key, style: const TextStyle(fontSize: 13))),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  setD(() {
-                    direction = _templates[v]!.$1;
-                    summary.text = _templates[v]!.$2;
-                  });
-                },
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Form(
+                key: form,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    decoration: const InputDecoration(labelText: 'Template (optional)'),
+                    items: [
+                      for (final e in _templates.entries) DropdownMenuItem(value: e.key, child: Text(e.key)),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setD(() {
+                        direction = _templates[v]!.$1;
+                        summary.text = _templates[v]!.$2;
+                      });
+                    },
+                  ),
+                  gap,
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: direction,
+                    decoration: const InputDecoration(labelText: 'Direction'),
+                    items: const [
+                      DropdownMenuItem(value: 'outbound', child: Text('Sent to the client')),
+                      DropdownMenuItem(value: 'inbound', child: Text('Received from the client')),
+                    ],
+                    onChanged: (v) => setD(() => direction = v ?? direction),
+                  ),
+                  gap,
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: medium,
+                    decoration: const InputDecoration(labelText: 'Medium'),
+                    items: const [
+                      DropdownMenuItem(value: 'email', child: Text('Email')),
+                      DropdownMenuItem(value: 'phone', child: Text('Phone')),
+                      DropdownMenuItem(value: 'meeting', child: Text('Meeting')),
+                      DropdownMenuItem(value: 'letter', child: Text('Letter')),
+                      DropdownMenuItem(value: 'other', child: Text('Other')),
+                    ],
+                    onChanged: (v) => setD(() => medium = v ?? medium),
+                  ),
+                  gap,
+                  TextFormField(controller: party, decoration: const InputDecoration(labelText: 'With whom')),
+                  gap,
+                  TextFormField(
+                    controller: summary,
+                    key: const ValueKey('comm-summary'),
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'What it was about'),
+                    validator: (v) => (v ?? '').trim().isEmpty ? 'Say what it was about' : null,
+                  ),
+                  gap,
+                  TextFormField(controller: body, maxLines: 3, decoration: const InputDecoration(labelText: 'Detail (optional)')),
+                ]),
               ),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: direction,
-                decoration: const InputDecoration(labelText: 'Direction'),
-                items: const [
-                  DropdownMenuItem(value: 'outbound', child: Text('Sent to the client')),
-                  DropdownMenuItem(value: 'inbound', child: Text('Received from the client')),
-                ],
-                onChanged: (v) => setD(() => direction = v ?? direction),
-              ),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: medium,
-                decoration: const InputDecoration(labelText: 'Medium'),
-                items: const [
-                  DropdownMenuItem(value: 'email', child: Text('Email')),
-                  DropdownMenuItem(value: 'phone', child: Text('Phone')),
-                  DropdownMenuItem(value: 'meeting', child: Text('Meeting')),
-                  DropdownMenuItem(value: 'letter', child: Text('Letter')),
-                  DropdownMenuItem(value: 'other', child: Text('Other')),
-                ],
-                onChanged: (v) => setD(() => medium = v ?? medium),
-              ),
-              TextField(controller: party, decoration: const InputDecoration(labelText: 'With whom')),
-              TextField(
-                controller: summary,
-                key: const ValueKey('comm-summary'),
-                maxLines: 2,
-                decoration: const InputDecoration(labelText: 'What it was about'),
-              ),
-              TextField(controller: body, maxLines: 3, decoration: const InputDecoration(labelText: 'Detail (optional)')),
-            ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(key: const ValueKey('comm-save'), onPressed: () => Navigator.pop(ctx, true), child: const Text('Record')),
+            FilledButton(
+              key: const ValueKey('comm-save'),
+              onPressed: () {
+                if (form.currentState?.validate() ?? false) Navigator.pop(ctx, true);
+              },
+              child: const Text('Record'),
+            ),
           ],
         ),
       ),
     );
     if (ok != true || summary.text.trim().isEmpty) return;
-    await _send('communication.record', {
-      'jobId': widget.jobId,
-      'direction': direction,
-      'medium': medium,
-      'party': party.text.trim(),
-      'summary': summary.text.trim(),
-      if (body.text.trim().isNotEmpty) 'body': body.text.trim(),
-    });
+    await _send(
+      'communication.record',
+      {
+        'jobId': widget.jobId,
+        'direction': direction,
+        'medium': medium,
+        'party': party.text.trim(),
+        'summary': summary.text.trim(),
+        if (body.text.trim().isNotEmpty) 'body': body.text.trim(),
+      },
+      done: 'Communication recorded',
+    );
   }
 
   /// Stage 3: "issue Request for Further Information with a clear list of
@@ -544,7 +816,7 @@ class _JobScreenState extends State<JobScreen> {
       lines: 5,
     );
     if (gaps == null || gaps.isEmpty) return;
-    await _sendAll([
+    final r = await _sendAll([
       ('communication.record', {
         'jobId': widget.jobId,
         'direction': 'outbound',
@@ -555,6 +827,7 @@ class _JobScreenState extends State<JobScreen> {
       }),
       ('job.transition', {'jobId': widget.jobId, 'toStage': 'rfi', 'reason': 'RFI issued'}),
     ]);
+    if (r == _Sent.sent && mounted) showDone(context, 'Request for further information sent');
   }
 
   Future<void> _rfiAnswered() async {
@@ -564,7 +837,7 @@ class _JobScreenState extends State<JobScreen> {
       hint: 'e.g. SDS and ERP received by email',
     );
     if (note == null) return;
-    await _sendAll([
+    final r = await _sendAll([
       ('communication.record', {
         'jobId': widget.jobId,
         'direction': 'inbound',
@@ -574,56 +847,44 @@ class _JobScreenState extends State<JobScreen> {
       }),
       ('job.transition', {'jobId': widget.jobId, 'toStage': 'document_review', 'reason': 'RFI answered'}),
     ]);
-  }
-
-  /// Several events that belong together go in one flush; the server applies
-  /// each in its own savepoint, so a rejected one is reported on its own.
-  Future<void> _sendAll(List<(String, Map<String, dynamic>)> events) async {
-    setState(() => _busy = true);
-    final ids = <String>[];
-    for (final (type, payload) in events) {
-      ids.add((await widget.sync.outbox.enqueue(type, payload)).id);
-    }
-    await widget.sync.flush();
-    final rejected = widget.sync.rejected.where((r) => ids.contains(r.id)).toList();
-    for (final r in rejected) {
-      final o = r.outcome;
-      _error = [if (o?.clause != null) o!.clause, o?.reason ?? 'rejected'].join(': ');
-      await widget.sync.dismissRejected(r.id);
-    }
-    await _reload();
+    if (r == _Sent.sent && mounted) showDone(context, 'Recorded; back to document review');
   }
 
   // ── IPS 23: the conflict-of-interest question ────────────────────────────
 
-  Widget _interestCard(JobRecord j) => _card(
-        'Register of interests',
-        subtitle: 'IPS clause 23. A certificate cannot issue until this is answered.',
-        [
-          if (j.interestDeclared)
-            Row(children: [
-              Icon(j.conflictFound == true ? Icons.warning_amber_rounded : Icons.check_circle_outline,
-                  size: 18, color: j.conflictFound == true ? Brand.conditional : Brand.compliant),
-              const SizedBox(width: 8),
-              Text(j.conflictFound == true ? 'Conflict declared' : 'No conflict of interest declared',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            ])
-          else if (!CurrentUser.canDecide)
-            const Text('Answered by the compliance certifier.', style: TextStyle(fontSize: 12.5, color: Colors.black54))
-          else
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              FilledButton(
-                key: const ValueKey('declare-none'),
-                onPressed: _busy ? null : () => _send('interest.declare', {'jobId': widget.jobId, 'conflictFound': false}),
-                child: const Text('No conflict of interest'),
-              ),
-              OutlinedButton(
-                onPressed: _busy ? null : _declareConflict,
-                child: const Text('Declare a conflict'),
-              ),
-            ]),
-        ],
-      );
+  Widget _interestCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    final conflict = j.conflictFound == true;
+    return SectionCard(
+      title: 'Register of interests',
+      subtitle: 'IPS clause 23. A certificate cannot issue until this is answered.',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (j.interestDeclared)
+          Row(children: [
+            Icon(conflict ? Tone.warn.icon : Tone.good.icon, size: 20, color: conflict ? Tone.warn.fg : Tone.good.fg),
+            const SizedBox(width: Space.sm),
+            Text(conflict ? 'Conflict declared' : 'No conflict of interest declared', style: t.titleSmall),
+          ])
+        else if (!CurrentUser.canDecide)
+          Text('Answered by the compliance certifier.', style: t.bodySmall)
+        else
+          Wrap(spacing: Space.sm, runSpacing: Space.sm, children: [
+            FilledButton(
+              key: const ValueKey('declare-none'),
+              onPressed: _busy
+                  ? null
+                  : () => _send('interest.declare', {'jobId': widget.jobId, 'conflictFound': false},
+                      done: 'Declaration recorded'),
+              child: const Text('No conflict of interest'),
+            ),
+            OutlinedButton(
+              onPressed: _busy ? null : _declareConflict,
+              child: const Text('Declare a conflict'),
+            ),
+          ]),
+      ]),
+    );
+  }
 
   Future<void> _declareConflict() async {
     final d = await _askText(
@@ -632,100 +893,246 @@ class _JobScreenState extends State<JobScreen> {
       hint: 'e.g. Previously advised this client on the ERP',
     );
     if (d == null || d.isEmpty) return;
-    await _send('interest.declare', {'jobId': widget.jobId, 'conflictFound': true, 'description': d});
+    await _send('interest.declare', {'jobId': widget.jobId, 'conflictFound': true, 'description': d},
+        done: 'Conflict declared');
   }
 
-  // ── Stage 5: non-compliances and their corrective actions ────────────────
+  // ── Findings: stage 5 non-compliances and their corrective actions ───────
 
-  Widget _correctiveActionsCard(JobRecord j) {
+  static (String, Tone) _severity(String s) => switch (s) {
+        'critical' => ('Critical', Tone.bad),
+        'major' => ('Major', Tone.warn),
+        'minor' => ('Minor', Tone.neutral),
+        _ => (s, Tone.neutral),
+      };
+
+  static (String, Tone) _status(CorrectiveAction ca) {
+    if (ca.isVerified) return ('Verified', Tone.good);
+    if (ca.status == 'resolved') return ('Resolved', Tone.info);
+    final due = ca.dueDate;
+    final now = DateTime.now();
+    if (due != null && due.isBefore(DateTime(now.year, now.month, now.day))) return ('Overdue', Tone.bad);
+    return switch (ca.status) {
+      'open' => ('Open', Tone.warn),
+      'in_progress' => ('In progress', Tone.warn),
+      final s => (s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1).replaceAll('_', ' ')}', Tone.neutral),
+    };
+  }
+
+  Widget _findingsCard(JobRecord j) {
     final nc = j.nonCompliances;
-    return _card(
-      'Non-compliances and corrective actions',
+    return SectionCard(
+      title: 'Non-compliances and corrective actions',
       subtitle: 'Stage 5. Each non-compliance needs an action, verified by a named person before issue.',
-      [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         if (nc.isEmpty)
-          const Text('No non-compliances recorded.', style: TextStyle(fontSize: 13))
+          const EmptyState(
+            icon: Icons.check_circle_outline,
+            title: 'No non-compliances recorded',
+            message: 'Items marked not compliant on the check sheet appear here.',
+          )
         else
-          for (final f in nc) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(width: 4, height: 18, color: Brand.nonCompliant),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(f.ref, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                    if ((f.failureReason ?? '').isNotEmpty)
-                      Text(f.failureReason!, style: const TextStyle(fontSize: 12.5)),
-                  ]),
-                ),
-                TextButton(
-                  key: ValueKey('raise-${f.id}'),
-                  onPressed: _busy ? null : () => _raise(f),
-                  child: const Text('Add action', style: TextStyle(fontSize: 12)),
-                ),
-              ],
-            ),
-            for (final ca in j.actionsFor(f.id))
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 0, 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _chip(ca.severity, _severityColor(ca.severity)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(ca.description, style: const TextStyle(fontSize: 12.5)),
-                        Text(
-                          [
-                            'Status: ${ca.status.replaceAll('_', ' ')}',
-                            if (ca.dueDate != null) 'due ${_d(ca.dueDate)}',
-                            if (ca.isVerified) 'verified ${_d(ca.reverifiedAt)} by ${ca.reverifiedByName ?? 'compliance certifier'}',
-                          ].join(' · '),
-                          style: const TextStyle(fontSize: 11, color: Colors.black54),
-                        ),
-                      ]),
-                    ),
-                    if (!ca.isVerified) ...[
-                      if (ca.status != 'resolved')
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'resolved'}),
-                          child: const Text('Resolved', style: TextStyle(fontSize: 12)),
-                        ),
-                      if (CurrentUser.canDecide)
-                        TextButton(
-                          key: ValueKey('verify-${ca.id}'),
-                          onPressed: _busy
-                              ? null
-                              : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'verified'}),
-                          child: const Text('Verify', style: TextStyle(fontSize: 12)),
-                        ),
-                    ],
-                  ],
-                ),
-              ),
-            const Divider(height: 16),
+          for (final (i, f) in nc.indexed) ...[
+            if (i > 0) const Divider(height: Space.xl),
+            _findingBlock(j, f),
           ],
-        if (nc.isNotEmpty)
-          Wrap(spacing: 8, runSpacing: 8, children: [
+        if (nc.isNotEmpty) ...[
+          const SizedBox(height: Space.lg),
+          Wrap(spacing: Space.sm, runSpacing: Space.sm, children: [
             OutlinedButton.icon(
               key: const ValueKey('nc-report'),
-              onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/non-compliance.html'), mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.print_outlined, size: 16),
-              label: const Text('Non-compliance report', style: TextStyle(fontSize: 12)),
+              onPressed: () => openExternalDocument(api.authedUri('/api/jobs/${j.id}/non-compliance.html')),
+              icon: const Icon(Icons.print_outlined, size: 18),
+              label: const Text('Non-compliance report'),
             ),
             if (CurrentUser.canRecord)
               OutlinedButton.icon(
                 key: const ValueKey('nc-send'),
                 onPressed: _busy ? null : () => _sendDocument('non_compliance', 'the non-compliance report'),
-                icon: const Icon(Icons.mail_outline, size: 16),
-                label: const Text('Email to client', style: TextStyle(fontSize: 12)),
+                icon: const Icon(Icons.mail_outline, size: 18),
+                label: const Text('Email to client'),
               ),
           ]),
-      ],
+        ],
+      ]),
+    );
+  }
+
+  Widget _findingBlock(JobRecord j, JobFinding f) {
+    final t = Theme.of(context).textTheme;
+    final actions = j.actionsFor(f.id);
+    return Container(
+      padding: const EdgeInsets.only(left: Space.md),
+      decoration: BoxDecoration(border: Border(left: BorderSide(color: Tone.bad.fg, width: 3))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(_ref(f), style: t.titleSmall),
+                if ((f.failureReason ?? '').isNotEmpty) Text(Wording.humanise(f.failureReason!), style: t.bodyMedium),
+                if (actions.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('No corrective action yet', style: t.bodySmall?.copyWith(color: Tone.warn.fg)),
+                  ),
+              ]),
+            ),
+            TextButton.icon(
+              key: ValueKey('raise-${f.id}'),
+              onPressed: _busy ? null : () => _raise(f),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add action'),
+            ),
+          ],
+        ),
+        for (final ca in actions) _actionRow(ca),
+      ]),
+    );
+  }
+
+  Widget _actionRow(CorrectiveAction ca) {
+    final t = Theme.of(context).textTheme;
+    final (sevLabel, sevTone) = _severity(ca.severity);
+    final (stLabel, stTone) = _status(ca);
+    return Container(
+      margin: const EdgeInsets.only(top: Space.sm),
+      padding: const EdgeInsets.all(Space.md),
+      decoration: BoxDecoration(color: Neutral.canvas, borderRadius: BorderRadius.circular(Radii.sm)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(ca.description, style: t.bodyMedium),
+              const SizedBox(height: Space.xs),
+              Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  StatusBadge(label: sevLabel, tone: sevTone, dense: true),
+                  StatusBadge(label: stLabel, tone: stTone, dense: true),
+                  if (ca.dueDate != null) Text('Due ${_d(ca.dueDate)}', style: t.bodySmall),
+                  if (ca.isVerified)
+                    Text('Verified ${_d(ca.reverifiedAt)} by ${ca.reverifiedByName ?? 'compliance certifier'}',
+                        style: t.bodySmall),
+                ],
+              ),
+            ]),
+          ),
+          if (!ca.isVerified) ...[
+            if (ca.status != 'resolved')
+              TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'resolved'},
+                        done: 'Marked resolved'),
+                child: const Text('Resolved'),
+              ),
+            if (CurrentUser.canDecide)
+              TextButton(
+                key: ValueKey('verify-${ca.id}'),
+                onPressed: _busy
+                    ? null
+                    : () => _send('corrective_action.update', {'correctiveActionId': ca.id, 'status': 'verified'},
+                        done: 'Corrective action verified'),
+                child: const Text('Verify'),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _raise(JobFinding f) async {
+    var severity = 'major';
+    DateTime? due;
+    final form = GlobalKey<FormState>();
+    final desc = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text('Corrective action for ${_ref(f)}'),
+          content: SizedBox(
+            width: 480,
+            child: Form(
+              key: form,
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: severity,
+                  decoration: const InputDecoration(labelText: 'Severity (process flow stage 5)'),
+                  items: const [
+                    DropdownMenuItem(value: 'critical', child: Text('Critical')),
+                    DropdownMenuItem(value: 'major', child: Text('Major')),
+                    DropdownMenuItem(value: 'minor', child: Text('Minor')),
+                  ],
+                  onChanged: (v) => setD(() => severity = v ?? 'major'),
+                ),
+                const SizedBox(height: Space.md),
+                TextFormField(
+                  controller: desc,
+                  key: const ValueKey('ca-description'),
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'What must change'),
+                  validator: (v) => (v ?? '').trim().isEmpty ? 'Say what must change' : null,
+                ),
+                const SizedBox(height: Space.md),
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('ca-due'),
+                      onPressed: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate: due ?? now.add(const Duration(days: 14)),
+                          firstDate: DateTime(now.year - 1),
+                          lastDate: DateTime(now.year + 5),
+                          helpText: 'Corrective action due',
+                        );
+                        if (picked != null) setD(() => due = picked);
+                      },
+                      icon: const Icon(Icons.event_outlined, size: 18),
+                      label: Text(due == null ? 'Due date (optional)' : 'Due ${_d(due)}'),
+                    ),
+                  ),
+                  if (due != null)
+                    IconButton(
+                      tooltip: 'Clear the due date',
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setD(() => due = null),
+                    ),
+                ]),
+              ]),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(
+              key: const ValueKey('ca-save'),
+              onPressed: () {
+                if (form.currentState?.validate() ?? false) Navigator.pop(ctx, true);
+              },
+              child: const Text('Raise'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || desc.text.trim().isEmpty) return;
+    await _send(
+      'corrective_action.raise',
+      {
+        'findingId': f.id,
+        'severity': severity,
+        'description': desc.text.trim(),
+        if (due != null) 'dueDate': _iso(due!),
+      },
+      done: 'Corrective action raised',
     );
   }
 
@@ -738,239 +1145,223 @@ class _JobScreenState extends State<JobScreen> {
       initial: _job?.managerEmail,
     );
     if (to == null || to.isEmpty) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    var ok = false;
     try {
       final r = await api.sendDocument(widget.jobId, document: document, to: to);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${r['summary'] ?? 'Recorded'}')));
-      }
+      ok = true;
+      if (mounted) showDone(context, '${r['summary'] ?? 'Recorded'}');
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Not sent: $e');
     } finally {
-      await _reload();
+      await _reload(keepError: !ok);
     }
-  }
-
-  static Color _severityColor(String s) => switch (s) {
-        'critical' => Brand.nonCompliant,
-        'major' => Brand.conditional,
-        _ => Brand.teal,
-      };
-
-  Widget _chip(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
-        child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
-      );
-
-  Future<void> _raise(JobFinding f) async {
-    var severity = 'major';
-    final desc = TextEditingController();
-    final due = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          title: Text('Corrective action for ${f.ref}'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            DropdownButtonFormField<String>(
-                isExpanded: true,
-              initialValue: severity,
-              decoration: const InputDecoration(labelText: 'Severity (process flow stage 5)'),
-              items: const [
-                DropdownMenuItem(value: 'critical', child: Text('Critical')),
-                DropdownMenuItem(value: 'major', child: Text('Major')),
-                DropdownMenuItem(value: 'minor', child: Text('Minor')),
-              ],
-              onChanged: (v) => setD(() => severity = v ?? 'major'),
-            ),
-            TextField(
-              controller: desc,
-              key: const ValueKey('ca-description'),
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'What must change'),
-            ),
-            TextField(
-              controller: due,
-              decoration: const InputDecoration(labelText: 'Due date (YYYY-MM-DD)', hintText: 'optional'),
-            ),
-          ]),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(
-                key: const ValueKey('ca-save'),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Raise')),
-          ],
-        ),
-      ),
-    );
-    if (ok != true || desc.text.trim().isEmpty) return;
-    await _send('corrective_action.raise', {
-      'findingId': f.id,
-      'severity': severity,
-      'description': desc.text.trim(),
-      if (due.text.trim().isNotEmpty) 'dueDate': due.text.trim(),
-    });
   }
 
   // ── Stage 6: the issuance dry-run ────────────────────────────────────────
 
   Widget _issuanceCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
     final c = _check;
-    return _card(
-      'Issuance check',
+    final tone = c == null
+        ? Tone.neutral
+        : c.canGrant
+            ? Tone.good
+            : c.canIssueConditional
+                ? Tone.warn
+                : Tone.bad;
+    return SectionCard(
+      title: 'Issuance check',
       subtitle: 'Stage 6. The same rule the database applies when the certificate is written.',
-      [
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (c == null)
-          const Text('Not available.', style: TextStyle(fontSize: 13))
+          Text('Not available.', style: t.bodySmall)
         else ...[
           Row(children: [
-            Icon(c.canGrant ? Icons.check_circle : Icons.block,
-                color: c.canGrant ? Brand.compliant : Brand.nonCompliant, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              c.canGrant
-                  ? 'Can grant'
-                  : c.canIssueConditional
-                      ? 'Conditional certificate or refusal only'
-                      : 'Cannot issue',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            Icon(c.canGrant ? Icons.check_circle : Icons.block, color: tone.fg, size: 20),
+            const SizedBox(width: Space.sm),
+            Expanded(
+              child: Text(
+                c.canGrant
+                    ? 'Can grant'
+                    : c.canIssueConditional
+                        ? 'Conditional certificate or refusal only'
+                        : 'Cannot issue',
+                style: t.titleSmall?.copyWith(color: tone.fg),
+              ),
             ),
           ]),
-          const SizedBox(height: 6),
+          const SizedBox(height: Space.xs),
           Text(
             [
               '${c.unresolvedNonCompliances} unresolved non-compliance(s)',
               '${j.pendingCount} item(s) still pending',
             ].join(' · '),
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: t.bodySmall,
           ),
           for (final b in c.blockers)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: Space.sm),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.gavel_outlined, size: 16, color: Brand.conditional),
-                const SizedBox(width: 6),
+                Icon(Tone.warn.icon, size: 18, color: Tone.warn.fg),
+                const SizedBox(width: Space.sm),
                 Expanded(
-                  child: Text('${b.clause ?? ''}: ${b.reason}'.replaceFirst(RegExp(r'^: '), ''),
-                      style: const TextStyle(fontSize: 12.5)),
+                  child: Text(Wording.humanise('${b.clause ?? ''}: ${b.reason}'.replaceFirst(RegExp(r'^: '), '')),
+                      style: t.bodyMedium),
                 ),
               ]),
             ),
         ],
-      ],
+      ]),
     );
   }
 
   // ── Stage 7: the certificate ─────────────────────────────────────────────
 
-  Widget _certificateCard(JobRecord j) {
-    final c = j.certificate;
-    return _card(
-      'Certificate',
-      subtitle: 'Stage 7. Issued from the job record in the workbook layout; retention set on issue (IPS 21(6)).',
-      [
-        if (c == null && !CurrentUser.canDecide)
-          const Text('Issued by the compliance certifier.', style: TextStyle(fontSize: 12.5, color: Colors.black54))
-        else if (c == null) ...[
-          FilledButton.icon(
-            key: const ValueKey('issue-certificate'),
-            onPressed: _busy || j.stage != 'final_validation' ? null : _issue,
-            icon: const Icon(Icons.verified_outlined, size: 18),
-            label: const Text('Issue certificate'),
-          ),
-          if (j.stage != 'final_validation')
-            const Padding(
-              padding: EdgeInsets.only(top: 6),
-              child: Text('Available once the job reaches Final Validation.',
-                  style: TextStyle(fontSize: 11, color: Colors.black54)),
-            ),
-        ] else ...[
-          _kv('Decision', c.decision),
-          _kv('Certificate number', c.certificateNumber ?? ''),
-          if (c.registerNumber != null) _kv('Register number', c.registerNumber!),
-          _kv('Issue date', _d(c.issueDate)),
-          _kv('In force', _d(c.inForceDate)),
-          _kv('Expiry', _d(c.expiryDate)),
-          if (c.conditions.isNotEmpty) _kv('Conditions', c.conditions.join('; ')),
-          if (c.requirementsNotMet.isNotEmpty) _kv('Requirements not met', c.requirementsNotMet.join('; ')),
-          _kv('WorkSafe register due', _d(c.worksafeRegisterDue)),
-          _kv('Retain records until', _d(j.retainUntil)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            OutlinedButton.icon(
-              key: const ValueKey('open-certificate'),
-              onPressed: () => launchUrl(api.authedUri('/api/jobs/${j.id}/certificate.html'), mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.open_in_new, size: 16),
-              label: const Text('Open certificate'),
-            ),
-            if (CurrentUser.canDecide)
-              OutlinedButton.icon(
-                key: const ValueKey('cert-send'),
-                onPressed: _busy ? null : () => _sendDocument('certificate', 'the certificate'),
-                icon: const Icon(Icons.mail_outline, size: 16),
-                label: const Text('Email to client'),
-              ),
-          ]),
-        ],
-      ],
-    );
+  static String _decision(String d) => switch (d) {
+        'granted' => 'Granted',
+        'conditional' => 'Granted subject to conditions',
+        'refused' => 'Refused',
+        _ => d,
+      };
+
+  Widget _certSendButton({required bool filled}) {
+    final onPressed = _busy ? null : () => _sendDocument('certificate', 'the certificate');
+    const icon = Icon(Icons.mail_outline, size: 18);
+    const label = Text('Email certificate to client');
+    return filled
+        ? FilledButton.icon(key: const ValueKey('cert-send'), onPressed: onPressed, icon: icon, label: label)
+        : OutlinedButton.icon(key: const ValueKey('cert-send'), onPressed: onPressed, icon: icon, label: label);
   }
 
-  Widget _kv(String k, String v) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 160, child: Text(k, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-          Expanded(child: Text(v, style: const TextStyle(fontSize: 12.5))),
-        ]),
-      );
+  Widget _certificateCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    final c = j.certificate;
+    return SectionCard(
+      title: 'Certificate',
+      subtitle: 'Stage 7. Issued from the job record in the workbook layout; retention set on issue (IPS 21(6)).',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (c == null && !CurrentUser.canDecide)
+          Text('Issued by the compliance certifier.', style: t.bodySmall)
+        else if (c == null)
+          Text(
+            j.stage == 'final_validation'
+                ? 'Not issued yet. Issue it from Next step above.'
+                : 'Not issued yet. Available once the job reaches Final Validation.',
+            style: t.bodySmall,
+          )
+        else ...[
+          KeyValueRow('Decision', _decision(c.decision)),
+          KeyValueRow('Certificate number', c.certificateNumber ?? ''),
+          if (c.registerNumber != null) KeyValueRow('Register number', c.registerNumber!),
+          KeyValueRow('Issue date', _d(c.issueDate)),
+          KeyValueRow('In force', _d(c.inForceDate)),
+          KeyValueRow('Expiry', _d(c.expiryDate)),
+          if (c.conditions.isNotEmpty) KeyValueRow('Conditions', c.conditions.join('; ')),
+          if (c.requirementsNotMet.isNotEmpty) KeyValueRow('Requirements not met', c.requirementsNotMet.join('; ')),
+          KeyValueRow('WorkSafe register due', _d(c.worksafeRegisterDue)),
+          KeyValueRow('Retain records until', _d(j.retainUntil)),
+          // At stage 7 the send is the Next step; afterwards it lives here.
+          if (CurrentUser.canDecide && j.stage != 'certificate_issued') ...[
+            const SizedBox(height: Space.md),
+            Align(alignment: Alignment.centerLeft, child: _certSendButton(filled: false)),
+          ],
+        ],
+      ]),
+    );
+  }
 
   Future<void> _issue() async {
     final j = _job!;
     final today = DateTime.now();
-    String iso(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
     var decision = _check?.canGrant == true ? 'granted' : 'conditional';
+    var issueDate = DateTime(today.year, today.month, today.day);
+    var expiry = DateTime(today.year + 1, today.month, today.day);
     final number = TextEditingController(text: '${CurrentUser.authorisationNumber}-${today.year}-${j.id.toString().padLeft(4, '0')}');
     final issuedTo = TextEditingController(
         text: '${j.subject['Name'] ?? j.subject['Full Name of PCBU'] ?? j.clientName}');
     final appliesTo = TextEditingController(
         text: '${j.subject['Company'] ?? j.subject['Company/Legal Entity'] ?? j.address ?? j.locationName}');
-    final issueDate = TextEditingController(text: iso(today));
-    final expiry = TextEditingController(text: iso(DateTime(today.year + 1, today.month, today.day)));
     final lines = TextEditingController();
+
+    Widget heading(BuildContext ctx, String text) => Padding(
+          padding: const EdgeInsets.only(top: Space.lg, bottom: Space.sm),
+          child: Text(text, style: Theme.of(ctx).textTheme.titleSmall),
+        );
+
+    Future<DateTime?> pick(BuildContext ctx, DateTime initial, String help) => showDatePicker(
+          context: ctx,
+          initialDate: initial,
+          firstDate: DateTime(today.year - 1),
+          lastDate: DateTime(today.year + 10),
+          helpText: help,
+        );
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
           title: const Text('Issue certificate'),
-          content: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: decision,
-                decoration: const InputDecoration(labelText: 'Decision'),
-                items: const [
-                  DropdownMenuItem(value: 'granted', child: Text('Granted')),
-                  DropdownMenuItem(value: 'conditional', child: Text('Granted subject to conditions (reg 6.24)')),
-                  DropdownMenuItem(value: 'refused', child: Text('Refused (reg 6.23)')),
-                ],
-                onChanged: (v) => setD(() => decision = v ?? decision),
-              ),
-              TextField(controller: number, decoration: const InputDecoration(labelText: 'Certificate number (IPS 8(1)(c))')),
-              TextField(controller: issuedTo, decoration: const InputDecoration(labelText: 'Issued to')),
-              TextField(controller: appliesTo, decoration: const InputDecoration(labelText: 'Applies to (location)')),
-              TextField(controller: issueDate, decoration: const InputDecoration(labelText: 'Issue date (YYYY-MM-DD)')),
-              TextField(controller: expiry, decoration: const InputDecoration(labelText: 'Expiry date (YYYY-MM-DD)')),
-              if (decision != 'granted')
-                TextField(
-                  controller: lines,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: decision == 'conditional' ? 'Conditions, one per line' : 'Requirements not met, one per line',
-                  ),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                Text('Decision', style: Theme.of(ctx).textTheme.titleSmall),
+                const SizedBox(height: Space.sm),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: decision,
+                  items: const [
+                    DropdownMenuItem(value: 'granted', child: Text('Granted')),
+                    DropdownMenuItem(value: 'conditional', child: Text('Granted subject to conditions (reg 6.24)')),
+                    DropdownMenuItem(value: 'refused', child: Text('Refused (reg 6.23)')),
+                  ],
+                  onChanged: (v) => setD(() => decision = v ?? decision),
                 ),
-            ]),
+                if (decision != 'granted') ...[
+                  const SizedBox(height: Space.md),
+                  TextField(
+                    controller: lines,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: decision == 'conditional' ? 'Conditions, one per line' : 'Requirements not met, one per line',
+                    ),
+                  ),
+                ],
+                heading(ctx, 'Certificate details'),
+                TextField(controller: number, decoration: const InputDecoration(labelText: 'Certificate number (IPS 8(1)(c))')),
+                const SizedBox(height: Space.md),
+                TextField(controller: issuedTo, decoration: const InputDecoration(labelText: 'Issued to')),
+                const SizedBox(height: Space.md),
+                TextField(controller: appliesTo, decoration: const InputDecoration(labelText: 'Applies to (location)')),
+                heading(ctx, 'Dates'),
+                Wrap(spacing: Space.sm, runSpacing: Space.sm, children: [
+                  OutlinedButton.icon(
+                    key: const ValueKey('issue-date'),
+                    onPressed: () async {
+                      final d = await pick(ctx, issueDate, 'Issue date');
+                      if (d != null) setD(() => issueDate = d);
+                    },
+                    icon: const Icon(Icons.event_outlined, size: 18),
+                    label: Text('Issued ${_d(issueDate)}'),
+                  ),
+                  OutlinedButton.icon(
+                    key: const ValueKey('expiry-date'),
+                    onPressed: () async {
+                      final d = await pick(ctx, expiry, 'Expiry date');
+                      if (d != null) setD(() => expiry = d);
+                    },
+                    icon: const Icon(Icons.event_busy_outlined, size: 18),
+                    label: Text('Expires ${_d(expiry)}'),
+                  ),
+                ]),
+              ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -984,7 +1375,10 @@ class _JobScreenState extends State<JobScreen> {
     );
     if (ok != true) return;
     final list = lines.text.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
       await api.issueCertificate(j.id, {
         'inspectionId': j.inspectionId,
@@ -992,14 +1386,18 @@ class _JobScreenState extends State<JobScreen> {
         'certificateNumber': number.text.trim(),
         'issuedTo': issuedTo.text.trim(),
         'appliesTo': appliesTo.text.trim(),
-        'issueDate': issueDate.text.trim(),
-        'expiryDate': expiry.text.trim(),
+        'issueDate': _iso(issueDate),
+        'expiryDate': _iso(expiry),
         if (decision == 'conditional') 'conditions': list,
         if (decision == 'refused') 'requirementsNotMet': list,
       });
       await _reload();
+      if (mounted) showDone(context, 'Certificate issued and recorded');
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
+      await _reload(keepError: true);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Not issued: $e');
       await _reload(keepError: true);
     }
   }
@@ -1007,40 +1405,44 @@ class _JobScreenState extends State<JobScreen> {
   // ── History: every move, who and when ────────────────────────────────────
 
   /// IPS 22: who did what on this job, newest first, refusals included.
-  Widget _historyCard(JobRecord j) => _card(
-        'History',
-        subtitle: 'Every record on this job, by person. Refusals stay on the record with their clause.',
-        [
-          if (j.events.isEmpty && j.transitions.isEmpty)
-            const Text('Nothing recorded yet.', style: TextStyle(fontSize: 13))
-          else if (j.events.isEmpty)
-            for (final t in j.transitions)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  '${_d(t.at)}  ${t.from == null ? '' : '${ProcessStage.label(t.from!)} → '}${ProcessStage.label(t.to)}'
-                  '${(t.reason ?? '').isEmpty ? '' : '  (${t.reason})'}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              )
-          else
-            for (final e in j.events.take(40))
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text.rich(
-                  TextSpan(children: [
-                    TextSpan(text: '${_d(e.at)}  ', style: const TextStyle(color: Colors.black54)),
-                    TextSpan(text: e.userName ?? 'Unknown device', style: const TextStyle(fontWeight: FontWeight.w700)),
-                    TextSpan(text: ' ${e.verb}'),
-                    if (e.outcome == 'rejected')
-                      TextSpan(text: '  refused${e.clause != null ? ' (${e.clause})' : ''}',
-                          style: const TextStyle(color: Brand.nonCompliant, fontWeight: FontWeight.w700)),
-                  ]),
-                  style: const TextStyle(fontSize: 12),
-                ),
+  Widget _historyCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    return SectionCard(
+      title: 'History',
+      subtitle: 'Every record on this job, by person. Refusals stay on the record with their clause.',
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (j.events.isEmpty && j.transitions.isEmpty)
+          const EmptyState(icon: Icons.history, title: 'Nothing recorded yet')
+        else if (j.events.isEmpty)
+          for (final tr in j.transitions)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.xs),
+              child: Text(
+                '${_d(tr.at)}  ${tr.from == null ? '' : '${ProcessStage.label(tr.from!)} → '}${ProcessStage.label(tr.to)}'
+                '${(tr.reason ?? '').isEmpty ? '' : '  (${tr.reason})'}',
+                style: t.bodyMedium,
               ),
-        ],
-      );
+            )
+        else
+          for (final e in j.events.take(40))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.xs),
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: '${_d(e.at)}  ', style: const TextStyle(color: Neutral.muted)),
+                  TextSpan(text: e.userName ?? 'Unknown device', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  TextSpan(text: ' ${Wording.humanise(e.verb)}'),
+                  if (e.outcome == 'rejected')
+                    TextSpan(
+                        text: '  refused${e.clause != null ? ' (${e.clause})' : ''}',
+                        style: TextStyle(color: Tone.bad.fg, fontWeight: FontWeight.w600)),
+                ]),
+                style: t.bodyMedium,
+              ),
+            ),
+      ]),
+    );
+  }
 
   Future<String?> _askText({required String title, required String label, String? hint, int lines = 2, String? initial}) async {
     final c = TextEditingController(text: initial ?? '');
@@ -1048,12 +1450,15 @@ class _JobScreenState extends State<JobScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: c,
-          key: const ValueKey('ask-text'),
-          autofocus: true,
-          maxLines: lines,
-          decoration: InputDecoration(labelText: label, hintText: hint),
+        content: SizedBox(
+          width: 480,
+          child: TextField(
+            controller: c,
+            key: const ValueKey('ask-text'),
+            autofocus: true,
+            maxLines: lines,
+            decoration: InputDecoration(labelText: label, hintText: hint),
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

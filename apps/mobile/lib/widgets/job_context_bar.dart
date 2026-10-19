@@ -14,6 +14,14 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
   final String stage;
   final String? trailing;
 
+  /// False where the app bar's title and subtitle already name the client
+  /// and location (the job screen): the line then carries what the title
+  /// does not, address and [detail], instead of repeating it.
+  final bool showNames;
+
+  /// Extra context after the address, e.g. the sheet set being assessed.
+  final String? detail;
+
   const JobContextBar({
     super.key,
     required this.clientName,
@@ -21,6 +29,8 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
     this.address,
     required this.stage,
     this.trailing,
+    this.showNames = true,
+    this.detail,
   });
 
   static const double height = 44;
@@ -38,17 +48,22 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: Space.lg),
         child: Row(
           children: [
-            const Icon(Icons.business_outlined, size: 18, color: Brand.ribbon),
+            Icon(showNames ? Icons.business_outlined : Icons.place_outlined, size: 18, color: Brand.ribbon),
             const SizedBox(width: Space.sm),
             Expanded(
               child: Text.rich(
                 TextSpan(children: [
-                  TextSpan(text: clientName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const TextSpan(text: '  ·  '),
-                  TextSpan(text: locationName, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  if ((address ?? '').isNotEmpty) ...[
+                  if (showNames) ...[
+                    TextSpan(text: clientName, style: const TextStyle(fontWeight: FontWeight.w600)),
                     const TextSpan(text: '  ·  '),
-                    TextSpan(text: address, style: const TextStyle(color: Neutral.muted)),
+                    TextSpan(text: locationName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  ],
+                  for (final (i, part) in [
+                    if ((address ?? '').isNotEmpty) address!,
+                    if ((detail ?? '').isNotEmpty) detail!,
+                  ].indexed) ...[
+                    if (showNames || i > 0) const TextSpan(text: '  ·  '),
+                    TextSpan(text: part, style: const TextStyle(color: Neutral.muted)),
                   ],
                 ]),
                 maxLines: 1,
@@ -56,11 +71,16 @@ class JobContextBar extends StatelessWidget implements PreferredSizeWidget {
                 style: const TextStyle(fontSize: 14, color: Neutral.strong),
               ),
             ),
-            if (trailing != null) ...[
+            // A phone has no room for the trailing note; the stage badge may
+            // take up to half the line and ellipsizes beyond that.
+            if (trailing != null && MediaQuery.sizeOf(context).width >= 560) ...[
               Text(trailing!, style: const TextStyle(fontSize: 13, color: Neutral.muted)),
               const SizedBox(width: Space.md),
             ],
-            StageChip(stage: stage),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width / 2),
+              child: StageChip(stage: stage),
+            ),
           ],
         ),
       );
