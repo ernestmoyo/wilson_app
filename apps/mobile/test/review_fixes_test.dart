@@ -8,6 +8,7 @@ import 'package:assure_field/models/finding.dart';
 import 'package:assure_field/models/inspection.dart';
 import 'package:assure_field/screens/sheet_view.dart';
 import 'package:assure_field/sync/outbox.dart';
+import 'package:assure_field/widgets/answer_control.dart';
 
 /// Regression tests for the client defects the independent review found
 /// (11 September 2026): a viewer must not be able to type into the sheet;
@@ -33,9 +34,17 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: SheetView(inspection: insp, template: insp.templates.first))));
     await tester.pumpAndSettle();
 
-    final pickers = tester.widgetList<DropdownButton<FindingStatus>>(find.byType(DropdownButton<FindingStatus>));
+    // The one-tap answer control replaced the status dropdown (UX B6).
+    final pickers = tester.widgetList<AnswerControl>(find.byType(AnswerControl));
     expect(pickers, isNotEmpty);
-    expect(pickers.every((d) => d.onChanged == null), isTrue, reason: 'status pickers disabled for a viewer');
+    expect(pickers.every((d) => d.onChanged == null), isTrue, reason: 'answer controls disabled for a viewer');
+    // A tap on a disabled answer changes nothing.
+    final t = insp.templates.first;
+    final f = insp.findingFor(t, t.sections.first, t.sections.first.items.first);
+    await tester.tap(find.byKey(ValueKey('answer-${f.key}-compliant')));
+    await tester.pumpAndSettle();
+    expect(f.status, FindingStatus.pending);
+    expect(find.byKey(const ValueKey('answer-more')), findsNothing, reason: 'no menu for a viewer');
     final fields = tester.widgetList<TextField>(find.byType(TextField));
     expect(fields, isNotEmpty);
     expect(fields.every((f) => f.readOnly), isTrue, reason: 'inline fields read-only for a viewer');

@@ -85,7 +85,9 @@ void main() {
       }
 
       // Section 1 and item 1 with the class 6/8 regulation overlay.
-      expect(find.text('Determining which regulations apply'), findsOneWidget);
+      // (Its title is also in the section list beside the sheet.)
+      expect(find.descendant(of: find.byKey(const ValueKey('section-1')), matching: find.text('Determining which regulations apply')),
+          findsOneWidget);
       expect(find.text('13.38'), findsOneWidget);
     });
 
@@ -111,7 +113,10 @@ void main() {
       final insp = g2();
       await pumpWide(tester, SheetView(inspection: insp, template: insp.templates[1]));
 
-      expect(find.text('Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances'),
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('section-1')),
+              matching: find.text('Requirements specific to class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances')),
           findsOneWidget);
 
       await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -6000));
@@ -160,10 +165,8 @@ void main() {
       final f = insp.findingFor(t, s, s.items.first);
       expect(f.status, FindingStatus.pending);
 
-      // First status dropdown on the page belongs to item 1.
-      await tester.tap(find.byType(DropdownButton<FindingStatus>).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('NC').last);
+      // One tap on item 1's Non-compliant (UX B6: was a dropdown).
+      await tester.tap(find.byKey(ValueKey('answer-${f.key}-non_compliant')));
       await tester.pumpAndSettle();
       expect(f.status, FindingStatus.nonCompliant);
 
@@ -179,9 +182,11 @@ void main() {
       final general = insp.templates.first;
       final signage = general.sections.firstWhere((x) => x.title == 'Signage');
 
-      // A chip per section, with done/total.
-      expect(find.byKey(ValueKey('jump-${signage.ordinal}')), findsOneWidget);
-      expect(find.textContaining('Signage  0/5'), findsOneWidget);
+      // An entry per section in the section list, with done/total.
+      final jump = find.byKey(ValueKey('jump-${signage.ordinal}'));
+      expect(jump, findsOneWidget);
+      expect(find.descendant(of: jump, matching: find.text('Signage')), findsOneWidget);
+      expect(find.descendant(of: jump, matching: find.text('0/5')), findsOneWidget);
 
       // Folding hides the items; the band row keeps the count.
       await tester.tap(find.byKey(const ValueKey('section-1')));
@@ -199,12 +204,32 @@ void main() {
     });
   });
 
-  testWidgets('ChecksheetScreen switches to the sheet layout at ≥ 900 px', (tester) async {
-    tester.view.physicalSize = const Size(1400, 1000);
+  testWidgets('ChecksheetScreen switches to the sheet layout at ≥ 760 px (iPad portrait included)', (tester) async {
+    tester.view.physicalSize = const Size(820, 1180);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(MaterialApp(home: ChecksheetScreen(inspection: g2())));
     await tester.pumpAndSettle();
     expect(find.byType(SheetView), findsOneWidget);
+    // Too narrow for the section list: the jump chips stand in for it.
+    expect(find.byKey(const ValueKey('jump-1')), findsOneWidget);
+  });
+
+  testWidgets('a guidance URL is a link', (tester) async {
+    final insp = g2();
+    // The class 6/8 sheet carries WorkSafe's policy clarification link.
+    final general = insp.templates[1];
+    final withUrl = [
+      for (final s in general.sections)
+        for (final i in s.items)
+          if (i.guidanceUrl != null) (s, i),
+    ];
+    expect(withUrl, isNotEmpty);
+    await pumpWide(tester, SheetView(inspection: insp, template: general));
+    final (s, i) = withUrl.first;
+    final f = insp.findingFor(general, s, i);
+    final link = find.byKey(ValueKey('guidance-${f.key}'));
+    expect(link, findsOneWidget);
+    expect(find.descendant(of: link, matching: find.byType(InkWell)), findsWidgets);
   });
 }
