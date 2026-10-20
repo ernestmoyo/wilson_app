@@ -354,7 +354,34 @@ class JobRecord {
   /// handles. Feeds site block row 13 and the handler certificate's table.
   final List<JobSubstance> substances;
 
+  /// Q5 (20 Oct 2026): an existing stationary container system on a reg
+  /// 17.91 report, peer reviewed before the certificate issues.
+  final bool peerReviewRequired;
+
+  /// not_required | not_requested | approved | changes_requested | lapsed
+  final String peerReviewState;
+  final List<PeerReview> peerReviews;
+  final List<PeerReviewComment> peerReviewComments;
+
+  /// Q7: the conditions of a conditional certificate, each verified by a
+  /// certifier before the job leaves certificate_issued.
+  final List<CertificateCondition> conditions;
+
+  /// Who pressed Issue, when the certificate names the holder.
+  final String? certificateIssuedBy;
+
+  /// The authorisation number a certificate number is prefixed with: the
+  /// holder's (TST100250), whoever issues. Null from an older server.
+  final String? holderAuthorisationNumber;
+
   const JobRecord({
+    this.peerReviewRequired = false,
+    this.peerReviewState = 'not_required',
+    this.peerReviews = const [],
+    this.peerReviewComments = const [],
+    this.conditions = const [],
+    this.certificateIssuedBy,
+    this.holderAuthorisationNumber,
     required this.id,
     required this.stage,
     this.classKey,
@@ -398,6 +425,21 @@ class JobRecord {
     final cert = (j['certificate'] as Map?)?.cast<String, dynamic>();
     final ret = (j['retention'] as Map?)?.cast<String, dynamic>();
     return JobRecord(
+      peerReviewRequired: j['peerReviewRequired'] == true,
+      peerReviewState: j['peerReviewState'] as String? ?? (j['peerReviewRequired'] == true ? 'not_requested' : 'not_required'),
+      peerReviews: [
+        for (final r in ((j['peerReviews'] as List?) ?? const []).cast<Map>()) PeerReview.fromJson(r.cast<String, dynamic>()),
+      ],
+      peerReviewComments: [
+        for (final c in ((j['peerReviewComments'] as List?) ?? const []).cast<Map>())
+          PeerReviewComment.fromJson(c.cast<String, dynamic>()),
+      ],
+      conditions: [
+        for (final c in ((j['conditions'] as List?) ?? const []).cast<Map>())
+          CertificateCondition.fromJson(c.cast<String, dynamic>()),
+      ],
+      certificateIssuedBy: j['certificateIssuedBy'] as String?,
+      holderAuthorisationNumber: j['holderAuthorisationNumber'] as String?,
       id: _int(j['id']),
       substances: [
         for (final x in ((j['substances'] as List?) ?? const []).cast<Map>())
@@ -506,6 +548,86 @@ class JobRecord {
       retainUntil: _d(ret?['retain_until']),
     );
   }
+}
+
+/// One formal decision of the peer reviewer (reg 17.91 report).
+class PeerReview {
+  final int id;
+  final String decision;
+  final String? comment;
+  final String? reviewerName;
+  final DateTime? decidedAt;
+
+  /// Whether it was made on the job as it stands (the snapshot hash matches).
+  final bool current;
+  const PeerReview({required this.id, required this.decision, this.comment, this.reviewerName, this.decidedAt, this.current = false});
+
+  factory PeerReview.fromJson(Map<String, dynamic> j) => PeerReview(
+        id: _int(j['id']),
+        decision: j['decision'] as String? ?? '',
+        comment: j['comment'] as String?,
+        reviewerName: j['reviewer_name'] as String?,
+        decidedAt: j['decided_at'] == null ? null : DateTime.tryParse('${j['decided_at']}'),
+        current: j['current'] == true,
+      );
+}
+
+/// A comment in the peer review thread, by the peer reviewer or the team.
+class PeerReviewComment {
+  final int id;
+  final String body;
+  final String? authorName;
+  final String? authorRole;
+  final int? findingId;
+  final DateTime? at;
+  const PeerReviewComment({required this.id, required this.body, this.authorName, this.authorRole, this.findingId, this.at});
+
+  factory PeerReviewComment.fromJson(Map<String, dynamic> j) => PeerReviewComment(
+        id: _int(j['id']),
+        body: j['body'] as String? ?? '',
+        authorName: j['author_name'] as String?,
+        authorRole: j['author_role'] as String?,
+        findingId: j['finding_id'] == null ? null : _int(j['finding_id']),
+        at: j['created_at'] == null ? null : DateTime.tryParse('${j['created_at']}'),
+      );
+}
+
+/// One condition of a conditional certificate (reg 6.24).
+class CertificateCondition {
+  final int id;
+  final int ordinal;
+  final String text;
+  final String? regulation;
+  final DateTime? dueDate;
+  final DateTime? verifiedAt;
+  final String? verifiedByName;
+  final String? verificationNote;
+  final bool overdue;
+  const CertificateCondition({
+    required this.id,
+    required this.ordinal,
+    required this.text,
+    this.regulation,
+    this.dueDate,
+    this.verifiedAt,
+    this.verifiedByName,
+    this.verificationNote,
+    this.overdue = false,
+  });
+
+  bool get isVerified => verifiedAt != null;
+
+  factory CertificateCondition.fromJson(Map<String, dynamic> j) => CertificateCondition(
+        id: _int(j['id']),
+        ordinal: j['ordinal'] == null ? 0 : _int(j['ordinal']),
+        text: j['text'] as String? ?? '',
+        regulation: j['regulation'] as String?,
+        dueDate: j['due_date'] == null ? null : DateTime.tryParse('${j['due_date']}'),
+        verifiedAt: j['verified_at'] == null ? null : DateTime.tryParse('${j['verified_at']}'),
+        verifiedByName: j['verified_by_name'] as String?,
+        verificationNote: j['verification_note'] as String?,
+        overdue: j['overdue'] == true,
+      );
 }
 
 /// One substance at the location or in the applicant's scope.

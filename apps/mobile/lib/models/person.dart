@@ -10,7 +10,15 @@ class Person {
   final bool active;
   final bool hasPasscode;
 
+  /// Manages people without deciding (Q6, 20 Oct 2026).
+  final bool canAdminister;
+
+  /// Every certificate is in this person's name (Bryan Wilson, TST100250).
+  final bool isCertificateHolder;
+
   const Person({
+    this.canAdminister = false,
+    this.isCertificateHolder = false,
     required this.id,
     required this.fullName,
     required this.occupation,
@@ -30,5 +38,7 @@ class Person {
         authorisationNumber: j['authorisationNumber'] as String?,
         active: j['active'] != false,
         hasPasscode: j['hasPasscode'] != false,
+        canAdminister: j['canAdminister'] == true,
+        isCertificateHolder: j['isCertificateHolder'] == true,
       );
 }

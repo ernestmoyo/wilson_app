@@ -15,6 +15,7 @@
 import { explain, isClientError } from './errors.mjs';
 import { canDecide, checkEventRole } from '../roles.mjs';
 import { excludedSections, sheetSet } from '../scope.mjs';
+import { jobSnapshotHash } from '../peer-review.mjs';
 
 /**
  * An inspection is pinned to the template revisions it was opened against
@@ -409,7 +410,89 @@ const handlers = {
     if (!r.rows.length) throw reject(`client ${p.clientId} not found`);
     return { clientId: r.rows[0].id, archived };
   },
+
+  // ── peer review and conditions (phase 2, package B; Tatenda Katai, 20 Oct 2026) ──
+
+  /**
+   * Q5: a job on a reg 17.91 report of an existing stationary container
+   * system needs a peer review. Set at New job; a certifier can change it.
+   */
+  async 'job.peer_review_required'(db, p, ctx) {
+    if (typeof p.required !== 'boolean') throw reject('required must be true or false');
+    const r = await db.query(`UPDATE job SET peer_review_required = $2 WHERE id = $1 RETURNING id`, [p.jobId, p.required]);
+    if (!r.rows.length) throw reject(`job ${p.jobId} not found`);
+    return { jobId: p.jobId, peerReviewRequired: p.required };
+  },
+
+  /** A comment in the peer review thread, by the peer reviewer or the team. */
+  async 'peer_review.comment'(db, p, ctx) {
+    await flaggedJob(db, p.jobId);
+    const body = textOrNull(p.body);
+    if (!body) throw reject('a comment needs some text');
+    if (!ctx.userId) throw reject('reg 17.91: a peer review comment needs an authenticated author', 'P0001');
+    if (p.findingId != null) {
+      const own = await db.query(
+        `SELECT 1 FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE f.id = $1 AND i.job_id = $2`,
+        [p.findingId, p.jobId]);
+      if (!own.rows.length) throw reject(`finding ${p.findingId} is not part of job ${p.jobId}`);
+    }
+    const r = await db.query(
+      `INSERT INTO peer_review_comment (job_id, author_id, finding_id, body) VALUES ($1,$2,$3,$4) RETURNING id`,
+      [p.jobId, ctx.userId, p.findingId ?? null, body]);
+    return { commentId: r.rows[0].id };
+  },
+
+  /**
+   * The peer reviewer's formal decision on the job as it stands now: the
+   * snapshot hash is the server's, never the device's, so an approval cannot
+   * be claimed for a version nobody saw.
+   */
+  async 'peer_review.decide'(db, p, ctx) {
+    await flaggedJob(db, p.jobId);
+    if (!['approved', 'changes_requested'].includes(p.decision)) throw reject("decision must be 'approved' or 'changes_requested'");
+    const comment = textOrNull(p.comment);
+    if (p.decision === 'changes_requested' && !comment) {
+      throw reject('reg 17.91: a request for changes must say what needs to change', 'P0001');
+    }
+    if (!ctx.userId) throw reject('reg 17.91: a peer review decision needs an authenticated peer reviewer', 'P0001');
+    const hash = await jobSnapshotHash(db, p.jobId);
+    const r = await db.query(
+      `INSERT INTO peer_review (job_id, reviewer_id, decision, comment, snapshot_hash) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [p.jobId, ctx.userId, p.decision, comment, hash]);
+    return { peerReviewId: r.rows[0].id, decision: p.decision, snapshotHash: hash };
+  },
+
+  /**
+   * Q7: a condition of a conditional certificate is met, verified by a
+   * certifier (roles.mjs), who and when recorded. The job leaves
+   * certificate_issued only once every condition is verified (migration 016).
+   */
+  async 'condition.verify'(db, p, ctx) {
+    const id = p.conditionId;
+    if (!(Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[1-9][0-9]{0,17}$/.test(id))) {
+      throw reject('conditionId must be a positive integer');
+    }
+    if (!ctx.userId) throw reject('reg 6.24: verifying a condition needs an authenticated certifier', 'P0001');
+    const cur = await db.query(
+      `SELECT cc.verified_at, c.job_id FROM certificate_condition cc JOIN certificate c ON c.id = cc.certificate_id WHERE cc.id = $1`, [id]);
+    if (!cur.rows.length) throw reject(`condition ${id} not found`);
+    if (p.jobId != null && Number(cur.rows[0].job_id) !== Number(p.jobId)) throw reject(`condition ${id} is not part of job ${p.jobId}`);
+    if (cur.rows[0].verified_at) throw reject(`reg 6.24: condition ${id} is already verified`, 'P0001');
+    const r = await db.query(
+      `UPDATE certificate_condition SET verified_by = $2, verified_at = COALESCE($3::timestamptz, now()), verification_note = $4
+       WHERE id = $1 RETURNING id, verified_at`,
+      [id, ctx.userId, ctx.occurredAt ?? null, textOrNull(p.note)]);
+    return { conditionId: r.rows[0].id, verifiedAt: r.rows[0].verified_at };
+  },
 };
+
+/** The job, if it is flagged for a peer review; a refusal otherwise. */
+async function flaggedJob(db, jobId) {
+  if (jobId == null) throw reject('jobId is required');
+  const j = await db.query(`SELECT peer_review_required FROM job WHERE id = $1`, [jobId]);
+  if (!j.rows.length) throw reject(`job ${jobId} not found`);
+  if (!j.rows[0].peer_review_required) throw reject(`reg 17.91: job ${jobId} is not flagged for a peer review`, 'P0001');
+}
 
 export const EVENT_TYPES = Object.keys(handlers);
 

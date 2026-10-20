@@ -146,6 +146,9 @@ class _JobsBoardState extends State<JobsBoard> {
       (TextEditingController(), TextEditingController(), TextEditingController()),
     ];
     var classKey = 'class_6_8';
+    // Q5 (20 Oct 2026): an existing stationary container system on a reg
+    // 17.91 report needs a peer review before the certificate issues.
+    var peerReview = false;
     // The set's scope choices picked for this job (e.g. which 3.1 arrangements).
     final chosen = <String>{};
     List<ScopeChoice> choicesOf(String key) => sets.firstWhere((x) => x.key == key, orElse: () => sets.first).choices;
@@ -348,6 +351,18 @@ class _JobsBoardState extends State<JobsBoard> {
                   label: const Text('Add substance'),
                 ),
               ),
+              if (kindOf(classKey) == 'location') ...[
+                section('Peer review'),
+                CheckboxListTile(
+                  key: const ValueKey('nj-peer-review'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: peerReview,
+                  onChanged: (v) => setD(() => peerReview = v ?? false),
+                  title: const Text('Existing stationary container system — 17.91 report (needs peer review)'),
+                ),
+              ],
             ]),
           )),
           actions: [
@@ -376,6 +391,7 @@ class _JobsBoardState extends State<JobsBoard> {
         'location': {'name': location.text.trim()},
         'classKey': classKey,
         if (choicesOf(classKey).isNotEmpty) 'scopeChoices': chosen.toList(),
+        if (peerReview && kindOf(classKey) == 'location') 'peerReviewRequired': true,
         // Form sheets: what was typed becomes the first subject field, so the
         // sheet opens with it filled in the template's own label.
         if (kindOf(classKey) != 'location')
@@ -530,7 +546,7 @@ class _JobsBoardState extends State<JobsBoard> {
         subtitle: [widget.session.fullName, if ((widget.session.authorisationNumber ?? '').isNotEmpty) widget.session.authorisationNumber!].join(' · '),
         actions: [
           SyncIndicator(sync: widget.sync, onTap: _busy ? null : _reload),
-          if (widget.session.canDecide)
+          if (widget.session.canManagePeople)
             IconButton(
               key: const ValueKey('to-people'),
               tooltip: 'People',
