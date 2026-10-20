@@ -193,5 +193,26 @@ void main() {
       expect(s.created.single['classKey'], 'class_2_3');
       expect(s.created.single['scopeChoices'], ['3_1_cabinet']);
     });
+
+    testWidgets('the class 3.2/4 set notes that only 4.1.1 is authorised (phase 2, E)', (tester) async {
+      final s = await openBoard(tester);
+      await tester.tap(find.byKey(const ValueKey('new-job')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('nj-set-note')), findsNothing, reason: 'class 6/8 carries no note');
+      await tester.tap(find.text('Location: classes 6 or 8').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Location: classes 3.2 and 4').last);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('nj-set-note')), findsOneWidget);
+      expect(find.text('Authorised for 4.1.1 only (Appendix A). 3.2 and 4.1.2 substances: not yet authorised.'), findsOneWidget);
+      await tester.enterText(find.byKey(const ValueKey('nj-legal')), 'Solids Test Limited');
+      await tester.enterText(find.byKey(const ValueKey('nj-address')), '5 Solids Road');
+      await tester.enterText(find.byKey(const ValueKey('nj-location')), 'Flammable solids store');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('nj-create')));
+      await tester.pumpAndSettle();
+      expect(s.created.single['classKey'], 'class_3_2_4');
+      expect(s.created.single.containsKey('scopeChoices'), isFalse);
+    });
   });
 }

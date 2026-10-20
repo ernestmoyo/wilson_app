@@ -24,13 +24,33 @@ SessionStore signedIn() => MemorySessionStore()
 void main() {
   group('generated WKS-17 templates', () {
     test('all three templates load with the expected shape', () {
-      expect(kChecksheetTemplates.length, 7);
+      expect(kChecksheetTemplates.length, 8);
       final general = kTemplatesByCode['wks17-general']!;
       expect(general.sections.length, 8);
       expect(general.itemCount, 36);
       expect(kTemplatesByCode['wks17-class-6-1a-6-1b-6-1c-8-2a-8']!.itemCount, 18);
       expect(kTemplatesByCode['wks17-class-2-and-3-1-substances']!.itemCount, 43);
       expect(kTemplatesByCode['wks17-class-5-1-1-and-5-1-2']!.itemCount, 18);
+    });
+
+    test('class 3.2/4 sheet and set (Argenta tab, 20 Oct 2026)', () {
+      final t = kTemplatesByCode['wks17-class-3-2-and-4']!;
+      expect(t.revision, 1);
+      expect(t.sections.map((s) => s.items.length).toList(), [3, 2, 7, 3]);
+      expect(t.itemCount, 15);
+      expect(t.sheet.title, 'Check sheet Location Class 3.2 and 4 substances');
+      expect(t.sections.first.items.first.action,
+          'Verify that there is a temperature control plan and system in place');
+      expect(t.sections.first.items.first.regulationRefs, ['10.22(2)']);
+      final set = kSheetSetsByKey['class_3_2_4']!;
+      expect(set.kind, 'location');
+      expect(set.name, 'Location: classes 3.2 and 4');
+      expect(set.templates, ['wks17-general', 'wks17-class-3-2-and-4']);
+      expect(set.authorisation, 'location-4-1-1');
+      // The general sheet's own class 3.2/4 view (the Argenta general tab).
+      final general = kTemplatesByCode['wks17-general']!;
+      expect(general.sections.first.items.first.regulationRefsFor('class_3_2_4'), ['10.36']);
+      expect(general.sheetFor('class_3_2_4').declaration, contains('Regulation 10.36'));
     });
 
     test('sheet sets carry their scope choices (class 2/3.1, 19 Oct 2026)', () {

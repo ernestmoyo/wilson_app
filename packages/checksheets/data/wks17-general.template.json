@@ -3,7 +3,7 @@
   "title": "General location requirements",
   "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
   "classScope": [],
-  "revision": 3,
+  "revision": 4,
   "effectiveFrom": null,
   "supersededBy": null,
   "status": "draft",
@@ -13,22 +13,30 @@
         "path": "data/wks17-general.template.json",
         "classKey": "class_6_8",
         "sheet": "Locations General",
-        "via": "wks17-general revision 1"
+        "via": "wks17-general revision 3"
       },
       {
-        "path": "wks17-locations-general.template.json",
+        "path": "data/wks17-general.template.json",
         "classKey": "class_2_3",
         "sheet": "Locations General",
-        "workbook": "Class 3.1 r10.34 LCC Mock Assessment Checksheet.xlsx"
+        "workbook": "Class 3.1 r10.34 LCC Mock Assessment Checksheet.xlsx",
+        "via": "wks17-general revision 3"
+      },
+      {
+        "path": "data/wks17-general.template.json",
+        "classKey": "class_5_1",
+        "sheet": "Locations General",
+        "workbook": "Class 5.1.1 and 5.1.2 Mock Assessment Location check sheets.xlsx",
+        "via": "wks17-general revision 3"
       },
       {
         "path": "wks17-locations-general.template.json",
-        "classKey": "class_5_1",
+        "classKey": "class_3_2_4",
         "sheet": "Locations General",
-        "workbook": "Class 5.1.1 and 5.1.2 Mock Assessment Location check sheets.xlsx"
+        "workbook": "Argenta Class 2 and 3 location checksheets with feedback.xlsx"
       }
     ],
-    "reconciledAt": "2026-10-19T14:44:37.042Z",
+    "reconciledAt": "2026-10-20T08:20:56.403Z",
     "corrections": [
       {
         "classKey": "class_6_8",
@@ -407,27 +415,154 @@
         "from": "Section 1/1",
         "to": "Section 1/2",
         "reason": "sheet 1 of 2 in this workbook"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "F1",
+        "from": "Evidence Portifolio",
+        "to": "Evidence Portfolio",
+        "reason": "spelling"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 1 number",
+        "from": null,
+        "to": "1",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 2 number",
+        "from": null,
+        "to": "2",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 3 number",
+        "from": null,
+        "to": "3",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 4 number",
+        "from": null,
+        "to": "4",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 5 regulation",
+        "from": "5.7(3)©",
+        "to": "5.7(3)(c)",
+        "reason": "copyright symbol autocorrected from \"(c)\""
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 5 number",
+        "from": null,
+        "to": "5",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 6 number",
+        "from": null,
+        "to": "6",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 7 number",
+        "from": null,
+        "to": "7",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 8 number",
+        "from": null,
+        "to": "8",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 9 number",
+        "from": null,
+        "to": "9",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 10 regulation",
+        "from": "5.1",
+        "to": "5.10",
+        "reason": "sits between 5.9 and 5.11; Excel dropped the trailing zero"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 10 number",
+        "from": null,
+        "to": "10",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 11 number",
+        "from": null,
+        "to": "11",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 6 item 12 number",
+        "from": null,
+        "to": "12",
+        "reason": "item carried no number in the source; numbered by position"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "section 7 item 6 regulation",
+        "from": "17.102(6)) 17.102(7)",
+        "to": "17.102(6) 17.102(7)",
+        "reason": "unbalanced closing parenthesis"
+      },
+      {
+        "classKey": "class_3_2_4",
+        "where": "footer",
+        "from": "Section 1/1",
+        "to": "Section 1/2",
+        "reason": "sheet 1 of 2 in this workbook"
       }
     ],
     "supersedes": {
-      "revision": 1,
-      "contentHash": "4b0b4c72f73dcfe2960e63b8f2ab50ac20cc3b1718d9d45ece32e336f23acbb7",
+      "revision": 3,
+      "contentHash": "d0f2b0393e5d3c8b02849089d4c34818b6b16f64c4cc566b8a98068d48cd063d",
       "workbook": null,
       "sheet": null,
       "reconciledFrom": [
         {
-          "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v4g2/wks17-locations-general.template.json",
+          "path": "data/wks17-general.template.json",
           "classKey": "class_6_8",
-          "sheet": "Locations General"
+          "sheet": "Locations General",
+          "via": "wks17-general revision 1"
         },
         {
-          "path": "C:/Users/ernes/AppData/Local/Temp/claude/C--Users-ernes-Documents-Projects-wilson-checksheet/c715f02d-5a1e-46e0-9f1c-4ef9cdaaacd3/scratchpad/v4ab/wks17-locations-general.template.json",
+          "path": "wks17-locations-general.template.json",
           "classKey": "class_2_3",
-          "sheet": "Locations General"
+          "sheet": "Locations General",
+          "workbook": "Class 3.1 r10.34 LCC Mock Assessment Checksheet.xlsx"
+        },
+        {
+          "path": "wks17-locations-general.template.json",
+          "classKey": "class_5_1",
+          "sheet": "Locations General",
+          "workbook": "Class 5.1.1 and 5.1.2 Mock Assessment Location check sheets.xlsx"
         }
       ]
     },
-    "revisionNote": "Class 2/3.1 view from the Class 3.1 r10.34 workbook: notification 13.34(4)->10.34(1)(a), secondary containment 13.3->10.34(1)(h) and 10.30 only, site plan 13.34(5)(b)->10.26(4)(b), declaration 17.91->10.34. New class 5.1.1/5.1.2 view. 17.102(6)) cleaned for every class. Class 6/8 wording otherwise unchanged. Rev 3 (20 Oct 2026): class 6/8 secondary containment 13.3->13.30 (a dropped zero; reg 13.3 is about application records, 13.30 is secondary containment)."
+    "revisionNote": "Rev 4 (20 Oct 2026): new class 3.2/4 view from the Argenta workbook's general tab: which regulations apply 10.36, notification 10.26(2), secondary containment 13.3 (as written; open question) then 10.31-10.33 and 10.30 only, site plan 10.26(4)(b); that tab's title, banner and declaration (10.36). Classes 6/8, 2/3.1 and 5.1 unchanged."
   },
   "sheet": {
     "evidenceColumnLabel": "Evidence Portfolio",
@@ -472,6 +607,9 @@
             ],
             "class_5_1": [
               "12.17"
+            ],
+            "class_3_2_4": [
+              "10.36"
             ]
           }
         },
@@ -510,6 +648,9 @@
             ],
             "class_5_1": [
               "12.8(4)"
+            ],
+            "class_3_2_4": [
+              "10.26(2)"
             ]
           }
         }
@@ -866,6 +1007,9 @@
             ],
             "class_5_1": [
               "12.13"
+            ],
+            "class_3_2_4": [
+              "13.3"
             ]
           }
         },
@@ -919,6 +1063,11 @@
               "13.33",
               "17.100",
               "17.101"
+            ],
+            "class_3_2_4": [
+              "10.31",
+              "10.32",
+              "10.33"
             ]
           }
         },
@@ -948,6 +1097,9 @@
               "12.13",
               "12.38",
               "13.30"
+            ],
+            "class_3_2_4": [
+              "10.30"
             ]
           }
         },
@@ -977,6 +1129,9 @@
               "12.13",
               "12.38",
               "13.30"
+            ],
+            "class_3_2_4": [
+              "10.30"
             ]
           }
         },
@@ -1031,6 +1186,9 @@
             ],
             "class_5_1": [
               "13.34(5)(b)"
+            ],
+            "class_3_2_4": [
+              "10.26(4)(b)"
             ]
           }
         },
@@ -1052,6 +1210,9 @@
             ],
             "class_5_1": [
               "13.34(5)(b)"
+            ],
+            "class_3_2_4": [
+              "10.26(4)(b)"
             ]
           }
         }
@@ -1073,6 +1234,11 @@
       "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
       "banner": "General location requirements specific to class 5.1.1 and 5.1.2 substances",
       "declaration": null
+    },
+    "class_3_2_4": {
+      "title": "Check sheet Location Class 3.2 and 4 substances",
+      "banner": "Process and information requirements applying to certification of hazardous substance locations generally",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.36 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
     }
   }
 }

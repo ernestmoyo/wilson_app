@@ -232,6 +232,7 @@ ${conditionsBlock}
  */
 export const CLASS_REGULATION = {
   class_2_3: '10.34',
+  class_3_2_4: '10.36',
   class_5_1: '12.17',
   class_6_8: '13.38',
 };

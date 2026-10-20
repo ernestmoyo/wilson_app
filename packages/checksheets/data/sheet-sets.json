@@ -52,6 +52,14 @@
       "authorisation": "location-5-1-1"
     },
     {
+      "key": "class_3_2_4",
+      "kind": "location",
+      "name": "Location: classes 3.2 and 4",
+      "detail": "Liquid desensitised explosives (3.2), readily combustible solids (4.1.1) and self-reactive substances (4.1.2A to F), regulation 10.36. Appendix A authorises 4.1.1 only, in packages up to 2,000 kg or 2,000 L",
+      "templates": ["wks17-general", "wks17-class-3-2-and-4"],
+      "authorisation": "location-4-1-1"
+    },
+    {
       "key": "handler_6",
       "kind": "handler",
       "name": "Certified handler: class 6",
@@ -79,7 +87,6 @@
   "planned": [
     { "name": "Certified handler: fumigants", "authorisation": "handler-fumigants", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" },
     { "name": "Certified handler: vertebrate toxic agents", "authorisation": "handler-vta", "status": "same assessment sheet; awaiting Bryan's confirmation of any differences" },
-    { "name": "Location: class 4.1.1", "authorisation": "location-4-1-1", "status": "the Argenta workbook assesses a 4.1.1 substance; waiting on confirmation that it is the 4.1.1 sheet (Q2)" },
     { "name": "Class 3.1 in stationary container systems (up to 10,000 L)", "authorisation": "location-3-1", "status": "sheet to be supplied (Q1); becomes a class 3.1 choice" },
     { "name": "Class 3.1 use up to 450 L", "authorisation": "location-3-1", "status": "sheet to be supplied (Q1); adds to the class 3.1 use choice" },
     { "name": "Stationary container systems: existing tanks, dispensers, process containers", "authorisation": "scs-existing-tanks", "status": "SAT 201 received; its design, construction, fabricator and repair rows are excluded work (C8). Waiting on Q1 for the existing-tank, dispenser and process-container sheets" }

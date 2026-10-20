@@ -43,6 +43,11 @@ await step('granted, class 6/8 cites 13.38; class 5.1 cites 12.17', async () => 
   expect(locationWording({ decision: 'granted', classKey: 'class_5_1' }).certifiesThat.includes('regulation 12.17'), '5.1');
 });
 
+await step('granted, class 3.2/4 cites 10.36', async () => {
+  const w = locationWording({ decision: 'granted', classKey: 'class_3_2_4' });
+  expect(w.issuedUnder.includes('regulation 10.36') && w.certifiesThat.includes('regulation 10.36'), JSON.stringify(w));
+});
+
 await step('conditional: regulation 6.24, "with the exception of", and the deadline', async () => {
   const w = locationWording({ decision: 'conditional', classKey: 'class_2_3', conditionsDue: '2027-01-15' });
   expect(w.issuedUnder.includes('regulation 6.24'), w.issuedUnder);

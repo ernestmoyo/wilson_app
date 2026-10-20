@@ -109,7 +109,8 @@
       "scope": "The certification of locations where class 4.1.1 substances are present is limited to packages up to a maximum quantity of 2,000 kg or 2,000 L.",
       "lifeCycles": [],
       "limits": { "maxKg": 2000, "maxL": 2000 },
-      "source": "Scope of Work, Appendix A (19 October 2026)"
+      "source": "Scope of Work, Appendix A (19 October 2026)",
+      "note": "Sheet set class_3_2_4 (the Argenta \"Class 3.2 and 4\" tab) is offered under this entry. Appendix A lists 4.1.1 only: classes 3.2 and 4.1.2A to F are not on the register. Open question to the owner before any 3.2 or 4.1.2 substance is certified (reg 6.22(1))."
     },
     {
       "key": "location-5-1-1",
