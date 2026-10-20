@@ -52,8 +52,8 @@ npm run verify
 |---|---|---|
 | `checksheets.ts` | `tsc --noEmit --strict` | compiles clean |
 | `checksheets.g.dart` | `dart analyze` | *No issues found* |
-| `checksheets.g.dart` | `flutter test` (widget_test) — loads, resolves class overlays and scope choices | 167 items, overlays and choices correct |
-| all three | round-trip vs canonical JSON (`npm run verify`) | 284 strings, 167 items, all match; 6 sets, 8 choices resolve |
+| `checksheets.g.dart` | `flutter test` (widget_test) — loads, resolves class overlays and scope choices | 182 items, overlays and choices correct |
+| all three | round-trip vs canonical JSON (`npm run verify`) | 314 strings, 182 items, all match; 7 sets, 8 choices resolve |
 
 The round-trip check exists because the PS text is full of apostrophes (`worker's`), curly quotes, em dashes and `$`. Mis-escaping those either fails to compile or — far worse — compiles into subtly wrong regulatory text that gets shown to an inspector. `npm run verify` re-escapes every string independently and asserts it appears in each output.
 

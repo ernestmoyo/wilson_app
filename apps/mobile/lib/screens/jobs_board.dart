@@ -224,6 +224,10 @@ class _JobsBoardState extends State<JobsBoard> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(sets.firstWhere((x) => x.key == classKey).regulation!, style: t.bodySmall),
                 ),
+              // Appendix A authorises 4.1.1 only; 3.2 and 4.1.2 are an open question (phase 2, E).
+              if (classKey == 'class_3_2_4')
+                Text('Authorised for 4.1.1 only (Appendix A). 3.2 and 4.1.2 substances: not yet authorised.',
+                    key: const ValueKey('nj-set-note'), style: t.bodySmall?.copyWith(color: Tone.warn.fg)),
               section('Client'),
               RawAutocomplete<_ClientGroup>(
                 textEditingController: legal,
@@ -972,6 +976,7 @@ class _JobsBoardState extends State<JobsBoard> {
         'class_6_8' => 'Classes 6 or 8',
         'class_2_3' => 'Classes 2 and 3.1',
         'class_5_1' => 'Class 5.1',
+        'class_3_2_4' => 'Classes 3.2 and 4',
         _ => switch (j.kind) { 'handler' => 'Certified handler', 'cylinder' => 'Cylinder importation', _ => null },
       };
 

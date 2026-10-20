@@ -27,7 +27,7 @@ import { basename, join } from 'path';
 const require2 = createRequire(new URL('../package.json', import.meta.url));
 const ExcelJS = require2('exceljs');
 
-const EXTRACTOR_VERSION = '1.1.0';
+const EXTRACTOR_VERSION = '1.1.1';
 
 // Font colours the workbook uses to encode a finding's result.
 const STATUS_BY_COLOUR = {
@@ -403,6 +403,14 @@ function extractSheet(ws, workbookName) {
   meta.title = fix('A1', meta.title,
     meta.title.replace(/\b(\w+)\s+\1\b/i, '$1'), 'duplicated word');
 
+  // "Class 3.4 and 4": there is no class 3.4. The tab is named "Class 3.2 and
+  // 4", the same workbook's general tab is titled "Class 3.2 and 4", and the
+  // sheet's own section titles name class 3.2.
+  if (/class\s+3\.2\s+and\s+4/i.test(ws.name)) {
+    meta.title = fix('A1', meta.title, meta.title.replace(/class\s+3\.4\s+and\s+4/i, 'Class 3.2 and 4'),
+      'no class 3.4 exists; the tab is named "Class 3.2 and 4" and its sections name class 3.2');
+  }
+
   if (meta.declaration) {
     if (!/^Declaration:/i.test(meta.declaration)) {
       meta.declaration = fix('Declaration', meta.declaration, `Declaration: ${meta.declaration}`,
@@ -425,6 +433,7 @@ function extractSheet(ws, workbookName) {
   const declReg = meta.declaration?.match(/Regulation\s+([\d.]+)/i)?.[1] ?? null;
   const classPhrase = /class\s+2\s+and\s+3\.1/i.test(meta.title) ? 'classes 2 or 3.1'
     : /class\s+5\.1\.1/i.test(meta.title) ? 'classes 5.1.1 or 5.1.2'
+    : /class\s+3\.2\s+and\s+4/i.test(meta.title) ? 'classes 3.2 or 4'
     : /6\.1A|class(es)?\s+6/i.test(meta.title) ? 'classes 6 or 8' : null;
   if (meta.scopeOfAuthorisation?.text && classPhrase && declReg) {
     const t = meta.scopeOfAuthorisation.text;

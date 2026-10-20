@@ -1,0 +1,160 @@
+{
+  "siteBlock": {
+    "Legal Entity Name": "Argenta Manufacturing Limited",
+    "Trading as Name": "Argenta Manufacturing Limited",
+    "Site / Location Address": "2 Sterling Avenue, Manurewa East, Auckland 2102",
+    "Postal Address": "Po Box 75340, Manurewa 2243, Auckland, 2243",
+    "Business Phone Number": "64 9 2503100",
+    "Business Website": "www.argentaglobal.com",
+    "NZBN": "9429033971360",
+    "Description of Business Type / Industry": "Argenta Manufacturing Limited is an animal health pharmaceutical manufacturer. The company produces a wide range of bespoke animal health products for both local and export markets. Argenta is the largest animal health pharmaceutical manufacturer in the Southern Hemisphere and also provides contract manufacturing services to other businesses in OECD countries. Its Manurewa facility is GMP-certified and meets the requirements of major regulatory agencies, including the European Medicines Agency (EMA) and the US Food and Drug Administration (FDA). The site is supported by highly competent health and safety practitioners and strong compliance programmes.",
+    "Manager Name": "Jesh Chandra",
+    "Date of Inspection/Site Visit": "2026-01-15",
+    "Status of Inspection": "Mock",
+    "Direct Dial Number and/or Mobile Number": "+64 6 358 9642",
+    "Brief location summary": "Argenta Pharmaceuticals stores 1000kg of SODIUM LAURYL SULPHATE (SLS), a class 4.1.1A flammable solid surfactant, in a Type D storage room maintained at ambient temperature. The storage area, identified as Room 004 on the Argenta site plan, is secured by lock and key and access is restricted to authorised personnel. Based on its physical and chemical properties, the substance is not classified as self-igniting."
+  },
+  "findings": [
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1; this regulation applies to a class 4.1.2",
+      "row": 18
+    },
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 20
+    },
+    {
+      "sectionOrdinal": 1,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 22
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "font:FF00B050",
+      "comment": "subclause (2) applies",
+      "row": 24
+    },
+    {
+      "sectionOrdinal": 2,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "compliant",
+      "statusSource": "font:FF00B050",
+      "comment": "Boundary of the controlled zone is a wall with a fire-resistance rating of 240/240/240 minutes and it abuts a protected place.",
+      "row": 25
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is not in contact with any substance or material with which it is incompatible",
+      "row": 27
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not Applicable This substance will not cause a fire through friction and does not have any of the serial numbers",
+      "row": 28
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 29
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 4,
+      "itemNumber": "4",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 30
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 5,
+      "itemNumber": "5",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 31
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 6,
+      "itemNumber": "6",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 32
+    },
+    {
+      "sectionOrdinal": 3,
+      "itemOrdinal": 7,
+      "itemNumber": "7",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 33
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 1,
+      "itemNumber": "1",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "A record of site plan has been provided, Prescribed quantities to be secured 100kg, 1000kg present require security",
+      "row": 35
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 2,
+      "itemNumber": "2",
+      "status": "not_applicable",
+      "statusSource": "inferred:text",
+      "comment": "Not applicable Substance is a class 4.1.1 this regulation applies to a class 4.1.2",
+      "row": 36
+    },
+    {
+      "sectionOrdinal": 4,
+      "itemOrdinal": 3,
+      "itemNumber": "3",
+      "status": "compliant",
+      "statusSource": "inferred:text",
+      "comment": "Substance secured by lock and key and can only be access by authorised persons",
+      "row": 37
+    }
+  ],
+  "trailing": {
+    "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.36 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+    "decision": "Decision: Refused to issue compliance certificate. Recommended Next Steps PCBU to: 1. Notify WorkSafe at least 30 working days before the commissioning of the hazardous substance location as a place for accommodating class 2, 3, or 4 substances 2. Provide evidence of signage at the entrances of to the site 3. Provide evidence of an approved version of the updated ERP 4. Supply evidence to the effect that the updated ERP has been verified by FENZ and recommendations have been taken into consideration 5. Implement and test the approved ERP",
+    "note": "NB: Non compliances are in red",
+    "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017"
+  }
+}

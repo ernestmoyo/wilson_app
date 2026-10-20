@@ -190,6 +190,35 @@ await step('a workroom job keeps the shared use section (18) as well as 19 to 21
   for (const n of [18, 19, 20, 21]) expect(!out.has(n), `section ${n} should be assessed`);
 });
 
+// ── Package E: the class 3.2 / 4 set (Argenta "Class 3.2 and 4" tab) ───────
+await step('class 3.2/4 is listed and authorised through the 4.1.1 register entry', async () => {
+  const sets = await api.get('/api/sheet-sets').set(H);
+  const s = sets.body.sets.find((x) => x.key === 'class_3_2_4');
+  expect(s, `class_3_2_4 not listed: ${sets.body.sets.map((x) => x.key)}`);
+  expect(s.kind === 'location' && s.name === 'Location: classes 3.2 and 4', JSON.stringify(s));
+  expect(JSON.stringify(s.templates) === '["wks17-general","wks17-class-3-2-and-4"]', JSON.stringify(s.templates));
+  expect(s.authorised === true, 'class_3_2_4 not authorised');
+  expect(s.authorisationEntry?.key === 'location-4-1-1' && s.authorisationEntry.limits?.maxKg === 2000, JSON.stringify(s.authorisationEntry));
+  expect(!sets.body.planned.some((p) => p.authorisation === 'location-4-1-1'), '4.1.1 still listed as planned');
+});
+
+await step('a class 3.2/4 job opens on the general sheet and the class 3.2/4 sheet (36 + 15 items)', async () => {
+  const c = await api.post('/api/jobs').set(H).send({ client: { legalName: 'Scope Test Solids Limited' }, site: { address: '5 Scope Road' },
+    location: { name: 'Flammable solids store' }, classKey: 'class_3_2_4' });
+  expect(c.status === 201 || c.status === 200, `${c.status} ${c.text}`);
+  const o = await sync([ev('inspection.open', { jobId: c.body.jobId, hsLocationId: c.body.hsLocationId, equipmentUsed: 'iPad',
+    templateCodes: ['wks17-general', 'wks17-class-3-2-and-4'] })]);
+  expect(o.body.rejected.length === 0, JSON.stringify(o.body.rejected));
+  const i = o.body.applied[0].result.inspectionId;
+  const per = (await db.query(`SELECT template_code, count(*)::int AS n FROM inspection_item_in_scope WHERE inspection_id = $1
+                               GROUP BY template_code ORDER BY template_code`, [i])).rows;
+  const got = Object.fromEntries(per.map((r) => [r.template_code, r.n]));
+  expect(got['wks17-general'] === 36 && got['wks17-class-3-2-and-4'] === 15, JSON.stringify(got));
+  const t = (await db.query(`SELECT t.revision, t.title FROM inspection_template p JOIN checksheet_template t ON t.id = p.template_id
+                             WHERE p.inspection_id = $1 AND t.code = 'wks17-class-3-2-and-4'`, [i])).rows;
+  expect(t.length === 1 && Number(t[0].revision) === 1 && t[0].title === 'Check sheet Location Class 3.2 and 4 substances', JSON.stringify(t));
+});
+
 await db.close();
 console.log(`\n${pass} passed, ${problems.length} failed`);
 if (problems.length) { console.error(problems.join('\n')); process.exit(1); }

@@ -1768,6 +1768,261 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     ]
   },
   {
+    "code": "wks17-class-3-2-and-4",
+    "title": "Check sheet Location Class 3.2 and 4 substances",
+    "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
+    "classScope": [],
+    "revision": 1,
+    "status": "draft",
+    "sheet": {
+      "title": "Check sheet Location Class 3.2 and 4 substances",
+      "evidenceColumnLabel": "Evidence Portfolio",
+      "banner": null,
+      "columnHeaders": [
+        "Item",
+        "Regulation",
+        "Action",
+        "Records",
+        "Comments"
+      ],
+      "note": "NB: Non compliances are in red",
+      "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.36 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)",
+      "documentControl": {
+        "Owner": "BW",
+        "Revision": "1",
+        "Status": "Current",
+        "Date of last revision": "2026-04-25",
+        "Frequency of revision": "less than 12 months"
+      },
+      "scopeOfAuthorisation": {
+        "heading": "Scope of Authorisation",
+        "text": "Locations where classes 3.2 or 4 substances are present [Regulation 10.36, Health and Safety at Work (Hazardous Substances) Regulations 2017] Conditions:",
+        "confirmation": "I can confirm that I have checked that the certification process has been carried within my scope of authorisation. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
+      },
+      "reference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard HSW (HS) Regulations of 2017",
+      "footer": "Section 2/2",
+      "kind": "location",
+      "subjectBlockTitle": null,
+      "subjectBlock": [],
+      "unitBlockTitle": null,
+      "unitBlock": null,
+      "authorisation": null,
+      "certificate": null
+    },
+    "sections": [
+      {
+        "ordinal": 1,
+        "number": null,
+        "title": "Temperature control plans for class 3.2 and 4 substances",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "10.22(2)"
+            ],
+            "regulationRaw": "10.22(2)",
+            "guidanceUrl": null,
+            "action": "Verify that there is a temperature control plan and system in place",
+            "records": "A record of the temperature control plan and system, or a reference to the plan",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "10.22(2)(a)"
+            ],
+            "regulationRaw": "10.22(2)(a)",
+            "guidanceUrl": null,
+            "action": "Verify that the temperature control plan monitors and controls the temperature of the space in which the substance is located and prevents the temperature exceeding the prescribed temperature",
+            "records": "A record of elements of the plan, or a reference to the plan",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "10.22(2)(b)"
+            ],
+            "regulationRaw": "10.22(2)(b)",
+            "guidanceUrl": null,
+            "action": "Verify steps that are to be taken, if the prescribed temperature is exceeded, to prevent the emergency temperature being reached",
+            "records": "A record of the elements of the plan, or a reference to the plan",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "number": "2",
+        "title": "Boundary of controlled zones for class 3.2 and 4 substances",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "10.28"
+            ],
+            "regulationRaw": "10.28",
+            "guidanceUrl": null,
+            "action": "Determine which subclause applies",
+            "records": "A record of the subclause",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "10.28(2)",
+              "10.28(4)"
+            ],
+            "regulationRaw": "10.28(2) 10.28(4) Schedule 9",
+            "guidanceUrl": null,
+            "action": "Verify the FRR of the wall Verify the separation distance to the boundary of the controlled zone",
+            "records": "A record of the wall FRR details or a record of the actual and prescribed distances or both",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "number": null,
+        "title": "Class 4.1.1, 4.1.2, and 4.1.3 substances to be segregated from incompatible substances and likelihood of unintended ignition to be reduced",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "10.5"
+            ],
+            "regulationRaw": "10.5",
+            "guidanceUrl": null,
+            "action": "Verify that the class 3.2 or 4 substances are segregated from the incompatible substances",
+            "records": "A record that— (a) identifies the hazardous substance location; and (b) identifies the classes of substances present; and (c) notes whether there are any incompatible substances nearby; and (d) specifies the means of segregation",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "10.23"
+            ],
+            "regulationRaw": "10.23",
+            "guidanceUrl": null,
+            "action": "For class 4.1.1 substances that may cause fire through friction, verify that if any substances with UN serial numbers UN1331, UN1343, UN1944, UN1945, or UN2254 are present, they are not subject to more than 50% of the minimum amount of friction required to cause ignition",
+            "records": "A record of the following: (a) the quantities of substances: (b) confirmation of compliance",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "10.24(1)(a)"
+            ],
+            "regulationRaw": "10.24(1)(a)",
+            "guidanceUrl": null,
+            "action": "Verify whether class 4.1.2A, 4.1.2B, 4.1.2C, or 4.1.2D substances are in a conforming secured storage area",
+            "records": "A record of the following: (a) the quantities of the substances: (b) the details of section 5 of AS/NZS 5026:2012",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 4,
+            "number": "4",
+            "regulationRefs": [
+              "10.24(2)(a)"
+            ],
+            "regulationRaw": "10.24(2)(a)",
+            "guidanceUrl": null,
+            "action": "Verify that class 4.1.2A, 4.1.2B, 4.1.2C, 4.1.2D, 4.1.2E, or 4.1.2F substances in packaging or containers are handled in accordance with regulations 10.5, 10.21, 10.22, 10.24(5), and 10.24(6)",
+            "records": "A record that— (a) lists the nature of the segregation; and (b) lists the ignition prevention measures; and (c) lists the temperature control measures; and (d) confirms the substances are not subject to impact or shock; and (e) confirms compliance with the friction limits",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 5,
+            "number": "5",
+            "regulationRefs": [
+              "10.24(2)(b)",
+              "10.24(3)"
+            ],
+            "regulationRaw": "10.24(2)(b) 10.24(3)",
+            "guidanceUrl": null,
+            "action": "Verify that the packaging or containers of class 4.1.2A, 4.1.2B, 4.1.2C, 4.1.2D, 4.1.2E, or 4.1.2F substances have a maximum capacity and thermal properties that will not cause or contribute to a fire or explosion",
+            "records": "A record that— (a) confirms packaging is compliant; and (b) confirms the thermal properties are compliant",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 6,
+            "number": "6",
+            "regulationRefs": [
+              "10.24(7)"
+            ],
+            "regulationRaw": "10.24(7)",
+            "guidanceUrl": null,
+            "action": "Verify that any class 4.1.2A substances are not: (a) more than 500g per package or container: (b) transported by sea, air, public road, or public railway",
+            "records": "A record of the following: (a) the quantity of class 4.1.2 substances: (b) confirmation of transportation compliance",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 7,
+            "number": "7",
+            "regulationRefs": [
+              "10.25(1)"
+            ],
+            "regulationRaw": "10.25(1)",
+            "guidanceUrl": null,
+            "action": "For class 3.2 and 4.1.3 substances, verify that— (a) the minimum concentration of desensitising agent has been determined; and (b) there are procedures to ensure the desensitising agent does not fall below 125% of the minimum concentration",
+            "records": "A record of the minimum concentration and the procedure",
+            "evidenceRequired": false
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "number": null,
+        "title": "Class 3.2 and 4 substances to be secured",
+        "items": [
+          {
+            "ordinal": 1,
+            "number": "1",
+            "regulationRefs": [
+              "10.4(1)"
+            ],
+            "regulationRaw": "10.4(1)",
+            "guidanceUrl": null,
+            "action": "Verify that the substances are present in quantities specified in Table 2 of Schedule 9 of the Regulations",
+            "records": "A record that identifies— (a) the hazardous substance location; and (b) the quantity of hazardous substances present",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 2,
+            "number": "2",
+            "regulationRefs": [
+              "10.4(1)(a)"
+            ],
+            "regulationRaw": "10.4(1)(a)",
+            "guidanceUrl": null,
+            "action": "Verify that class 4.1.2A, 4.1.2B, 4.1.2C, and 4.1.2D substances are secured to the standard prescribed in regulation 10.24(1)",
+            "records": "A record confirming compliance with the elements of section 5 of AS/NZS 5026:2012",
+            "evidenceRequired": false
+          },
+          {
+            "ordinal": 3,
+            "number": "3",
+            "regulationRefs": [
+              "10.4(1)(b)"
+            ],
+            "regulationRaw": "10.4(1)(b)",
+            "guidanceUrl": null,
+            "action": "Verify that for class 3.2 substances and all other class 4 substances, the hazardous substance location is secured from access by persons other than those permitted by the PCBU to access the substance",
+            "records": "A record that specifies the means by which the substances are secured",
+            "evidenceRequired": false
+          }
+        ]
+      }
+    ]
+  },
+  {
     "code": "wks17-class-5-1-1-and-5-1-2",
     "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
@@ -2414,7 +2669,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "title": "General location requirements",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
     "classScope": [],
-    "revision": 3,
+    "revision": 4,
     "status": "draft",
     "sheet": {
       "title": null,
@@ -2456,6 +2711,11 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
         "title": "Check sheet Location Class 5.1.1 and 5.1.2 substances",
         "banner": "General location requirements specific to class 5.1.1 and 5.1.2 substances",
         "declaration": null
+      },
+      "class_3_2_4": {
+        "title": "Check sheet Location Class 3.2 and 4 substances",
+        "banner": "Process and information requirements applying to certification of hazardous substance locations generally",
+        "declaration": "Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.36 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"
       }
     },
     "sections": [
@@ -2481,6 +2741,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_5_1": [
                 "12.17"
+              ],
+              "class_3_2_4": [
+                "10.36"
               ]
             },
             "regulationRaw": "10.34 10.36 12.17 12.42 13.38",
@@ -2519,6 +2782,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_5_1": [
                 "12.8(4)"
+              ],
+              "class_3_2_4": [
+                "10.26(2)"
               ]
             },
             "regulationRaw": "13.34(4)",
@@ -2875,6 +3141,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_5_1": [
                 "12.13"
+              ],
+              "class_3_2_4": [
+                "13.3"
               ]
             },
             "regulationRaw": "13.30",
@@ -2928,6 +3197,11 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
                 "13.33",
                 "17.100",
                 "17.101"
+              ],
+              "class_3_2_4": [
+                "10.31",
+                "10.32",
+                "10.33"
               ]
             },
             "regulationRaw": "10.31 10.32 10.33 12.14 12.15 12.16 12.39 12.40 12.41 13.31 13.32 13.33 17.100 17.101",
@@ -2957,6 +3231,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
                 "12.13",
                 "12.38",
                 "13.30"
+              ],
+              "class_3_2_4": [
+                "10.30"
               ]
             },
             "regulationRaw": "10.30 12.13 12.38 13.30",
@@ -2986,6 +3263,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
                 "12.13",
                 "12.38",
                 "13.30"
+              ],
+              "class_3_2_4": [
+                "10.30"
               ]
             },
             "regulationRaw": "10.30 12.13 12.38 13.30",
@@ -3040,6 +3320,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_5_1": [
                 "13.34(5)(b)"
+              ],
+              "class_3_2_4": [
+                "10.26(4)(b)"
               ]
             },
             "regulationRaw": "13.34(5)(b)",
@@ -3061,6 +3344,9 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
               ],
               "class_5_1": [
                 "13.34(5)(b)"
+              ],
+              "class_3_2_4": [
+                "10.26(4)(b)"
               ]
             },
             "regulationRaw": "13.34(5)(b)",

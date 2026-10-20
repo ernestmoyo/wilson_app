@@ -291,6 +291,7 @@ class FakeServer {
              {'key': '2_1_1_gases', 'label': 'Class 2.1.1 gases'},
              {'key': '3_1_cabinet', 'label': 'Class 3.1: packages in cabinets'},
            ]},
+          {'key': 'class_3_2_4', 'kind': 'location', 'name': 'Location: classes 3.2 and 4', 'templates': ['wks17-general', 'wks17-class-3-2-and-4'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 10.36'}},
           {'key': 'handler_6', 'kind': 'handler', 'name': 'Certified handler: class 6', 'templates': ['ch-class-6-handler-assessment'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 4.1'}},
           {'key': 'cylinder_fern', 'kind': 'cylinder', 'name': 'Cylinder importation: fire extinguishers (FERN)', 'templates': ['ci-cylinder-importation-fern'], 'authorised': true, 'authorisationEntry': {'regulation': 'Regulation 15.16'}},
         ],

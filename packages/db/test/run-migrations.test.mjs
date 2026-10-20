@@ -94,9 +94,9 @@ const itemId = (await db.query(`
 
 // ── the template layer actually loaded ─────────────────────────────────────
 console.log('\nTEMPLATE LAYER');
-await check('167 items seeded across 7 templates', async () => {
+await check('182 items seeded across 8 templates', async () => {
   const r = await db.query('SELECT count(*)::int AS n FROM checksheet_item');
-  if (r.rows[0].n !== 167) throw new Error(`expected 167 items, got ${r.rows[0].n}`);
+  if (r.rows[0].n !== 182) throw new Error(`expected 182 items, got ${r.rows[0].n}`);
 });
 
 await check('class-conditional regulation refs survived the seed', async () => {
