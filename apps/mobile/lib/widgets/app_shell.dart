@@ -224,7 +224,8 @@ class _Rail extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(Radii.md),
                       child: Image.asset(
-                        'assets/brand/icon-teal.png',
+                        // The white tile with the black mark: the teal one vanishes on the teal rail.
+                        'assets/brand/icon.png',
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,
