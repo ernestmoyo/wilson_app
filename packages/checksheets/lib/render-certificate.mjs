@@ -41,7 +41,7 @@ export const COMPANY = {
   address: '1 Matakohe Road, Westgate, Auckland, New Zealand',
   email: 'compliancecertifier@assuresafety.co.nz',
   website: 'www.assuresafety.co.nz',
-  phone: '+64 21 204 8493',
+  phone: '020 476 4841',
 };
 
 const ICON = {

@@ -8,7 +8,7 @@ class CompanyInfo {
   static const address = '1 Matakohe Road, Westgate, Auckland, New Zealand';
   static const email = 'compliancecertifier@assuresafety.co.nz';
   static const website = 'www.assuresafety.co.nz';
-  static const phone = '+64 21 204 8493';
+  static const phone = '020 476 4841';
 }
 
 class CompanyDetails extends StatelessWidget {

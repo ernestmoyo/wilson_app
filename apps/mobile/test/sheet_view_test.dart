@@ -54,7 +54,7 @@ void main() {
       expect(find.text('Evidence Portfolio'), findsWidgets); // source spelt it "Portifolio"; corrected + logged
       // The letterhead's contact block is text, not the pasted bitmap.
       expect(find.text('compliancecertifier@assuresafety.co.nz'), findsOneWidget);
-      expect(find.text('+64 21 204 8493'), findsOneWidget);
+      expect(find.text('020 476 4841'), findsOneWidget);
 
       // Rows 2–14 fold behind a one-line summary so the checklist starts on
       // the first screen; open them, then check every label in the sheet's words.
