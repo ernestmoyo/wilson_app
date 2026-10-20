@@ -44,7 +44,7 @@ function sheetForClass(meta, classKey) {
   if (!over) return base;
   return { ...base, ...Object.fromEntries(Object.entries(over).filter(([, v]) => v != null)) };
 }
-function regulationForClass(item, classKey) {
+export function regulationForClass(item, classKey) {
   const over = classKey ? item.regulation_refs_by_class?.[classKey] : null;
   return Array.isArray(over) && over.length ? over.join(' ') : item.regulation_raw;
 }

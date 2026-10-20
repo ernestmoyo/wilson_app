@@ -18,7 +18,7 @@ import { canDecide, canRecord } from './roles.mjs';
 import { mailConfigured, sendMail } from './mail.mjs';
 import { randomUUID } from 'crypto';
 import { setAuthorised, validateChoices } from './scope.mjs';
-import { checksheetPdf } from './export/checksheet-pdf.mjs';
+import { checksheetPdf, regulationForClass } from './export/checksheet-pdf.mjs';
 import { buildBundleZip, bundleFileName, contentDisposition, exportKey, exportStore } from './export/bundle.mjs';
 import { safeFileName } from './export/naming.mjs';
 
@@ -26,7 +26,7 @@ import { safeFileName } from './export/naming.mjs';
 const renderMod = await import(
   pathToFileURL(assetPath('lib/render-certificate.mjs', 'packages/checksheets/lib/render-certificate.mjs')).href
 );
-const { renderCertificateHtml, CERTIFICATE_DEFAULTS } = renderMod;
+const { renderCertificateHtml, CERTIFICATE_DEFAULTS, locationWording } = renderMod;
 const reportMod = await import(
   pathToFileURL(assetPath('lib/render-report.mjs', 'packages/checksheets/lib/render-report.mjs')).href
 );
@@ -669,7 +669,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                        captured_by_name, captured_by_occupation, captured_at, captured_where, retain_until
                 FROM evidence WHERE job_id = $1 ORDER BY created_at`, [id]),
       db.query(`SELECT id, decision, register_number, certificate_number, issue_date, in_force_date,
-                       expiry_date, conditions, requirements_not_met, worksafe_register_due
+                       expiry_date, conditions, conditions_due, requirements_not_met, worksafe_register_due
                 FROM certificate WHERE job_id = $1`, [id]),
       db.query(`SELECT trigger, retain_until FROM retention_clock WHERE job_id = $1`, [id]),
       db.query(`SELECT from_stage, to_stage, occurred_at, actor_id, reason
@@ -763,6 +763,29 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
    * the app's "Can grant / Cannot grant" pill server-authoritative rather than
    * a local guess — the same PL/pgSQL that will block the real transition.
    */
+  /**
+   * Open non-compliances as the lines of "requirements not met":
+   * "General 4.4 (reg 2.6(3)): <reason>", with the regulation the job's class
+   * cites for that item.
+   */
+  async function openRequirements(jobId) {
+    const r = await db.query(`
+      SELECT j.class_key, t.code, cs.ordinal AS s, ci.ordinal AS i, COALESCE(ci.number, ci.ordinal::text) AS number,
+             cs.number AS section_number, ci.regulation_raw, ci.regulation_refs_by_class, f.failure_reason, f.comment
+      FROM finding_in_scope f JOIN inspection ins ON ins.id = f.inspection_id JOIN job j ON j.id = ins.job_id
+      JOIN checksheet_item ci ON ci.id = f.item_id JOIN checksheet_section cs ON cs.id = ci.section_id
+      JOIN checksheet_template t ON t.id = cs.template_id
+      LEFT JOIN corrective_action ca ON ca.finding_id = f.id
+      WHERE ins.job_id = $1 AND f.status = 'non_compliant' AND (ca.id IS NULL OR ca.status <> 'verified')
+      ORDER BY t.code <> 'wks17-general', t.code, cs.ordinal, ci.ordinal`, [jobId]);
+    return r.rows.map((x) => {
+      const sheet = x.code.endsWith('-general') ? 'General' : 'Class sheet';
+      const reg = regulationForClass(x, x.class_key);
+      const why = x.failure_reason || x.comment || 'not met';
+      return `${sheet} ${x.s}.${x.i}${reg ? ` (reg ${reg})` : ''}: ${why}`;
+    });
+  }
+
   /** Non-compliant findings with no verified corrective action. */
   async function unresolvedNonCompliances(jobId) {
     const nc = await db.query(`
@@ -835,19 +858,38 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
         });
       }
     }
+    // Reg 6.24(2): a conditional certificate states the date its conditions
+    // must be met by, no more than 3 months after issue (and Tatenda, 20 Oct
+    // 2026: "it must clearly state the deadline").
+    if (b.decision === 'conditional') {
+      const due = /^\d{4}-\d{2}-\d{2}$/.test(b.conditionsDue ?? '') ? new Date(`${b.conditionsDue}T00:00:00Z`) : null;
+      const issued = new Date(`${String(b.issueDate ?? '').slice(0, 10)}T00:00:00Z`);
+      const limit = new Date(issued); limit.setUTCMonth(limit.getUTCMonth() + 3);
+      if (!due || Number.isNaN(due.getTime())) {
+        return res.status(422).json({ error: 'a conditional certificate needs the date its conditions must be met by', clause: 'reg 6.24(2)' });
+      }
+      if (due < issued || due > limit) {
+        return res.status(422).json({ error: `the conditions must be met within 3 months of issue (by ${limit.toISOString().slice(0, 10)} at the latest)`, clause: 'reg 6.24(2)' });
+      }
+    }
+    // What was not met, frozen with the decision: every open non-compliance,
+    // by sheet item and the regulation the job's class cites, with its reason.
+    let notMet = Array.isArray(b.requirementsNotMet) ? b.requirementsNotMet.filter(Boolean) : [];
+    if (b.decision !== 'granted' && !notMet.length) notMet = await openRequirements(id);
     const out = await db.withTx(async (tx) => {
       await tx.query(`UPDATE job SET stage = 'certificate_issued' WHERE id = $1`, [id]);
       const r = await tx.query(
         `INSERT INTO certificate
            (job_id, inspection_id, decision, register_number, certificate_number, certifier_id,
             issued_to, applies_to, issue_date, in_force_date, expiry_date, details,
-            requirements_not_met, conditions, signed_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+            requirements_not_met, conditions, signed_at, conditions_due)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
          RETURNING id, worksafe_register_due`,
         [id, b.inspectionId ?? null, b.decision, b.registerNumber ?? null, b.certificateNumber ?? null,
          req.ctx.userId ?? b.certifierId ?? null, b.issuedTo, b.appliesTo, b.issueDate,
          b.inForceDate ?? b.issueDate, b.expiryDate ?? null, b.details ?? null,
-         b.requirementsNotMet ?? [], b.conditions ?? [], b.signedAt ?? new Date().toISOString()]);
+         notMet, b.conditions ?? [], b.signedAt ?? new Date().toISOString(),
+         b.decision === 'conditional' ? b.conditionsDue : null]);
       // The trigger writes the stage move; name who made it.
       await tx.query(
         `UPDATE job_stage_transition SET actor_id = $2
@@ -868,6 +910,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // The certificate stops being a separately-typed document.
   async function fetchCertificateHtml(id) {
     const jk = await db.query(`SELECT class_key, subject FROM job WHERE id = $1`, [id]);
+    const classKey = jk.rows[0]?.class_key;
     if (!jk.rows.length) return null;
     if (kindFor(jk.rows[0].class_key) !== 'location') return fetchFormCertificateHtml(id, jk.rows[0]);
     const r = await db.query(`
@@ -908,7 +951,11 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       requirementsNotMet: row.requirements_not_met ?? [],
       conditions: row.conditions ?? [],
       decision: row.decision,
+      conditionsDue: d(row.conditions_due),
       issueDate: d(row.issue_date), inForceDate: d(row.in_force_date), expiryDate: d(row.expiry_date),
+      // Title and sentences from the decision and the class, never the
+      // class 6/8 defaults for everything (20 Oct 2026).
+      ...locationWording({ decision: row.decision, classKey, conditionsDue: d(row.conditions_due) }),
     };
     let signatureDataUrl = null;
     const sigPath = assetPath('signature.png', 'packages/checksheets/data/certificates/g2-chiller/signature.png');

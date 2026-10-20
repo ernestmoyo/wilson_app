@@ -192,7 +192,7 @@ await step('granted needs every non-compliance closed; conditional does not; a m
   expect(Math.abs(new Date(moved.occurred_at) - new Date(backdated)) < 1000, `transition kept its date: ${moved.occurred_at}`);
   const granted = await api.post(`/api/jobs/${E.jobId}/certificate`).set(cert).send({ inspectionId: insp, decision: 'granted', certificateNumber: 'TST100250-E', issuedTo: 'x', appliesTo: 'x', issueDate: '2026-09-11' });
   expect(granted.status === 422 && /reg 13.39/.test(granted.text), `granted over open NC: ${granted.status} ${granted.text}`);
-  const cond = await api.post(`/api/jobs/${E.jobId}/certificate`).set(cert).send({ inspectionId: insp, decision: 'conditional', conditions: ['Close the finding within 30 days'], certificateNumber: 'TST100250-E', issuedTo: 'x', appliesTo: 'x', issueDate: '2026-09-11' });
+  const cond = await api.post(`/api/jobs/${E.jobId}/certificate`).set(cert).send({ inspectionId: insp, decision: 'conditional', conditions: ['Close the finding within 30 days'], conditionsDue: '2026-10-11', certificateNumber: 'TST100250-E', issuedTo: 'x', appliesTo: 'x', issueDate: '2026-09-11' });
   expect(cond.status === 201, `conditional: ${cond.status} ${cond.text}`);
   // Every real set is now authorised (Appendix A), so the refusal is proved on
   // temporary sets: one with no register entry, one whose choices are not all

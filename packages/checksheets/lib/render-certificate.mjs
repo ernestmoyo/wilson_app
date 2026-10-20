@@ -83,9 +83,17 @@ export function renderCertificateHtml(cert, { signatureDataUrl = null, letterhea
     )
     .join('');
 
-  const notMet = cert.requirementsNotMet?.length ? cert.requirementsNotMet.join('; ') : 'None';
-  const conditionsBlock = cert.conditions?.length
-    ? `<div class="cell span-4 bl br bt bb bold">Conditions: ${cert.conditions.map(esc).join('; ')}</div>`
+  const refused = cert.decision === 'refused';
+  const conditional = cert.decision === 'conditional';
+  // "None" only where nothing was found: never on a conditional certificate
+  // or a refusal, which exist because something was not met.
+  const notMetList = cert.requirementsNotMet ?? [];
+  const notMet = notMetList.length
+    ? notMetList.map(esc).join('<br>')
+    : (refused || conditional ? '' : 'None');
+  const notMetLabel = refused ? 'Requirements not met (the reasons for refusal):' : 'Location Requirements Not Met:';
+  const conditionsBlock = cert.conditions?.length || (conditional && cert.conditionsDue)
+    ? `<div class="cell span-4 bl br bt bb bold">Conditions${cert.conditionsDue ? ` (to be met by ${nzDate(cert.conditionsDue)})` : ''}: ${(cert.conditions ?? []).map(esc).join('; ')}</div>`
     : '';
   const issuerStatement = (cert.issuerStatement || '').replace('{certifier}', cert.certifier.fullName || '');
 
@@ -177,22 +185,20 @@ ${substanceRows}
 
     <div class="cell span-4 bl br spacer"></div>
     <div class="cell span-4 bl br bt bb bold details">${esc(cert.detailsOfCertification)}</div>
-    <div class="cell span-4 bl br bb bold notmet">Location Requirements Not Met: ${esc(notMet)}</div>
+    <div class="cell span-4 bl br bb bold notmet">${notMetLabel} ${notMet}</div>
 ${conditionsBlock}
 
     <div class="cell col-b bl sig-block">
       ${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Signature of ${esc(cert.certifier.fullName)}">` : ''}
     </div>
     <div class="cell col-c"></div>
-    <div class="cell col-d">
-      <div>Date Issued:</div>
-      <div>Date comes into force:</div>
-      <div>Expiry Date:</div>
+    <div class="cell col-d">${refused
+      ? '<div>Date of refusal:</div>'
+      : '<div>Date Issued:</div><div>Date comes into force:</div><div>Expiry Date:</div>'}
     </div>
-    <div class="cell col-e br center">
-      <div>${nzDate(cert.issueDate)}</div>
-      <div>${nzDate(cert.inForceDate)}</div>
-      <div>${nzDate(cert.expiryDate)}</div>
+    <div class="cell col-e br center">${refused
+      ? `<div>${nzDate(cert.issueDate)}</div>`
+      : `<div>${nzDate(cert.issueDate)}</div><div>${nzDate(cert.inForceDate)}</div><div>${nzDate(cert.expiryDate)}</div>`}
     </div>
 
     <div class="cell col-b bl">Signature:</div>
@@ -218,6 +224,47 @@ ${conditionsBlock}
 </body>
 </html>
 `;
+}
+
+/**
+ * The regulation under which a location compliance certificate is issued,
+ * by sheet set (LCC PS cl 18; docs/20261019/REGULATORY_ALIGNMENT.md row 1).
+ */
+export const CLASS_REGULATION = {
+  class_2_3: '10.34',
+  class_5_1: '12.17',
+  class_6_8: '13.38',
+};
+
+const ACT = 'of the Health and Safety at Work (Hazardous Substances) Regulations 2017';
+
+/**
+ * The fixed sentences of a location certificate, from the decision and the
+ * class (20 Oct 2026). A refusal is a notice of refusal (reg 6.23(2)), never
+ * a certificate; a conditional certificate is issued under reg 6.24, "with the
+ * exception of" what was not met, and states the date it must be met by.
+ */
+export function locationWording({ decision, classKey, conditionsDue = null }) {
+  const reg = CLASS_REGULATION[classKey] ?? '13.38';
+  if (decision === 'refused') {
+    return {
+      documentTitle: 'NOTICE OF REFUSAL TO ISSUE A LOCATION COMPLIANCE CERTIFICATE',
+      issuedUnder: `Given under regulation 6.23(2) ${ACT}`,
+      certifiesThat: `A location compliance certificate under regulation ${reg} has not been issued, because the requirements set out below have not been met`,
+    };
+  }
+  if (decision === 'conditional') {
+    return {
+      documentTitle: 'COMPLIANCE CERTIFICATE Location (conditional)',
+      issuedUnder: `Issued in accordance with regulation 6.24 and regulation ${reg} ${ACT}`,
+      certifiesThat: `This certificate certifies that the requirements prescribed in regulation ${reg} for a location compliance certificate have been met, with the exception of the requirements set out below, which must be met by ${nzDate(conditionsDue) || '[date not set]'}`,
+    };
+  }
+  return {
+    documentTitle: 'COMPLIANCE CERTIFICATE Location',
+    issuedUnder: `Issued in accordance with regulation 6.23 and regulation ${reg} ${ACT}`,
+    certifiesThat: `This certificate certifies that the requirements prescribed in regulation ${reg} for a location compliance certificate have been met`,
+  };
 }
 
 /** Defaults for the fixed wording, so a certificate built from findings needs only the facts. */

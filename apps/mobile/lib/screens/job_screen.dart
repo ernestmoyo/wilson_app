@@ -1272,6 +1272,7 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
           KeyValueRow('In force', _d(c.inForceDate)),
           KeyValueRow('Expiry', _d(c.expiryDate)),
           if (c.conditions.isNotEmpty) KeyValueRow('Conditions', c.conditions.join('; ')),
+          if (c.conditionsDue != null) KeyValueRow('Conditions to be met by', _d(c.conditionsDue)),
           if (c.requirementsNotMet.isNotEmpty) KeyValueRow('Requirements not met', c.requirementsNotMet.join('; ')),
           KeyValueRow('WorkSafe register due', _d(c.worksafeRegisterDue)),
           KeyValueRow('Retain records until', _d(j.retainUntil)),
@@ -1291,6 +1292,10 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
     var decision = _check?.canGrant == true ? 'granted' : 'conditional';
     var issueDate = DateTime(today.year, today.month, today.day);
     var expiry = DateTime(today.year + 1, today.month, today.day);
+    // Reg 6.24(2): the conditions are met within 3 months of issue. Offered at
+    // the latest date allowed; Bryan can bring it forward.
+    DateTime latestDue(DateTime issued) => DateTime(issued.year, issued.month + 3, issued.day);
+    var conditionsDue = latestDue(issueDate);
     final number = TextEditingController(text: '${CurrentUser.authorisationNumber}-${today.year}-${j.id.toString().padLeft(4, '0')}');
     final issuedTo = TextEditingController(
         text: '${j.subject['Name'] ?? j.subject['Full Name of PCBU'] ?? j.clientName}');
@@ -1354,7 +1359,12 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
                     key: const ValueKey('issue-date'),
                     onPressed: () async {
                       final d = await pick(ctx, issueDate, 'Issue date');
-                      if (d != null) setD(() => issueDate = d);
+                      if (d != null) {
+                        setD(() {
+                          issueDate = d;
+                          if (conditionsDue.isAfter(latestDue(d)) || conditionsDue.isBefore(d)) conditionsDue = latestDue(d);
+                        });
+                      }
                     },
                     icon: const Icon(Icons.event_outlined, size: 18),
                     label: Text('Issued ${_d(issueDate)}'),
@@ -1368,7 +1378,33 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
                     icon: const Icon(Icons.event_busy_outlined, size: 18),
                     label: Text('Expires ${_d(expiry)}'),
                   ),
+                  if (decision == 'conditional')
+                    OutlinedButton.icon(
+                      key: const ValueKey('conditions-due'),
+                      onPressed: () async {
+                        final d = await showDatePicker(
+                          context: ctx,
+                          initialDate: conditionsDue,
+                          firstDate: issueDate,
+                          lastDate: latestDue(issueDate),
+                          helpText: 'Conditions met by (within 3 months, reg 6.24)',
+                        );
+                        if (d != null) setD(() => conditionsDue = d);
+                      },
+                      icon: const Icon(Icons.flag_outlined, size: 18),
+                      label: Text('Conditions met by ${_d(conditionsDue)}'),
+                    ),
                 ]),
+                if (decision != 'granted')
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.sm),
+                    child: Text(
+                      decision == 'refused'
+                          ? 'A refusal produces a notice of refusal, not a certificate. Left blank, the open non-compliances are listed as the reasons.'
+                          : 'The certificate states this date. Left blank, the open non-compliances are listed as the requirements not met.',
+                      style: Theme.of(ctx).textTheme.bodySmall,
+                    ),
+                  ),
               ]),
             ),
           ),
@@ -1398,6 +1434,7 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
         'issueDate': _iso(issueDate),
         'expiryDate': _iso(expiry),
         if (decision == 'conditional') 'conditions': list,
+        if (decision == 'conditional') 'conditionsDue': _iso(conditionsDue),
         if (decision == 'refused') 'requirementsNotMet': list,
       });
       await _reload();

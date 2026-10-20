@@ -522,7 +522,7 @@ async function g2Evidence(jobId, inspectionId) {
     raise: { findingId: f.id, severity: 'minor', description: `Close ${f.template_code} ${f.section_ordinal}/${f.item_ordinal}`, dueDate: '2026-03-15' } }));
   const cr = await finish(j.jobId, inspectionId, {
     decision: 'conditional', cas,
-    cert: { certificateNumber: 'TST100250-26-ABC-01', issuedTo: 'Site manager', appliesTo: spec.site.address, issueDate: '2026-01-30', expiryDate: '2027-01-30', conditions },
+    cert: { certificateNumber: 'TST100250-26-ABC-01', issuedTo: 'Site manager', appliesTo: spec.site.address, issueDate: '2026-01-30', expiryDate: '2027-01-30', conditionsDue: '2026-04-30', conditions },
   });
   const x = await exportsFor('job3-abecca-conditional', j.jobId);
   const job = (await call('GET', `/api/jobs/${j.jobId}`)).json;

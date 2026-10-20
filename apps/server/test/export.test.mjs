@@ -248,7 +248,7 @@ await step('with a certificate issued, the bundle carries it and the PDF prints 
     ['job.transition', { jobId, toStage: 'final_validation' }],
   ]);
   const c = await api.post(`/api/jobs/${jobId}/certificate`).set(cert.h).send({
-    decision: 'conditional', inspectionId, certificateNumber: 'TST100250-EXPORT-1', issuedTo: CLIENT, appliesTo: 'G2 Chiller', issueDate: '2026-10-15',
+    decision: 'conditional', inspectionId, certificateNumber: 'TST100250-EXPORT-1', issuedTo: CLIENT, appliesTo: 'G2 Chiller', issueDate: '2026-10-15', conditionsDue: '2027-01-15',
     expiryDate: '2027-10-15', conditions: ['Spill kit to be installed at the store entrance within 20 working days'],
   });
   expect(c.status === 201, `certificate: ${c.status} ${c.text}`);

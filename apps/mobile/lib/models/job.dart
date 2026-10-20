@@ -308,6 +308,8 @@ class JobCertificate {
   final List<String> conditions;
   final List<String> requirementsNotMet;
   final DateTime? worksafeRegisterDue;
+  /// A conditional certificate's deadline for its conditions (reg 6.24(2)).
+  final DateTime? conditionsDue;
   const JobCertificate({
     required this.id,
     required this.decision,
@@ -319,6 +321,7 @@ class JobCertificate {
     this.conditions = const [],
     this.requirementsNotMet = const [],
     this.worksafeRegisterDue,
+    this.conditionsDue,
   });
 }
 
@@ -498,6 +501,7 @@ class JobRecord {
               conditions: _strings(cert['conditions']),
               requirementsNotMet: _strings(cert['requirements_not_met']),
               worksafeRegisterDue: _d(cert['worksafe_register_due']),
+              conditionsDue: _d(cert['conditions_due']),
             ),
       retainUntil: _d(ret?['retain_until']),
     );

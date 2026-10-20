@@ -68,6 +68,23 @@ void main() {
     expect(find.byKey(const ValueKey('issue-certificate')), findsNothing);
   });
 
+  testWidgets('a conditional certificate carries the date its conditions must be met by (reg 6.24(2))', (t) async {
+    await pump(t);
+    await t.tap(find.byKey(const ValueKey('issue-certificate')));
+    await t.pumpAndSettle();
+    // Conditional is the default while non-compliances are open; the deadline
+    // is offered, set to the latest the regulation allows.
+    expect(find.byKey(const ValueKey('conditions-due')), findsOneWidget);
+    expect(find.textContaining('Conditions met by'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('issue-confirm')));
+    await t.pumpAndSettle();
+    final body = server.issued.single;
+    final issued = DateTime.parse(body['issueDate'] as String);
+    final due = DateTime.parse(body['conditionsDue'] as String);
+    expect(due.isAfter(issued), isTrue);
+    expect(due.isAfter(DateTime(issued.year, issued.month + 3, issued.day)), isFalse, reason: 'no more than 3 months');
+  });
+
   testWidgets('the process card is a task list: Done, Now, Not started', (t) async {
     await pump(t);
     for (final n in [1, 2, 3, 4, 5]) {
