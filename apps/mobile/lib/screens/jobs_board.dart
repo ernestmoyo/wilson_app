@@ -9,9 +9,14 @@ import '../sync/api_client.dart';
 import '../sync/outbox.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/job_context_bar.dart';
 import '../widgets/ui.dart';
+
+// Sign-out's guard moved to the shell with the Sign out button; kept
+// importable from here.
+export '../widgets/app_shell.dart' show confirmSignOut;
 
 /// The landing: Brian's active clients. One row per client (grouped by the
 /// client's id, so two clients that share a name stay two), its open jobs
@@ -24,19 +29,64 @@ class JobsBoard extends StatefulWidget {
   final SyncService sync;
   final Session session;
   final Future<void> Function() onSignOut;
+
+  /// 'clients' (By client) or 'jobs' (All jobs); the app keeps the choice
+  /// while it is open.
+  final String initialView;
+  final ValueChanged<String>? onViewChanged;
   const JobsBoard({
     super.key,
     required this.api,
     required this.sync,
     required this.session,
     required this.onSignOut,
+    this.initialView = 'clients',
+    this.onViewChanged,
   });
+
+  /// "Good morning" until noon, "Good afternoon" until five, then evening.
+  static String greeting(DateTime now) => now.hour >= 5 && now.hour < 12
+      ? 'Good morning'
+      : now.hour >= 12 && now.hour < 17
+          ? 'Good afternoon'
+          : 'Good evening';
+
+  static const _months = [
+    'January', 'February', 'March', 'April', 'May', 'June', //
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  /// "20 October 2026".
+  static String longDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
 
   @override
   State<JobsBoard> createState() => _JobsBoardState();
 }
 
+/// Where an open job stands, for the All jobs filters and order: Bryan's
+/// move, the client's move, or certified and being looked after.
+enum _Bucket {
+  inProgress('in-progress', 'In progress'),
+  waiting('waiting', 'Waiting on client'),
+  issued('issued', 'Issued');
+
+  final String key;
+  final String label;
+  const _Bucket(this.key, this.label);
+
+  static _Bucket of(String stage) => switch (stage) {
+        'rfi' || 'gap_closure' => waiting,
+        'certificate_issued' || 'monitoring' => issued,
+        _ => inProgress,
+      };
+}
+
 class _JobsBoardState extends State<JobsBoard> {
+  late String _view = widget.initialView == 'jobs' ? 'jobs' : 'clients';
+
+  /// The All jobs filter: null for all.
+  _Bucket? _bucket;
+
   List<JobSummary>? _jobs;
   DashboardData? _dash;
   List<SheetSet>? _sets;
@@ -544,28 +594,21 @@ class _JobsBoardState extends State<JobsBoard> {
     // While searching, clients with nothing open are searched too.
     final shown = _filter(_showArchived ? archived : [...active, if (_showPast || searching) ...past]);
     final dash = _dash;
+    final openJobs = [for (final j in jobs ?? const <JobSummary>[]) if (_isOpen(j)) j];
+    // Archived clients are listed client by client whatever the view.
+    final byJob = _view == 'jobs' && !_showArchived;
     return Scaffold(
       appBar: BrandBar(
         title: 'Clients',
-        subtitle: [widget.session.fullName, if ((widget.session.authorisationNumber ?? '').isNotEmpty) widget.session.authorisationNumber!].join(' · '),
+        // On a phone the account button says who; the bar keeps to the title.
+        subtitle: shellIsCompact(context)
+            ? null
+            : [widget.session.fullName, if ((widget.session.authorisationNumber ?? '').isNotEmpty) widget.session.authorisationNumber!].join(' · '),
+        // People, the sync state and Sign out are the rail's (on a phone the
+        // bottom bar and the account button's); the bar keeps Refresh.
         actions: [
-          SyncIndicator(sync: widget.sync, onTap: _busy ? null : _reload),
-          if (widget.session.canManagePeople)
-            IconButton(
-              key: const ValueKey('to-people'),
-              tooltip: 'People',
-              icon: const Icon(Icons.people_outline),
-              onPressed: () => context.go('/people'),
-            ),
           IconButton(tooltip: 'Refresh', icon: const Icon(Icons.refresh), onPressed: _busy ? null : _reload),
-          IconButton(
-            key: const ValueKey('sign-out'),
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              if (await confirmSignOut(context, pending: widget.sync.pendingCount)) await widget.onSignOut();
-            },
-          ),
+          ...shellBarActions(context),
         ],
       ),
       body: RefreshIndicator(
@@ -573,12 +616,13 @@ class _JobsBoardState extends State<JobsBoard> {
         // A readable column on a desk screen; edge to edge on a phone.
         child: LayoutBuilder(
           builder: (context, box) {
-            final side = box.maxWidth > 992 ? (box.maxWidth - 960) / 2 : Space.lg;
+            final side = box.maxWidth > kReadable + 2 * Space.lg ? (box.maxWidth - kReadable) / 2 : Space.lg;
+            final narrow = box.maxWidth < 600;
             return ListView(
-              padding: EdgeInsets.fromLTRB(side, Space.lg, side, 48),
+              padding: EdgeInsets.fromLTRB(side, Space.xl, side, 48),
               children: [
-                _headerRow(_showArchived ? archived.length : active.length),
-                if ((jobs ?? const []).isNotEmpty || _showArchived) _searchField(),
+                _welcome(openJobs, dash),
+                _quickActions(openJobs, narrow: narrow),
                 if (_busy) const LinearProgressIndicator(minHeight: 2),
                 if (_error != null)
                   Notice(
@@ -586,21 +630,35 @@ class _JobsBoardState extends State<JobsBoard> {
                     icon: Icons.cloud_off_outlined,
                     action: TextButton(onPressed: _reload, child: const Text('Retry')),
                   ),
+                if (!_showArchived && dash != null && dash.reminders.isNotEmpty) _attention(dash),
+                _listHeader(
+                  _showArchived
+                      ? archived.length
+                      : byJob
+                          ? openJobs.length
+                          : active.length,
+                  byJob: byJob,
+                  narrow: narrow,
+                ),
+                if ((jobs ?? const []).isNotEmpty || _showArchived) _searchField(byJob: byJob),
                 if (_showArchived) ...[
                   if (_archivedJobs != null && archived.isEmpty)
                     const EmptyState(icon: Icons.inventory_2_outlined, title: 'No archived clients.'),
                 ] else ...[
-                  if (dash != null && dash.reminders.isNotEmpty && !searching) _attention(dash),
                   if (jobs != null && active.isEmpty && !searching) _empty(),
                 ],
-                if (searching && shown.isEmpty)
-                  EmptyState(
-                    icon: Icons.search_off,
-                    title: 'No clients match "${_query.trim()}"',
-                    message: 'Search looks at client names, trading names, locations and site addresses.',
-                  ),
-                for (final c in shown) _clientCard(c, archivedView: _showArchived, sharedName: shared.contains(c.name.trim().toLowerCase())),
-                _footer(past.length),
+                if (byJob) ...[
+                  if (openJobs.isNotEmpty || searching) _allJobs(openJobs),
+                ] else ...[
+                  if (searching && shown.isEmpty)
+                    EmptyState(
+                      icon: Icons.search_off,
+                      title: 'No clients match "${_query.trim()}"',
+                      message: 'Search looks at client names, trading names, locations and site addresses.',
+                    ),
+                  for (final c in shown) _clientCard(c, archivedView: _showArchived, sharedName: shared.contains(c.name.trim().toLowerCase())),
+                ],
+                _footer(byJob ? 0 : past.length),
                 if (!_showArchived && dash != null && dash.activity.isNotEmpty) _activity(dash),
               ],
             );
@@ -610,38 +668,217 @@ class _JobsBoardState extends State<JobsBoard> {
     );
   }
 
-  /// What is listed, and New job where the eye lands.
-  Widget _headerRow(int n) => Padding(
-        padding: const EdgeInsets.only(bottom: Space.md),
-        child: Row(children: [
-          Expanded(
-            child: Text(
-              _jobs == null
-                  ? 'Clients'
-                  : _showArchived
-                      ? 'Archived clients ($n)'
-                      : '$n active client${n == 1 ? '' : 's'}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-          if (_showArchived)
-            TextButton.icon(
-              key: const ValueKey('show-active'),
-              onPressed: _busy ? null : _toggleArchived,
-              icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Active clients'),
-            )
-          else if (widget.session.canRecord)
-            FilledButton.icon(
-              key: const ValueKey('new-job'),
-              onPressed: _busy ? null : _newJob,
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('New job'),
-            ),
-        ]),
-      );
+  void _setView(String v) {
+    if (v == _view) return;
+    setState(() => _view = v);
+    widget.onViewChanged?.call(v);
+  }
 
-  Widget _searchField() => Padding(
+  /// Good morning, the date, and one line of what is open.
+  Widget _welcome(List<JobSummary> open, DashboardData? dash) {
+    final t = Theme.of(context).textTheme;
+    final now = DateTime.now();
+    final first = widget.session.fullName.trim().split(RegExp(r'\s+')).first;
+    final attention = dash?.reminders.map((r) => r.jobId).toSet().length ?? 0;
+    final summary = _jobs == null
+        ? null
+        : [
+            open.isEmpty ? 'No active jobs' : '${open.length} active job${open.length == 1 ? '' : 's'}',
+            if (dash != null) attention == 0 ? 'nothing needs attention' : '$attention need${attention == 1 ? 's' : ''} attention',
+          ].join(' · ');
+    return Padding(
+      key: const ValueKey('welcome'),
+      padding: const EdgeInsets.only(bottom: Space.lg),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(JobsBoard.longDate(now), style: t.labelMedium?.copyWith(color: Neutral.muted)),
+        const SizedBox(height: Space.xs),
+        Text(first.isEmpty ? JobsBoard.greeting(now) : '${JobsBoard.greeting(now)}, $first', style: t.headlineSmall),
+        if (summary != null) ...[
+          const SizedBox(height: Space.xs),
+          Text(summary, style: t.bodyLarge?.copyWith(color: Neutral.body)),
+        ],
+      ]),
+    );
+  }
+
+  /// The open job worked on most recently that is still Bryan's move.
+  static JobSummary? _latest(List<JobSummary> open) {
+    JobSummary? best;
+    DateTime? bestAt;
+    for (final j in open) {
+      if (_Bucket.of(j.stage) != _Bucket.inProgress) continue;
+      final at = j.lastActivity ?? j.openedAt;
+      if (best == null || (at != null && (bestAt == null || at.isAfter(bestAt)))) {
+        best = j;
+        bestAt = at;
+      }
+    }
+    return best;
+  }
+
+  /// The next thing to do, as large targets: New job, pick up where he left
+  /// off, and for a peer reviewer the jobs waiting for review.
+  Widget _quickActions(List<JobSummary> open, {required bool narrow}) {
+    final latest = _latest(open);
+    final items = <Widget>[
+      if (widget.session.canRecord)
+        FilledButton.icon(
+          key: const ValueKey('new-job'),
+          style: FilledButton.styleFrom(minimumSize: const Size(160, kTouchLarge)),
+          onPressed: _busy ? null : _newJob,
+          icon: const Icon(Icons.add, size: 22),
+          label: const Text('New job'),
+        ),
+      if (latest != null)
+        _QuickCard(
+          key: const ValueKey('continue-job'),
+          icon: Icons.play_arrow_rounded,
+          title: 'Continue: ${latest.subjectLine}',
+          // Whose and where it stands; the job row below says the next step.
+          subtitle: '${latest.clientName} · ${ProcessStage.short(latest.stage)}',
+          onTap: _busy ? null : () => _open(latest.id),
+        ),
+      if (widget.session.isPeerReviewer)
+        _QuickCard(
+          key: const ValueKey('jobs-to-review'),
+          icon: Icons.rate_review_outlined,
+          title: 'Jobs to review',
+          subtitle: '${open.length} flagged for a reg 17.91 peer review',
+          onTap: () {
+            setState(() => _bucket = null);
+            _setView('jobs');
+          },
+        ),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.xl),
+      child: narrow
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: Space.md, children: items)
+          : Row(spacing: Space.md, children: [
+              for (final w in items) w is FilledButton ? w : Expanded(child: w),
+            ]),
+    );
+  }
+
+  /// What is listed, and how: By client or All jobs.
+  Widget _listHeader(int n, {required bool byJob, required bool narrow}) {
+    final title = Text(
+      _jobs == null
+          ? 'Clients'
+          : _showArchived
+              ? 'Archived clients ($n)'
+              : byJob
+                  ? '$n open job${n == 1 ? '' : 's'}'
+                  : '$n active client${n == 1 ? '' : 's'}',
+      style: Theme.of(context).textTheme.titleLarge,
+    );
+    final Widget? trailing = _showArchived
+        ? TextButton.icon(
+            key: const ValueKey('show-active'),
+            onPressed: _busy ? null : _toggleArchived,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Active clients'),
+          )
+        : (_jobs ?? const []).isEmpty
+            ? null
+            : SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                    value: 'clients',
+                    icon: Icon(Icons.business_outlined, size: 18),
+                    label: Text('By client', key: ValueKey('view-clients')),
+                  ),
+                  ButtonSegment(
+                    value: 'jobs',
+                    icon: Icon(Icons.view_list_outlined, size: 18),
+                    label: Text('All jobs', key: ValueKey('view-jobs')),
+                  ),
+                ],
+                selected: {_view},
+                onSelectionChanged: (s) => _setView(s.first),
+              );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.md),
+      child: narrow && trailing is SegmentedButton
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              title,
+              const SizedBox(height: Space.md),
+              trailing,
+            ])
+          : Row(children: [Expanded(child: title), ?trailing]),
+    );
+  }
+
+  /// Every open job in one list, Bryan's move first, then the client's,
+  /// then certified work; latest activity first within each.
+  Widget _allJobs(List<JobSummary> open) {
+    final t = Theme.of(context).textTheme;
+    final q = _query.trim().toLowerCase();
+    bool has(String? s) => (s ?? '').toLowerCase().contains(q);
+    final matching = q.isEmpty
+        ? open
+        : open.where((j) => has(j.clientName) || has(j.tradingName) || has(j.locationName) || has(j.subjectLine) || has(j.address)).toList();
+    final counts = {for (final b in _Bucket.values) b: matching.where((j) => _Bucket.of(j.stage) == b).length};
+    final shown = [for (final j in matching) if (_bucket == null || _Bucket.of(j.stage) == _bucket) j]
+      ..sort((a, b) {
+        final byBucket = _Bucket.of(a.stage).index.compareTo(_Bucket.of(b.stage).index);
+        if (byBucket != 0) return byBucket;
+        final at = a.lastActivity ?? a.openedAt, bt = b.lastActivity ?? b.openedAt;
+        if (at == null || bt == null) return at == null ? (bt == null ? 0 : 1) : -1;
+        return bt.compareTo(at);
+      });
+    Widget chip(String key, String label, int n, bool selected, VoidCallback onTap) => ChoiceChip(
+          key: ValueKey('stage-filter-$key'),
+          label: Text('$label  $n'),
+          selected: selected,
+          showCheckmark: false,
+          onSelected: (_) => onTap(),
+        );
+    return Column(key: const ValueKey('all-jobs'), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Wrap(spacing: Space.sm, runSpacing: Space.sm, children: [
+        chip('all', 'All', matching.length, _bucket == null, () => setState(() => _bucket = null)),
+        for (final b in _Bucket.values) chip(b.key, b.label, counts[b]!, _bucket == b, () => setState(() => _bucket = b)),
+      ]),
+      const SizedBox(height: Space.md),
+      if (shown.isEmpty)
+        EmptyState(
+          icon: q.isNotEmpty ? Icons.search_off : Icons.inbox_outlined,
+          title: q.isNotEmpty
+              ? 'No jobs match "${_query.trim()}"'
+              : switch (_bucket) {
+                  _Bucket.waiting => 'Nothing waiting on a client',
+                  _Bucket.issued => 'No certified jobs being looked after',
+                  _ => 'No jobs in progress',
+                },
+          message: q.isNotEmpty ? 'Search looks at client names, trading names, locations and site addresses.' : null,
+        )
+      else
+        Container(
+          margin: const EdgeInsets.only(bottom: Space.md),
+          padding: const EdgeInsets.fromLTRB(Space.lg, Space.xs, Space.xs, Space.xs),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(Radii.md),
+            border: Border.all(color: Neutral.line),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            for (var i = 0; i < shown.length; i++) ...[
+              if (i > 0) const Divider(),
+              _jobLine(shown[i], showClient: true),
+            ],
+          ]),
+        ),
+      if (shown.isNotEmpty && _bucket == null && q.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(left: Space.xs, bottom: Space.sm),
+          child: Text('In progress first, then waiting on the client, then issued; latest activity first.', style: t.bodySmall),
+        ),
+    ]);
+  }
+
+  Widget _searchField({bool byJob = false}) => Padding(
         padding: const EdgeInsets.only(bottom: Space.md),
         child: TextField(
           key: const ValueKey('board-search'),
@@ -650,7 +887,7 @@ class _JobsBoardState extends State<JobsBoard> {
           textInputAction: TextInputAction.search,
           style: Theme.of(context).textTheme.bodyLarge,
           decoration: InputDecoration(
-            hintText: 'Search clients, sites and locations',
+            hintText: byJob ? 'Search jobs by client, site or location' : 'Search clients, sites and locations',
             prefixIcon: const Icon(Icons.search, color: Neutral.muted),
             suffixIcon: _query.isEmpty
                 ? null
@@ -1022,7 +1259,10 @@ class _JobsBoardState extends State<JobsBoard> {
     ]);
   }
 
-  Widget _jobLine(JobSummary j) {
+  /// One job: what and where, its stage and next step, how far along.
+  /// [showClient] names the client above it (All jobs, where no client
+  /// card says whose it is).
+  Widget _jobLine(JobSummary j, {bool showClient = false}) {
     final t = Theme.of(context).textTheme;
     final hasInspection = j.itemTotal > 0;
     final cls = _classLabel(j);
@@ -1042,6 +1282,8 @@ class _JobsBoardState extends State<JobsBoard> {
       ),
     );
     final what = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      if (showClient)
+        Text(j.clientName, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.labelMedium?.copyWith(color: Neutral.muted)),
       Text(j.subjectLine, style: t.titleSmall),
       if (detail.isNotEmpty) Text(detail, style: t.bodySmall),
     ]);
@@ -1090,6 +1332,59 @@ class _JobsBoardState extends State<JobsBoard> {
   }
 }
 
+/// A large quick action on the landing: icon, what it does, and one line of
+/// what it will open.
+class _QuickCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  const _QuickCard({super.key, required this.icon, required this.title, required this.subtitle, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: '$title. $subtitle',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.md),
+          side: const BorderSide(color: Neutral.line),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Radii.md),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: kTouchLarge),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.sm),
+              child: Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(color: Neutral.tint, borderRadius: BorderRadius.circular(Radii.sm)),
+                  child: Icon(icon, color: Brand.ribbon),
+                ),
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                    Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.titleSmall?.copyWith(fontSize: 15)),
+                    Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: t.bodySmall),
+                  ]),
+                ),
+                const Icon(Icons.chevron_right, size: 20, color: Neutral.faint),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// A client as the board shows it: the jobs the server listed under its id.
 class _ClientGroup {
   final int? id;
@@ -1099,35 +1394,3 @@ class _ClientGroup {
   _ClientGroup({required this.id, required this.name, this.trading});
 }
 
-/// Signing out drops whatever has not reached the server (it is never sent
-/// under the next person's sign-in), so say so first (UX change graph F1).
-/// True to go ahead.
-Future<bool> confirmSignOut(BuildContext context, {required int pending}) async {
-  if (pending <= 0) return true;
-  final go = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      icon: Icon(Icons.cloud_off_outlined, color: Tone.warn.fg),
-      title: const Text('Changes not saved yet'),
-      content: Text(
-        '$pending ${pending == 1 ? 'change has' : 'changes have'} not reached the server. '
-        'Signing out now throws ${pending == 1 ? 'it' : 'them'} away. '
-        'Stay signed in until the status shows "All saved".',
-      ),
-      actions: [
-        TextButton(
-          key: const ValueKey('sign-out-anyway'),
-          style: TextButton.styleFrom(foregroundColor: Tone.bad.fg),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Sign out anyway'),
-        ),
-        FilledButton(
-          key: const ValueKey('sign-out-stay'),
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Stay signed in'),
-        ),
-      ],
-    ),
-  );
-  return go ?? false;
-}

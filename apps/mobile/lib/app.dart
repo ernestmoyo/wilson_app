@@ -16,6 +16,7 @@ import 'sync/outbox.dart';
 import 'sync/prefs_outbox_store.dart';
 import 'sync/sync_service.dart';
 import 'theme.dart';
+import 'widgets/app_shell.dart';
 import 'widgets/ui.dart';
 
 /// Where the server is. Built in with --dart-define=API_BASE=…; when absent
@@ -44,6 +45,9 @@ class AppSession extends ChangeNotifier {
   /// Inspections already opened this run, by job, so going back and forward
   /// between the hub and the sheet does not re-open them.
   final Map<int, Inspection> inspections = {};
+
+  /// The landing's view ('clients' or 'jobs'), kept while the app is open.
+  String boardView = 'clients';
 
   AppSession({SessionStore? store, ApiClient? api, OutboxStore? outboxStore})
       : store = store ?? PrefsSessionStore(),
@@ -84,6 +88,7 @@ class AppSession extends ChangeNotifier {
     await api.logout();
     await store.clear();
     inspections.clear();
+    boardView = 'clients';
     session = null;
     notifyListeners();
   }
@@ -103,7 +108,11 @@ Widget _gated(AppSession app, Widget Function() build) => ListenableBuilder(
           : const Scaffold(body: Center(child: CircularProgressIndicator())),
     );
 
-GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
+GoRouter buildRouter(AppSession app, {String? initialLocation}) {
+  // A job and everything under it go on the root navigator, over the shell.
+  final rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+  return GoRouter(
+      navigatorKey: rootKey,
       // On web the address bar wins: a deep link or a refresh lands where it
       // says, not on the board.
       initialLocation: initialLocation ?? (kIsWeb && Uri.base.path.isNotEmpty ? Uri.base.path : '/'),
@@ -123,39 +132,69 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
           path: '/login',
           builder: (context, state) => LoginScreen(api: app.api, onSignedIn: app.signedIn),
         ),
-        GoRoute(
-          path: '/',
-          builder: (context, state) => _gated(app,
-              () => JobsBoard(api: app.api, sync: app.sync, session: app.session!, onSignOut: app.signOut)),
+        // The shell (rail or bottom bar) wraps the two destinations only.
+        // Everything under a job goes on the root navigator: it covers the
+        // shell and keeps its own back arrow, and every URL is unchanged.
+        ShellRoute(
+          builder: (context, state, child) => _gated(
+            app,
+            () => AppShell(
+              session: app.session!,
+              sync: app.sync,
+              onSignOut: app.signOut,
+              location: state.uri.path,
+              child: child,
+            ),
+          ),
           routes: [
             GoRoute(
-              path: 'people',
-              builder: (context, state) => _gated(app, () => PeopleScreen(api: app.api)),
-            ),
-            GoRoute(
-              path: 'jobs/:id',
-              builder: (context, state) => _gated(app,
-                  () => JobScreen(jobId: int.parse(state.pathParameters['id']!), sync: app.sync, onUnauthorized: app.signOut)),
+              path: '/',
+              builder: (context, state) => _gated(
+                  app,
+                  () => JobsBoard(
+                        api: app.api,
+                        sync: app.sync,
+                        session: app.session!,
+                        onSignOut: app.signOut,
+                        initialView: app.boardView,
+                        onViewChanged: (v) => app.boardView = v,
+                      )),
               routes: [
                 GoRoute(
-                  path: 'sheet',
+                  path: 'people',
+                  // A destination switch, not a step down: no slide.
+                  pageBuilder: (context, state) =>
+                      NoTransitionPage(key: state.pageKey, child: _gated(app, () => PeopleScreen(api: app.api))),
+                ),
+                GoRoute(
+                  path: 'jobs/:id',
+                  parentNavigatorKey: rootKey,
                   builder: (context, state) => _gated(app,
-                      () => SheetRoute(app: app, jobId: int.parse(state.pathParameters['id']!))),
+                      () => JobScreen(jobId: int.parse(state.pathParameters['id']!), sync: app.sync, onUnauthorized: app.signOut)),
                   routes: [
-                    // One item of the sheet (UX B10): a refresh or a shared
-                    // link lands on the item, and back returns to the sheet.
                     GoRoute(
-                      path: 'item/:template/:section/:item',
-                      builder: (context, state) => _gated(
-                        app,
-                        () => ItemRoute(
-                          app: app,
-                          jobId: int.parse(state.pathParameters['id']!),
-                          templateCode: state.pathParameters['template']!,
-                          sectionOrdinal: int.tryParse(state.pathParameters['section']!) ?? -1,
-                          itemOrdinal: int.tryParse(state.pathParameters['item']!) ?? -1,
+                      path: 'sheet',
+                      parentNavigatorKey: rootKey,
+                      builder: (context, state) => _gated(app,
+                          () => SheetRoute(app: app, jobId: int.parse(state.pathParameters['id']!))),
+                      routes: [
+                        // One item of the sheet (UX B10): a refresh or a shared
+                        // link lands on the item, and back returns to the sheet.
+                        GoRoute(
+                          path: 'item/:template/:section/:item',
+                          parentNavigatorKey: rootKey,
+                          builder: (context, state) => _gated(
+                            app,
+                            () => ItemRoute(
+                              app: app,
+                              jobId: int.parse(state.pathParameters['id']!),
+                              templateCode: state.pathParameters['template']!,
+                              sectionOrdinal: int.tryParse(state.pathParameters['section']!) ?? -1,
+                              itemOrdinal: int.tryParse(state.pathParameters['item']!) ?? -1,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
@@ -165,6 +204,7 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
         ),
       ],
     );
+}
 
 /// /jobs/:id/sheet — opens (or reuses) the inspection, then shows the sheet.
 /// A refresh on this URL comes straight back here with everything reloaded

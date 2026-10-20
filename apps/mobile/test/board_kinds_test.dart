@@ -22,7 +22,9 @@ void main() {
     final api = ApiClient(baseUrl: Uri.parse('http://fake.test'), deviceId: 'd', httpClient: server.client_());
     await tester.pumpWidget(AssureFieldApp(app: AppSession(store: signedIn(), api: api, outboxStore: InMemoryOutboxStore())));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.person_outline), findsOneWidget);
+    // Below the welcome and quick actions on this small view.
+    await tester.scrollUntilVisible(find.byKey(const ValueKey('job-7')), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.descendant(of: find.byKey(const ValueKey('job-7')), matching: find.byIcon(Icons.person_outline)), findsOneWidget);
     expect(find.textContaining('Test Applicant'), findsWidgets);
     expect(find.textContaining('Continue the assessment'), findsOneWidget);
 

@@ -39,7 +39,9 @@ void main() {
 
   testWidgets('the landing is Clients: one row per client, its open jobs under it', (tester) async {
     await open(tester, server: twoClients());
-    expect(find.text('Clients'), findsOneWidget);
+    // Clients is the bar's title and the rail's selected destination.
+    expect(find.text('Clients'), findsWidgets);
+    expect(find.byKey(const ValueKey('nav-clients')), findsOneWidget);
     expect(find.byKey(const ValueKey('client-1')), findsOneWidget);
     expect(find.byKey(const ValueKey('client-2')), findsOneWidget);
     // Argenta's two jobs sit under one row, not two cards.
@@ -272,6 +274,9 @@ void main() {
 
   testWidgets('the board fits a phone without overflow', (tester) async {
     await open(tester, server: twoClients(), size: const Size(390, 844));
+    expect(tester.takeException(), isNull);
+    // The welcome and the quick actions come first; the clients below them.
+    await tester.scrollUntilVisible(find.byKey(const ValueKey('client-1')), 200, scrollable: find.byType(Scrollable).first);
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('client-1')), findsOneWidget);
   });

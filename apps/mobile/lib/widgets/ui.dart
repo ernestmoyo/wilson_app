@@ -205,7 +205,13 @@ class EmptyState extends StatelessWidget {
 class SyncIndicator extends StatelessWidget {
   final SyncService sync;
   final VoidCallback? onTap;
-  const SyncIndicator({super.key, required this.sync, this.onTap});
+
+  /// Icon only (words in the tooltip). Null: decide by the window width.
+  final bool? iconOnly;
+
+  /// On the teal rail: the state sits on its own tint so it still reads.
+  final bool onDark;
+  const SyncIndicator({super.key, required this.sync, this.onTap, this.iconOnly, this.onDark = false});
 
   static ({String label, IconData icon, Tone tone}) describe(SyncService s) {
     if (s.rejectedCount > 0) {
@@ -228,13 +234,44 @@ class SyncIndicator extends StatelessWidget {
           final d = describe(sync);
           // A phone's app bar has no room for the words: icon only, words in
           // the tooltip.
-          final iconOnly = MediaQuery.sizeOf(context).width < 600;
+          final iconOnly = this.iconOnly ?? MediaQuery.sizeOf(context).width < 600;
           if (iconOnly) {
             return IconButton(
               key: const ValueKey('sync-indicator'),
               tooltip: d.label,
               onPressed: onTap,
+              style: onDark ? IconButton.styleFrom(backgroundColor: d.tone.bg, disabledBackgroundColor: d.tone.bg) : null,
               icon: Icon(d.icon, color: d.tone.fg),
+            );
+          }
+          if (onDark) {
+            return Tooltip(
+              message: 'Sync status: ${d.label}',
+              child: Material(
+                color: d.tone.bg,
+                shape: const StadiumBorder(),
+                child: InkWell(
+                  key: const ValueKey('sync-indicator'),
+                  customBorder: const StadiumBorder(),
+                  onTap: onTap,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: kTouch),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(d.icon, size: 18, color: d.tone.fg),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(d.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: d.tone.fg)),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
           return Semantics(

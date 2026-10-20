@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../bootstrap.dart' show CurrentUser;
 import '../models/person.dart';
 import '../sync/api_client.dart';
 import '../theme.dart';
+import '../widgets/app_shell.dart';
 import '../widgets/brand_bar.dart';
 import '../widgets/ui.dart';
 
@@ -80,15 +80,10 @@ class _PeopleScreenState extends State<PeopleScreen> {
     return Scaffold(
       appBar: BrandBar(
         title: 'People',
-        subtitle: 'Who may sign in, and as what',
-        actions: [
-          TextButton.icon(
-            key: const ValueKey('to-jobs'),
-            onPressed: () => context.go('/'),
-            icon: const Icon(Icons.view_list_outlined, size: 18),
-            label: const Text('Clients'),
-          ),
-        ],
+        subtitle: shellIsCompact(context) ? null : 'Who may sign in, and as what',
+        // Clients is in the rail or the bottom bar; on a phone the sync
+        // state and the account sit here.
+        actions: shellBarActions(context),
       ),
       body: !CurrentUser.canManagePeople
           ? const Center(
@@ -97,27 +92,39 @@ class _PeopleScreenState extends State<PeopleScreen> {
           : LayoutBuilder(
               builder: (context, box) {
                 // The same readable column as the board.
-                final side = box.maxWidth > 992 ? (box.maxWidth - 960) / 2 : Space.lg;
+                final side = box.maxWidth > kReadable + 2 * Space.lg ? (box.maxWidth - kReadable) / 2 : Space.lg;
+                final add = FilledButton.icon(
+                  key: const ValueKey('add-person'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, kTouchLarge)),
+                  onPressed: _busy ? null : () => _edit(null),
+                  icon: const Icon(Icons.person_add_alt_1_outlined, size: 20),
+                  label: const Text('Add person'),
+                );
+                final intro = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                  Text(
+                    people == null ? 'People' : '${people.where((p) => p.active).length} active ${people.where((p) => p.active).length == 1 ? 'person' : 'people'}',
+                    style: t.headlineSmall,
+                  ),
+                  const SizedBox(height: Space.xs),
+                  Text(
+                    'Every account is one person. History and photographs carry that person\'s name and occupation, so nobody shares a sign-in.',
+                    style: t.bodyMedium?.copyWith(color: Neutral.muted),
+                  ),
+                ]);
                 return ListView(
-                  padding: EdgeInsets.fromLTRB(side, Space.lg, side, 48),
+                  padding: EdgeInsets.fromLTRB(side, Space.xl, side, 48),
                   children: [
+                    // The same header as the landing: what this is, and the
+                    // one thing to do here, where the eye lands.
+                    box.maxWidth < 560
+                        ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [intro, const SizedBox(height: Space.lg), add])
+                        : Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Expanded(child: intro),
+                            const SizedBox(width: Space.xl),
+                            add,
+                          ]),
+                    const SizedBox(height: Space.lg),
                     if (_busy) const LinearProgressIndicator(minHeight: 2),
-                    Row(children: [
-                      Expanded(
-                        child: Text(
-                          'Every account is one person. History and photographs carry that person\'s name and occupation, so nobody shares a sign-in.',
-                          style: t.bodySmall,
-                        ),
-                      ),
-                      const SizedBox(width: Space.md),
-                      FilledButton.icon(
-                        key: const ValueKey('add-person'),
-                        onPressed: _busy ? null : () => _edit(null),
-                        icon: const Icon(Icons.person_add_alt_1_outlined, size: 20),
-                        label: const Text('Add person'),
-                      ),
-                    ]),
-                    const SizedBox(height: Space.md),
                     if (_error != null)
                       Notice(
                         _error!,
@@ -147,10 +154,18 @@ class _PeopleScreenState extends State<PeopleScreen> {
                         for (final r in roleNames.keys)
                           Padding(
                             padding: const EdgeInsets.only(bottom: Space.sm),
-                            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              SizedBox(width: 200, child: Align(alignment: Alignment.centerLeft, child: _roleBadge(r, active: true))),
-                              Expanded(child: Text(roleHelp[r] ?? '', style: t.bodyMedium)),
-                            ]),
+                            // On a phone the words go under the badge, not
+                            // into a sliver beside it.
+                            child: box.maxWidth < 560
+                                ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    _roleBadge(r, active: true),
+                                    const SizedBox(height: Space.xs),
+                                    Text(roleHelp[r] ?? '', style: t.bodyMedium),
+                                  ])
+                                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    SizedBox(width: 200, child: Align(alignment: Alignment.centerLeft, child: _roleBadge(r, active: true))),
+                                    Expanded(child: Text(roleHelp[r] ?? '', style: t.bodyMedium)),
+                                  ]),
                           ),
                       ]),
                     ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme.dart';
+import 'app_shell.dart' show AppShellScope;
 
 /// The Assure Safety letterhead as an app bar: white strip, the logo mark,
 /// a title, a teal rule beneath. The same header the certificate carries,
@@ -43,7 +44,12 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
     // A route-aware back: pops the router's stack (the browser's back does
     // the same), never the whole app.
     final router = GoRouter.maybeOf(context);
-    final canPop = router?.canPop() ?? Navigator.of(context).canPop();
+    // Inside the app shell (the landing, People) a screen is a destination,
+    // not a step down: no back arrow, and with the rail showing the logo is
+    // the rail's.
+    final shell = AppShellScope.maybeOf(context);
+    final canPop = shell == null && (router?.canPop() ?? Navigator.of(context).canPop());
+    final showLogo = !(shell?.hasRail ?? false);
     return Material(
       color: Colors.white,
       elevation: 0,
@@ -65,10 +71,10 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                       onPressed: () => router != null ? router.pop() : Navigator.of(context).maybePop(),
                     )
                   else
-                    const SizedBox(width: 12),
+                    SizedBox(width: showLogo ? 12 : Space.xl - 6),
                   // The logo goes home from anywhere: the jobs board is the
                   // first route, so pop to it.
-                  InkWell(
+                  if (showLogo) InkWell(
                     key: const ValueKey('logo-home'),
                     borderRadius: BorderRadius.circular(Radii.sm),
                     onTap: () => router != null ? router.go('/') : Navigator.of(context).popUntil((r) => r.isFirst),
@@ -82,7 +88,7 @@ class BrandBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  if (showLogo) const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

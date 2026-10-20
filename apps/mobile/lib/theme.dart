@@ -15,6 +15,13 @@ class Brand {
   static const ribbon = Color(0xFF0A5566);
   static const band = Color(0xFFDDDDDD);
 
+  /// Ink on the ribbon (the navigation rail): white for the selected
+  /// destination and names, a pale teal for the rest (5:1 on [ribbon]), and
+  /// a white wash behind the selected destination and the avatar.
+  static const onRibbon = Colors.white;
+  static const onRibbonMuted = Color(0xFFC3DADE);
+  static const ribbonWash = Color(0x29FFFFFF);
+
   /// Status colours. Red and green are the workbook's own
   /// (FFFF0000 / FF00B050) so a certifier reading a printout and reading the
   /// app sees the same signal. They stay exact on check sheet comment text
@@ -100,6 +107,16 @@ class Radii {
 
 /// The smallest thing a gloved finger should have to hit.
 const double kTouch = 44;
+
+/// A primary action on the landing (New job, Continue): bigger than [kTouch].
+const double kTouchLarge = 56;
+
+/// Window widths (Material 3 size classes): a rail from [kRailFrom], the
+/// rail with names beside its icons from [kRailExtendedFrom], and the
+/// readable column every list screen keeps on a wide window.
+const double kRailFrom = 840;
+const double kRailExtendedFrom = 1200;
+const double kReadable = 960;
 
 const _font = 'IBM Plex Sans';
 
@@ -216,6 +233,31 @@ ThemeData buildTheme() {
       labelStyle: text.labelLarge,
       unselectedLabelStyle: text.labelLarge?.copyWith(fontWeight: FontWeight.w500),
       dividerColor: Neutral.line,
+    ),
+    // The phone's bottom bar (the rail's narrow form): white, the selected
+    // destination on the tint, labels always shown.
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: Neutral.tint,
+      height: 64,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      labelTextStyle: WidgetStateProperty.resolveWith((s) => text.labelMedium?.copyWith(
+            color: s.contains(WidgetState.selected) ? Brand.ribbon : Neutral.muted,
+            fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
+          )),
+      iconTheme: WidgetStateProperty.resolveWith(
+          (s) => IconThemeData(color: s.contains(WidgetState.selected) ? Brand.ribbon : Neutral.muted)),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: SegmentedButton.styleFrom(
+        minimumSize: const Size(0, kTouch),
+        selectedBackgroundColor: Neutral.tint,
+        selectedForegroundColor: Brand.ribbon,
+        foregroundColor: Neutral.body,
+        side: const BorderSide(color: Color(0xFFB9C7CA)),
+        textStyle: text.labelLarge?.copyWith(fontSize: 14),
+      ),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: Brand.ribbon,
