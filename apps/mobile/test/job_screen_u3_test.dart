@@ -85,6 +85,17 @@ void main() {
     expect(due.isAfter(DateTime(issued.year, issued.month + 3, issued.day)), isFalse, reason: 'no more than 3 months');
   });
 
+  testWidgets('the issuance check shows warnings (evidence not yet accepted) as notes, not blockers', (t) async {
+    server.checkWarnings.add({
+      'kind': 'evidence_not_accepted',
+      'clause': 'IPS 21(1)(e)',
+      'reason': '2 evidence file(s) not yet accepted by a reviewer',
+    });
+    await pump(t);
+    expect(find.textContaining('2 evidence file(s) not yet accepted by a reviewer'), findsOneWidget);
+    expect(find.byKey(const ValueKey('check-warning')), findsOneWidget);
+  });
+
   testWidgets('the process card is a task list: Done, Now, Not started', (t) async {
     await pump(t);
     for (final n in [1, 2, 3, 4, 5]) {

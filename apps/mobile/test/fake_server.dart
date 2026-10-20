@@ -360,7 +360,11 @@ class FakeServer {
         'certifier': {'number': 'TST100250'},
       };
 
+  /// Issuance-check warnings (not blockers), e.g. evidence not yet accepted.
+  final List<Map<String, dynamic>> checkWarnings = [];
+
   Map<String, dynamic> check() => {
+        'warnings': checkWarnings,
         'canGrant': false,
         'canIssueConditional': declared,
         'unresolvedNonCompliances': caStatus == 'verified' ? 0 : 1,

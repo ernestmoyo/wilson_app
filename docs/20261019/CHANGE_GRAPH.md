@@ -233,3 +233,12 @@ Built as four packages in parallel (contract: `PHASE1_CONTRACT.md`), then harden
 ### Phase 2 (ready to build on the owner's go)
 
 - P2-A evidence review and versions (Q3, Q4) · P2-B peer reviewer role and approval for SCS/17.91 (Q5) · P2-C roles: second issuer, reviewer admin (Q6) · P2-D conditions outstanding until verified (Q7) · P2-E class 3.2/4 sheet set from the Argenta tab (Q2).
+
+### Phase 2 built (20 October 2026, merged on feat/graph-model; not deployed)
+
+- **E** class 3.2/4 sheet set (15 items, general view rev 4); offered on the 4.1.1 authorisation with a note. The filled-in Argenta instance was left out of the repo (client contact details).
+- **A** evidence review and versions: migration 015; `evidence.review` (reviewer/admin/certifier; not accepted needs a note); `supersedesId` versions, never overwritten; PDF names the version assessed; ZIP keeps `Previous versions/`; issuance-check warning, shown on the job screen.
+- **B** roles and review: migration 016; `peer_reviewer` sees only flagged jobs and may only comment and approve; snapshot-hash peer review gate (lapses on edits), also enforced by a stage trigger; certificate holder (TST100250) named on every certificate, `issued_by` records who pressed Issue; `can_administer` reviewer manages people (cannot touch certifiers or admins); `certificate_condition` rows on a conditional issue, monitoring/closed refused until all verified; reminders 14 days before and overdue.
+- **Proof:** 17 server suites, 4 db tests, 165 Flutter tests green; analyze 1 pre-existing notice.
+- **Two narrow updates on deploy (write only into the new columns):** 015 copies `created_at` into the new `uploaded_at` for existing evidence; 016 sets `is_certificate_holder = true` on the single TST100250 user.
+- **Not done:** per-item comment action for the peer reviewer in the sheet (comments go on the job's Peer review card; the server already accepts a finding id); the People menu still shows certifier actions to an admin-reviewer (the server refuses them); real browser and iPad walk.

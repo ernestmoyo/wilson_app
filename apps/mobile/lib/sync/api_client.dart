@@ -106,6 +106,12 @@ class ApiClient {
                 reason: b['reason'] as String? ?? '',
               ))
           .toList(),
+      warnings: ((j['warnings'] as List?) ?? const [])
+          .map((b) => Blocker(
+                clause: (b as Map)['clause'] as String?,
+                reason: b['reason'] as String? ?? '',
+              ))
+          .toList(),
     );
   }
 
@@ -308,11 +314,15 @@ class IssuanceCheck {
   final bool canIssueConditional;
   final int unresolvedNonCompliances;
   final List<Blocker> blockers;
+  /// Worth knowing before issuing, but not a blocker (e.g. evidence not yet
+  /// accepted by a reviewer, scope of work Q3).
+  final List<Blocker> warnings;
   const IssuanceCheck({
     required this.canGrant,
     required this.canIssueConditional,
     required this.unresolvedNonCompliances,
     required this.blockers,
+    this.warnings = const [],
   });
 }
 

@@ -1228,6 +1228,16 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
                 ),
               ]),
             ),
+          for (final w in c.warnings)
+            Padding(
+              key: const ValueKey('check-warning'),
+              padding: const EdgeInsets.only(top: Space.sm),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Tone.info.icon, size: 18, color: Tone.info.fg),
+                const SizedBox(width: Space.sm),
+                Expanded(child: Text(w.reason, style: t.bodyMedium)),
+              ]),
+            ),
         ],
       ]),
     );
