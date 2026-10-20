@@ -16,7 +16,11 @@ class CurrentUser {
   static String authorisationNumber = 'TST100250';
   static String role = 'certifier';
   static bool get canDecide => role == 'certifier' || role == 'admin';
-  static bool get canRecord => role != 'viewer';
+  // A peer reviewer reads the flagged jobs; the sheet is read-only for them.
+  static bool get canRecord => role != 'viewer' && role != 'peer_reviewer';
+  static bool get isPeerReviewer => role == 'peer_reviewer';
+  static bool canAdminister = false;
+  static bool get canManagePeople => canDecide || canAdminister;
 
   /// After login the server's description of the person replaces the
   /// defaults; the defaults only matter to a server not enforcing sign-in.
@@ -26,6 +30,7 @@ class CurrentUser {
     occupation = s.occupation;
     if (s.authorisationNumber != null) authorisationNumber = s.authorisationNumber!;
     role = s.role;
+    canAdminister = s.canAdminister;
   }
 }
 

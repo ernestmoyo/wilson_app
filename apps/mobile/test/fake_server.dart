@@ -117,6 +117,66 @@ class FakeServer {
   /// Headers each storage PUT carried (must not include our session token).
   final List<Map<String, String>> storagePutHeaders = [];
 
+  // ── peer review and conditions (phase 2, package B) ───────────────────────
+  /// Job 7 is flagged for a reg 17.91 peer review.
+  bool peerReviewRequired = false;
+
+  /// Peer review decisions and comments as GET /api/jobs/:id returns them.
+  final List<Map<String, dynamic>> peerReviews = [];
+  final List<Map<String, dynamic>> peerReviewComments = [];
+
+  /// Force a state the fake cannot work out (e.g. 'lapsed'); null: derived.
+  String? peerReviewStateOverride;
+
+  /// certificate_condition rows of the issued certificate.
+  final List<Map<String, dynamic>> conditions = [];
+
+  /// The signed-in person manages people without deciding.
+  bool canAdminister = false;
+
+  String get peerReviewState => peerReviewStateOverride ??
+      (!peerReviewRequired
+          ? 'not_required'
+          : peerReviews.isEmpty
+              ? 'not_requested'
+              : peerReviews.last['decision'] as String);
+
+  Map<String, dynamic> peerReviewPayload() => {
+        'peerReviewRequired': peerReviewRequired,
+        'peerReviewState': peerReviewState,
+        'peerReviews': peerReviews,
+        'peerReviewComments': peerReviewComments,
+        'conditions': conditions,
+        'holderAuthorisationNumber': 'TST100250',
+      };
+
+  String get _signedInName => switch (role) {
+        'certifier' => 'Bryan Wilson',
+        'peer_reviewer' => 'Peer Reviewer',
+        _ => 'Document reviewer',
+      };
+
+  /// The phase 2 events; true when [type] was one of them.
+  bool _applyReview(String type, Map<String, dynamic> p) {
+    switch (type) {
+      case 'peer_review.comment':
+        peerReviewComments.add({'id': peerReviewComments.length + 1, 'body': p['body'], 'author_name': _signedInName, 'author_role': role, 'created_at': '2026-10-20T00:00:00Z'});
+      case 'peer_review.decide':
+        peerReviewStateOverride = null;
+        peerReviews.add({'id': peerReviews.length + 1, 'decision': p['decision'], 'comment': p['comment'], 'reviewer_name': _signedInName, 'decided_at': '2026-10-20T00:00:00Z', 'current': true});
+      case 'job.peer_review_required':
+        peerReviewRequired = p['required'] == true;
+      case 'condition.verify':
+        final c = conditions.firstWhere((x) => x['id'] == p['conditionId']);
+        c['verified_at'] = '2026-10-20T00:00:00Z';
+        c['verified_by_name'] = _signedInName;
+        c['verification_note'] = p['note'];
+      default:
+        return false;
+    }
+    return true;
+  }
+
   /// A board row for another job, shaped like the real /api/jobs row.
   static Map<String, dynamic> row(int id, int clientId, String client, String location,
           {String stage = 'site_inspection', String? address, String? lastActivity}) =>
@@ -175,7 +235,7 @@ class FakeServer {
 
   /// People as the server lists them.
   final List<Map<String, dynamic>> users = [
-    {'id': 1, 'fullName': 'Bryan Wilson', 'occupation': 'Compliance certifier', 'email': 'compliancecertifier@assuresafety.co.nz', 'role': 'certifier', 'authorisationNumber': 'TST100250', 'active': true, 'hasPasscode': true},
+    {'id': 1, 'fullName': 'Bryan Wilson', 'occupation': 'Compliance certifier', 'email': 'compliancecertifier@assuresafety.co.nz', 'role': 'certifier', 'authorisationNumber': 'TST100250', 'active': true, 'hasPasscode': true, 'isCertificateHolder': true},
     {'id': 2, 'fullName': 'Document reviewer', 'occupation': 'Compliance reviewer', 'email': 'reviewer@assuresafety.co.nz', 'role': 'reviewer', 'active': true, 'hasPasscode': false},
   ];
   final List<Map<String, dynamic>> passcodesSet = [];
@@ -195,6 +255,7 @@ class FakeServer {
   final List<Map<String, dynamic>> units = [];
 
   Map<String, dynamic> job() => {
+        ...peerReviewPayload(),
         'id': 7,
         'stage': stage,
         'class_key': classKey,
@@ -313,6 +374,7 @@ class FakeServer {
   void _apply(Map<String, dynamic> e) {
     events.add(e);
     final p = (e['payload'] as Map).cast<String, dynamic>();
+    if (_applyReview(e['type'] as String, p)) return;
     switch (e['type']) {
       case 'interest.declare':
         declared = true;
@@ -420,7 +482,7 @@ class FakeServer {
           return http.Response(jsonEncode(board(archived: req.url.queryParameters['archived'] == '1')), 200);
         }
         if (path == '/api/users' && req.method == 'GET') {
-          if (role != 'certifier') return http.Response('{"error":"managing people needs a compliance certifier","clause":"Role"}', 403);
+          if (role != 'certifier' && !canAdminister) return http.Response('{"error":"managing people needs a compliance certifier","clause":"Role"}', 403);
           return http.Response(jsonEncode(users), 200);
         }
         if (path == '/api/users' && req.method == 'POST') {

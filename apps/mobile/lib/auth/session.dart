@@ -14,9 +14,17 @@ class Session {
   final String? authorisationNumber;
   final DateTime? expiresAt;
 
-  /// certifier | reviewer | viewer. The server enforces it; the app hides
-  /// what the role cannot do so nobody taps into a refusal.
+  /// certifier | reviewer | viewer | admin | peer_reviewer. The server
+  /// enforces it; the app hides what the role cannot do so nobody taps into
+  /// a refusal.
   final String role;
+
+  /// Manages people without deciding: the reviewer with admin and oversight
+  /// (Tatenda Katai, 20 Oct 2026, Q6).
+  final bool canAdminister;
+
+  /// The person every certificate names (Bryan Wilson, TST100250).
+  final bool isCertificateHolder;
 
   const Session({
     required this.token,
@@ -27,10 +35,15 @@ class Session {
     this.authorisationNumber,
     this.expiresAt,
     this.role = 'certifier',
+    this.canAdminister = false,
+    this.isCertificateHolder = false,
   });
 
   bool get canDecide => role == 'certifier' || role == 'admin';
-  bool get canRecord => role != 'viewer';
+  // A peer reviewer reads the flagged jobs and records only the review.
+  bool get canRecord => role != 'viewer' && role != 'peer_reviewer';
+  bool get isPeerReviewer => role == 'peer_reviewer';
+  bool get canManagePeople => canDecide || canAdminister;
 
   factory Session.fromLogin(Map<String, dynamic> j) {
     final u = (j['user'] as Map).cast<String, dynamic>();
@@ -43,6 +56,8 @@ class Session {
       authorisationNumber: u['authorisationNumber'] as String?,
       expiresAt: j['expiresAt'] == null ? null : DateTime.tryParse('${j['expiresAt']}'),
       role: u['role'] as String? ?? 'certifier',
+      canAdminister: u['canAdminister'] == true,
+      isCertificateHolder: u['isCertificateHolder'] == true,
     );
   }
 
@@ -55,6 +70,8 @@ class Session {
           'email': email,
           'authorisationNumber': authorisationNumber,
           'role': role,
+          'canAdminister': canAdminister,
+          'isCertificateHolder': isCertificateHolder,
         },
         'expiresAt': expiresAt?.toIso8601String(),
       };

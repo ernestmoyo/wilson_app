@@ -22,6 +22,8 @@ import { checksheetPdf, regulationForClass } from './export/checksheet-pdf.mjs';
 import { loadJobEvidence } from './export/checksheet-pdf.mjs';
 import { buildBundleZip, bundleFileName, contentDisposition, exportKey, exportStore } from './export/bundle.mjs';
 import { safeFileName } from './export/naming.mjs';
+import { isPeerReviewer } from './roles.mjs';
+import { certificateHolderId, peerReviewBlocker, peerReviewState } from './peer-review.mjs';
 
 // The certificate renderer lives in packages/checksheets; vendored on Vercel.
 const renderMod = await import(
@@ -388,13 +390,42 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // A route id that is not a positive integer is "not found", not a cast error.
   app.param('id', (req, res, next, v) => (/^[1-9][0-9]{0,17}$/.test(v) ? next() : res.status(404).json({ error: 'not found' })));
 
+  // ── the peer reviewer's separate access (Tatenda Katai, 20 Oct 2026, Q5) ─
+  // Only jobs flagged for a reg 17.91 peer review exist for them: their
+  // sheets, evidence and documents to read; everything else is hidden (404)
+  // or refused (403, clause Role). Their two events go through /api/sync,
+  // where roles.mjs holds them to peer_review.comment and peer_review.decide.
+  app.use((req, res, next) => (async () => {
+    if (!isPeerReviewer(req.ctx?.role)) return next();
+    const p = req.path;
+    if (!p.startsWith('/api/') || isPublic(req) || p.startsWith('/api/auth/')) return next();
+    const refuse = () => res.status(403).json({ error: 'a peer reviewer reads the flagged jobs, comments and decides the peer review; nothing else', clause: 'Role' });
+    const isGet = req.method === 'GET';
+    if (p === '/api/sync' && req.method === 'POST') return next();
+    if (isGet && ['/api/jobs', '/api/dashboard', '/api/sheet-sets', '/api/authorisation'].includes(p)) return next();
+    const jm = p.match(/^\/api\/jobs\/([1-9][0-9]{0,17})(\/.*)?$/);
+    if (jm) {
+      if (!(isGet || (req.method === 'POST' && jm[2] === '/bundle'))) return refuse();
+      const ok = await db.query(`SELECT 1 FROM job WHERE id = $1 AND peer_review_required`, [jm[1]]);
+      return ok.rows.length ? next() : res.status(404).json({ error: 'job not found' });
+    }
+    const em = p.match(/^\/api\/evidence\/([0-9a-f]{64}\.[a-z0-9]{1,4})(\/link)?$/);
+    if (em && isGet) {
+      const ok = await db.query(
+        `SELECT 1 FROM evidence e JOIN job j ON j.id = e.job_id
+         WHERE e.storage_key IN ($1, $2) AND j.peer_review_required LIMIT 1`, [em[1], `evidence/${em[1]}`]);
+      return ok.rows.length ? next() : res.status(404).json({ error: 'not found' });
+    }
+    return refuse();
+  })().catch(next));
+
   // ── auth ─────────────────────────────────────────────────────────────────
   app.post('/api/auth/login', wrap(async (req, res) => {
     const b = req.body ?? {};
     if (!b.passcode) return res.status(400).json({ error: 'passcode is required' });
     const out = await login(db, { email: b.email, passcode: b.passcode, deviceId: b.deviceId ?? req.ctx.deviceId });
     if (!out) return res.status(401).json({ error: 'email or passcode not recognised' });
-    res.json(out);
+    res.json({ ...out, user: { ...out.user, ...(await personFlags(out.user.id)) } });
   }));
   app.post('/api/auth/logout', wrap(async (req, res) => {
     await logout(db, tokenFromRequest(req));
@@ -407,7 +438,8 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       [req.ctx.userId]);
     const u = r.rows[0];
     res.json({ id: u.id, fullName: u.full_name, occupation: u.occupation, email: u.email,
-               role: u.role, authorisationNumber: u.authorisation_number, authenticated: req.ctx.authenticated });
+               role: u.role, authorisationNumber: u.authorisation_number, authenticated: req.ctx.authenticated,
+               ...(await personFlags(u.id)) });
   }));
 
   // ── health ───────────────────────────────────────────────────────────────
@@ -475,7 +507,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     // Archived clients are off the board; ?archived=1 lists only them.
     const archived = req.query.archived === '1';
     const r = await db.query(`
-      SELECT j.id, j.stage, j.class_key, j.opened_at, j.subject,
+      SELECT j.id, j.stage, j.class_key, j.opened_at, j.subject, j.peer_review_required,
              c.id AS client_id, (c.archived_at IS NOT NULL) AS client_archived,
              c.legal_name AS client, c.trading_name, l.name AS location, s.address,
              i.id AS inspection_id, i.inspected_at,
@@ -504,7 +536,9 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       LEFT JOIN LATERAL (SELECT decision FROM certificate WHERE job_id = j.id LIMIT 1) cert ON true
       WHERE (c.archived_at IS NOT NULL) = $1
       ORDER BY last_activity DESC NULLS LAST, j.id DESC`, [archived]);
-    res.json(r.rows.map((row) => ({ ...row, kind: kindFor(row.class_key) })));
+    // A peer reviewer's board holds only the jobs flagged for a peer review.
+    const rows = isPeerReviewer(req.ctx.role) ? r.rows.filter((row) => row.peer_review_required) : r.rows;
+    res.json(rows.map((row) => ({ ...row, kind: kindFor(row.class_key) })));
   }));
 
   /** Create a client + site + location + job in one call (stage 1, enquiry). */
@@ -547,6 +581,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       }
       if (b.subject && typeof b.subject === 'object') {
         await tx.query(`UPDATE job SET subject = $2::jsonb WHERE id = $1`, [j.rows[0].id, JSON.stringify(b.subject)]);
+      }
+      // Q5: an existing stationary container system on a reg 17.91 report.
+      if (b.peerReviewRequired === true) {
+        await tx.query(`UPDATE job SET peer_review_required = true WHERE id = $1`, [j.rows[0].id]);
       }
       let ord = 0;
       for (const u of Array.isArray(b.units) ? b.units : []) {
@@ -738,8 +776,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
                 WHERE i.job_id = $1 ORDER BY t.code, s.ordinal`, [id]),
     ]);
 
+    const review = await peerReviewPayload(id);
     const counts = findings.rows.reduce((a, f) => ((a[f.status] = (a[f.status] ?? 0) + 1), a), {});
     res.json({
+      ...review,
       ...j.rows[0],
       inspections: insp.rows,
       findings: findings.rows,
@@ -805,6 +845,52 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     return nc.rows[0].n;
   }
 
+  /**
+   * Phase 2, package B on the job payload: the peer review (state, decisions,
+   * comment thread), the conditions of a conditional certificate, and who
+   * actually issued a certificate that names the holder.
+   */
+  async function peerReviewPayload(jobId) {
+    const pr = await peerReviewState(db, jobId);
+    const [reviews, comments, conditions, issuer] = await Promise.all([
+      db.query(`SELECT p.id, p.decision, p.comment, p.snapshot_hash, p.decided_at, p.reviewer_id,
+                       u.full_name AS reviewer_name
+                FROM peer_review p LEFT JOIN app_user u ON u.id = p.reviewer_id
+                WHERE p.job_id = $1 ORDER BY p.id`, [jobId]),
+      db.query(`SELECT c.id, c.finding_id, c.body, c.created_at, c.author_id,
+                       u.full_name AS author_name, u.role AS author_role,
+                       t.code AS template_code, s.ordinal AS section_ordinal, i.ordinal AS item_ordinal
+                FROM peer_review_comment c
+                LEFT JOIN app_user u ON u.id = c.author_id
+                LEFT JOIN finding f ON f.id = c.finding_id
+                LEFT JOIN checksheet_item i ON i.id = f.item_id
+                LEFT JOIN checksheet_section s ON s.id = i.section_id
+                LEFT JOIN checksheet_template t ON t.id = s.template_id
+                WHERE c.job_id = $1 ORDER BY c.id`, [jobId]),
+      db.query(`SELECT cc.id, cc.ordinal, cc.text, cc.regulation, cc.due_date, cc.verified_by, cc.verified_at,
+                       cc.verification_note, u.full_name AS verified_by_name,
+                       (cc.verified_at IS NULL AND cc.due_date IS NOT NULL AND cc.due_date < CURRENT_DATE) AS overdue
+                FROM certificate_condition cc JOIN certificate c ON c.id = cc.certificate_id
+                LEFT JOIN app_user u ON u.id = cc.verified_by
+                WHERE c.job_id = $1 ORDER BY cc.ordinal`, [jobId]),
+      db.query(`SELECT ib.full_name AS issued_by, h.full_name AS holder, h.authorisation_number AS holder_number
+                FROM certificate c LEFT JOIN app_user ib ON ib.id = c.issued_by
+                LEFT JOIN app_user h ON h.id = c.certifier_id WHERE c.job_id = $1`, [jobId]),
+    ]);
+    return {
+      peerReviewRequired: pr.required,
+      peerReviewState: pr.state,
+      peerReviews: reviews.rows.map((r) => ({ ...r, current: pr.currentHash != null && String(r.snapshot_hash).trim() === pr.currentHash })),
+      peerReviewComments: comments.rows,
+      conditions: conditions.rows,
+      certificateIssuedBy: issuer.rows[0]?.issued_by ?? null,
+      certificateHolder: issuer.rows[0] ? { name: issuer.rows[0].holder, authorisationNumber: issuer.rows[0].holder_number } : null,
+      // The number a new certificate is prefixed with (IPS 8(1)(c)): the
+      // holder's, whoever issues.
+      holderAuthorisationNumber: AUTHORISATION.certifier?.number ?? null,
+    };
+  }
+
   app.get('/api/jobs/:id/issuance-check', wrap(async (req, res) => {
     const id = Number(req.params.id);
     const blockers = [];
@@ -825,7 +911,12 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       LEFT JOIN corrective_action ca ON ca.finding_id = f.id
       WHERE i.job_id = $1 AND f.status = 'non_compliant'
         AND (ca.id IS NULL OR ca.status <> 'verified')`, [id]);
+    // Q5: a flagged job needs the peer reviewer's approval of it as it stands.
+    const pr = await peerReviewState(db, id);
+    const prBlocker = peerReviewBlocker(pr.state);
+    if (prBlocker) blockers.push(prBlocker);
     res.json({
+      peerReviewState: pr.state,
       canGrant: blockers.length === 0 && nc.rows[0].n === 0,
       canIssueConditional: blockers.length === 0,
       unresolvedNonCompliances: nc.rows[0].n,
@@ -878,6 +969,10 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       const own = await db.query(`SELECT 1 FROM inspection WHERE id = $1 AND job_id = $2`, [b.inspectionId, id]);
       if (!own.rows.length) return res.status(400).json({ error: `inspection ${b.inspectionId} is not part of job ${id}` });
     }
+    // Q5: a job on a reg 17.91 report issues only after the peer reviewer
+    // approved it as it stands now (an edit since lapses the approval).
+    const prGate = peerReviewBlocker((await peerReviewState(db, id)).state);
+    if (prGate) return res.status(422).json({ error: prGate.reason, clause: prGate.clause });
     if (b.decision === 'granted') {
       const open = await unresolvedNonCompliances(id);
       if (open > 0) {
@@ -905,20 +1000,36 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     // by sheet item and the regulation the job's class cites, with its reason.
     let notMet = Array.isArray(b.requirementsNotMet) ? b.requirementsNotMet.filter(Boolean) : [];
     if (b.decision !== 'granted' && !notMet.length) notMet = await openRequirements(id);
+    // Q6: every certificate is in the holder's name (Bryan Wilson, TST100250);
+    // issued_by and the event log record who pressed Issue.
+    const issuer = req.ctx.userId ?? b.certifierId ?? null;
+    const holder = await certificateHolderId(db, { authorisationNumber: AUTHORISATION.certifier?.number, fallback: issuer });
     const out = await db.withTx(async (tx) => {
       await tx.query(`UPDATE job SET stage = 'certificate_issued' WHERE id = $1`, [id]);
       const r = await tx.query(
         `INSERT INTO certificate
            (job_id, inspection_id, decision, register_number, certificate_number, certifier_id,
             issued_to, applies_to, issue_date, in_force_date, expiry_date, details,
-            requirements_not_met, conditions, signed_at, conditions_due)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+            requirements_not_met, conditions, signed_at, conditions_due, issued_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
          RETURNING id, worksafe_register_due`,
         [id, b.inspectionId ?? null, b.decision, b.registerNumber ?? null, b.certificateNumber ?? null,
-         req.ctx.userId ?? b.certifierId ?? null, b.issuedTo, b.appliesTo, b.issueDate,
+         holder, b.issuedTo, b.appliesTo, b.issueDate,
          b.inForceDate ?? b.issueDate, b.expiryDate ?? null, b.details ?? null,
          notMet, b.conditions ?? [], b.signedAt ?? new Date().toISOString(),
-         b.decision === 'conditional' ? b.conditionsDue : null]);
+         b.decision === 'conditional' ? b.conditionsDue : null, issuer]);
+      // Q7: each condition is tracked until a certifier verifies it; the job
+      // stays open until then (migration 016).
+      if (b.decision === 'conditional') {
+        const lines = (Array.isArray(b.conditions) && b.conditions.filter(Boolean).length ? b.conditions.filter(Boolean) : notMet).map(String);
+        for (let k = 0; k < lines.length; k++) {
+          // "… (reg 2.6(3))" → "2.6(3)": the regulation the line cites, if any.
+          const reg = /\(reg(?:ulation)?\s+(\d[\d.]*(?:\([0-9a-z]+\))*)/i.exec(lines[k]);
+          await tx.query(
+            `INSERT INTO certificate_condition (certificate_id, ordinal, text, regulation, due_date) VALUES ($1,$2,$3,$4,$5)`,
+            [r.rows[0].id, k + 1, lines[k], reg ? reg[1] : null, b.conditionsDue]);
+        }
+      }
       // The trigger writes the stage move; name who made it.
       await tx.query(
         `UPDATE job_stage_transition SET actor_id = $2
@@ -1050,45 +1161,87 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   // Person → Role. Managed by a compliance certifier (or admin) from the
   // People screen. Every account is one person, so History and photographs
   // (IPS 21(4): name and occupation) carry the right name.
-  const ROLES = ['certifier', 'reviewer', 'viewer', 'admin'];
-  const personRow = (u) => ({
+  const ROLES = ['certifier', 'reviewer', 'viewer', 'admin', 'peer_reviewer'];
+  /** Roles only a certifier (or admin) may hand out: those that decide. */
+  const DECIDING_ROLES = ['certifier', 'admin'];
+  const personRow = (u, holder = null) => ({
     id: u.id, fullName: u.full_name, occupation: u.occupation, email: u.email, role: u.role,
     authorisationNumber: u.authorisation_number, active: u.active, createdAt: u.created_at, hasPasscode: !!u.passcode_hash,
+    canAdminister: u.can_administer === true,
+    isCertificateHolder: holder != null && Number(u.id) === Number(holder),
   });
-  const PERSON_COLS = 'id, full_name, occupation, email, role, authorisation_number, active, created_at, passcode_hash';
+  const PERSON_COLS = 'id, full_name, occupation, email, role, authorisation_number, active, created_at, passcode_hash, can_administer';
+  const holderId = () => certificateHolderId(db, { authorisationNumber: AUTHORISATION.certifier?.number });
+
+  /** Q6: what the app needs to know about a person beyond the role. */
+  async function personFlags(userId) {
+    const r = await db.query(`SELECT can_administer FROM app_user WHERE id = $1`, [userId]);
+    const h = await holderId();
+    return { canAdminister: r.rows[0]?.can_administer === true, isCertificateHolder: h != null && Number(h) === Number(userId) };
+  }
+
+  /**
+   * People are managed by a certifier (or admin), or by a reviewer given
+   * can_administer (the reviewer with admin and oversight, Q6). Such a
+   * reviewer does not decide, so cannot hand out a deciding role or the
+   * administration flag, nor touch a certifier's or admin's account.
+   */
+  async function canManagePeople(req) {
+    if (canDecide(req.ctx.role)) return true;
+    if (!req.ctx.userId) return false;
+    const r = await db.query(`SELECT can_administer FROM app_user WHERE id = $1 AND active`, [req.ctx.userId]);
+    return r.rows[0]?.can_administer === true;
+  }
+  const refuseDeciding = (res, what) =>
+    res.status(403).json({ error: `${what} needs a compliance certifier`, clause: 'Role' });
+  async function touchesDecider(id) {
+    const r = await db.query(`SELECT role FROM app_user WHERE id = $1`, [id]);
+    return DECIDING_ROLES.includes(r.rows[0]?.role);
+  }
 
   app.get('/api/users', wrap(async (req, res) => {
-    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'managing people needs a compliance certifier', clause: 'Role' });
+    if (!(await canManagePeople(req))) return res.status(403).json({ error: 'managing people needs a compliance certifier', clause: 'Role' });
     const r = await db.query(`SELECT ${PERSON_COLS} FROM app_user ORDER BY active DESC, id`);
-    res.json(r.rows.map(personRow));
+    const h = await holderId();
+    res.json(r.rows.map((u) => personRow(u, h)));
   }));
 
   app.post('/api/users', wrap(async (req, res) => {
-    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'adding a person needs a compliance certifier', clause: 'Role' });
+    if (!(await canManagePeople(req))) return res.status(403).json({ error: 'adding a person needs a compliance certifier', clause: 'Role' });
     const b = req.body ?? {};
     const fullName = String(b.fullName ?? '').trim(), occupation = String(b.occupation ?? '').trim();
     const email = String(b.email ?? '').trim().toLowerCase(), role = String(b.role ?? 'reviewer');
     if (!fullName || !occupation) return res.status(400).json({ error: 'a person needs a name and an occupation', clause: 'IPS 21(4)' });
     if (!/^[^@\s]+@[^@\s]+$/.test(email)) return res.status(400).json({ error: 'a sign-in email is required' });
     if (!ROLES.includes(role)) return res.status(400).json({ error: `role must be one of ${ROLES.join(', ')}` });
+    if (b.canAdminister !== undefined && typeof b.canAdminister !== 'boolean') return res.status(400).json({ error: 'canAdminister must be true or false' });
+    if (!canDecide(req.ctx.role) && (DECIDING_ROLES.includes(role) || b.canAdminister === true)) {
+      return refuseDeciding(res, 'adding a certifier or another administrator');
+    }
     if (String(b.passcode ?? '').length < 6) return res.status(400).json({ error: 'a passcode of at least 6 characters is required' });
     const dup = await db.query(`SELECT id FROM app_user WHERE lower(email) = $1`, [email]);
     if (dup.rows.length) return res.status(409).json({ error: 'that email is already a person here' });
     const r = await db.query(
-      `INSERT INTO app_user (full_name, occupation, email, role, authorisation_number, passcode_hash)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING ${PERSON_COLS}`,
-      [fullName, occupation, email, role, b.authorisationNumber ? String(b.authorisationNumber).trim() : null, hashPasscode(b.passcode)]);
-    res.status(201).json(personRow(r.rows[0]));
+      `INSERT INTO app_user (full_name, occupation, email, role, authorisation_number, passcode_hash, can_administer)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING ${PERSON_COLS}`,
+      [fullName, occupation, email, role, b.authorisationNumber ? String(b.authorisationNumber).trim() : null, hashPasscode(b.passcode),
+       b.canAdminister === true]);
+    res.status(201).json(personRow(r.rows[0], await holderId()));
   }));
 
   app.patch('/api/users/:id', wrap(async (req, res) => {
-    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'changing a person needs a compliance certifier', clause: 'Role' });
+    if (!(await canManagePeople(req))) return res.status(403).json({ error: 'changing a person needs a compliance certifier', clause: 'Role' });
     const id = Number(req.params.id);
     const b = req.body ?? {};
     for (const k of ['fullName', 'occupation', 'email', 'role', 'authorisationNumber']) {
       if (b[k] !== undefined && b[k] !== null && typeof b[k] !== 'string') return res.status(400).json({ error: `${k} must be text` });
     }
     if (b.role !== undefined && !ROLES.includes(b.role)) return res.status(400).json({ error: `role must be one of ${ROLES.join(', ')}` });
+    if (b.canAdminister !== undefined && typeof b.canAdminister !== 'boolean') return res.status(400).json({ error: 'canAdminister must be true or false' });
+    if (!canDecide(req.ctx.role)
+        && (DECIDING_ROLES.includes(b.role) || b.canAdminister !== undefined || (await touchesDecider(id)))) {
+      return refuseDeciding(res, 'changing a certifier, a deciding role or who administers');
+    }
     if (b.active === false && id === req.ctx.userId) return res.status(400).json({ error: 'you cannot deactivate yourself' });
     if (b.email !== undefined) {
       const email = String(b.email).trim().toLowerCase();
@@ -1100,19 +1253,22 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
     const r = await db.query(
       `UPDATE app_user SET
          full_name = COALESCE($2, full_name), occupation = COALESCE($3, occupation), email = COALESCE($4, email),
-         role = COALESCE($5, role), authorisation_number = COALESCE($6, authorisation_number), active = COALESCE($7, active)
+         role = COALESCE($5, role), authorisation_number = COALESCE($6, authorisation_number), active = COALESCE($7, active),
+         can_administer = COALESCE($8, can_administer)
        WHERE id = $1 RETURNING ${PERSON_COLS}`,
       [id, b.fullName?.trim() || null, b.occupation?.trim() || null, b.email ?? null, b.role ?? null,
-       b.authorisationNumber === undefined ? null : String(b.authorisationNumber).trim(), typeof b.active === 'boolean' ? b.active : null]);
+       b.authorisationNumber === undefined ? null : String(b.authorisationNumber).trim(), typeof b.active === 'boolean' ? b.active : null,
+       typeof b.canAdminister === 'boolean' ? b.canAdminister : null]);
     if (!r.rows.length) return res.status(404).json({ error: 'person not found' });
     if (b.active === false) await db.query(`UPDATE auth_token SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [id]);
-    res.json(personRow(r.rows[0]));
+    res.json(personRow(r.rows[0], await holderId()));
   }));
 
   /** A new passcode signs that person out everywhere. */
   app.post('/api/users/:id/passcode', wrap(async (req, res) => {
-    if (!canDecide(req.ctx.role)) return res.status(403).json({ error: 'resetting a passcode needs a compliance certifier', clause: 'Role' });
+    if (!(await canManagePeople(req))) return res.status(403).json({ error: 'resetting a passcode needs a compliance certifier', clause: 'Role' });
     const id = Number(req.params.id);
+    if (!canDecide(req.ctx.role) && (await touchesDecider(id))) return refuseDeciding(res, "resetting a certifier's passcode");
     const passcode = String(req.body?.passcode ?? '');
     if (passcode.length < 6) return res.status(400).json({ error: 'a passcode of at least 6 characters is required' });
     const r = await db.query(`UPDATE app_user SET passcode_hash = $2 WHERE id = $1 RETURNING id`, [id, hashPasscode(passcode)]);
@@ -1122,7 +1278,23 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
   }));
 
   // ── dashboard: what needs attention, and what just happened ─────────────
+  /** Q7: conditions of a conditional certificate due within 14 days, or overdue. */
+  async function conditionReminders() {
+    const r = await db.query(`
+      SELECT cc.id, cc.text, cc.due_date, j.id AS job_id, cl.legal_name AS client, l.name AS location,
+             (cc.due_date < CURRENT_DATE) AS overdue
+      FROM certificate_condition cc JOIN certificate c ON c.id = cc.certificate_id JOIN job j ON j.id = c.job_id
+      JOIN client cl ON cl.id = j.client_id AND cl.archived_at IS NULL LEFT JOIN hs_location l ON l.id = j.hs_location_id
+      WHERE cc.verified_at IS NULL AND cc.due_date IS NOT NULL AND cc.due_date <= CURRENT_DATE + 14
+      ORDER BY cc.due_date, cc.id`);
+    const day = (v) => (typeof v === 'string' ? v.slice(0, 10) : new Date(v).toISOString().slice(0, 10));
+    return r.rows.map((x) => ({ kind: 'condition', jobId: x.job_id, client: x.client, location: x.location, when: x.due_date,
+      text: `Condition ${x.overdue ? 'overdue' : 'due'} ${day(x.due_date)}: ${x.text}` }));
+  }
+
   app.get('/api/dashboard', wrap(async (_req, res) => {
+    // The peer reviewer's access is the flagged jobs only: nothing here is theirs.
+    if (isPeerReviewer(_req.ctx.role)) return res.json({ reminders: [], activity: [], mailConfigured: mailConfigured() });
     const [renewals, rfi, actions, stalled, activity, noAction, triage, decide] = await Promise.all([
       db.query(`SELECT j.id AS job_id, cl.legal_name AS client, l.name AS location, c.expiry_date
                 FROM certificate c JOIN job j ON j.id = c.job_id
@@ -1192,6 +1364,7 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
         when: r.opened_at, text: r.stage === 'enquiry' ? 'Enquiry waiting for triage' : 'Application pack not yet sent' })),
       ...decide.rows.map((r) => ({ kind: 'decide', jobId: r.job_id, client: r.client, location: r.location,
         when: null, text: 'At final validation: run the issuance check and decide' })),
+      ...(await conditionReminders()),
     ];
     res.json({ reminders, activity: activity.rows, mailConfigured: mailConfigured() });
   }));

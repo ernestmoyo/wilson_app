@@ -438,7 +438,8 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
     final current = ProcessStage.numberOf(j.stage);
     final waiting = j.stage == 'rfi' || j.stage == 'gap_closure';
     final reached = current > 0 ? current : _reached(j);
-    final moves = j.allowedNext.where((n) => n != 'certificate_issued').toList();
+    // A peer reviewer reads and reviews; moving the job is not theirs.
+    final moves = CurrentUser.isPeerReviewer ? <String>[] : j.allowedNext.where((n) => n != 'certificate_issued').toList();
     return SectionCard(
       key: const ValueKey('process-card'),
       title: 'Process',
@@ -603,6 +604,8 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
         2 => [_communicationsCard(j)],
         3 => [_historyCard(j)],
         _ => [
+            if (j.peerReviewRequired) _peerReviewCard(j),
+            if (j.conditions.isNotEmpty) _conditionsCard(j),
             if (j.certificate != null) _certificateCard(j),
             _issuanceCard(j),
             _interestCard(j),
@@ -1276,6 +1279,7 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
           if (c.requirementsNotMet.isNotEmpty) KeyValueRow('Requirements not met', c.requirementsNotMet.join('; ')),
           KeyValueRow('WorkSafe register due', _d(c.worksafeRegisterDue)),
           KeyValueRow('Retain records until', _d(j.retainUntil)),
+          if (j.certificateIssuedBy != null) KeyValueRow('Issued by', j.certificateIssuedBy!),
           // At stage 7 the send is the Next step; afterwards it lives here.
           if (CurrentUser.canDecide && j.stage != 'certificate_issued') ...[
             const SizedBox(height: Space.md),
@@ -1296,7 +1300,10 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
     // the latest date allowed; Bryan can bring it forward.
     DateTime latestDue(DateTime issued) => DateTime(issued.year, issued.month + 3, issued.day);
     var conditionsDue = latestDue(issueDate);
-    final number = TextEditingController(text: '${CurrentUser.authorisationNumber}-${today.year}-${j.id.toString().padLeft(4, '0')}');
+    // Every certificate is in the holder's name, so it carries the holder's
+    // number whoever issues it (Q6, 20 Oct 2026).
+    final prefix = j.holderAuthorisationNumber ?? CurrentUser.authorisationNumber;
+    final number = TextEditingController(text: '$prefix-${today.year}-${j.id.toString().padLeft(4, '0')}');
     final issuedTo = TextEditingController(
         text: '${j.subject['Name'] ?? j.subject['Full Name of PCBU'] ?? j.clientName}');
     final appliesTo = TextEditingController(
@@ -1446,6 +1453,169 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
       if (mounted) setState(() => _error = 'Not issued: $e');
       await _reload(keepError: true);
     }
+  }
+
+  // ── Peer review (reg 17.91 report; Tatenda Katai, 20 Oct 2026, Q5) ─────
+
+  static (String, Tone, IconData) _peerState(String s) => switch (s) {
+        'approved' => ('Approved', Tone.good, Icons.verified_outlined),
+        'changes_requested' => ('Changes requested', Tone.warn, Icons.edit_note_outlined),
+        'lapsed' => ('Lapsed', Tone.bad, Icons.history_toggle_off),
+        _ => ('Not requested', Tone.neutral, Icons.hourglass_empty),
+      };
+
+  /// The state, the decisions, the comment thread, and for the peer
+  /// reviewer the Approve / Request changes buttons. The certificate cannot
+  /// issue until the latest decision approves the job as it stands.
+  Widget _peerReviewCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    final (label, tone, icon) = _peerState(j.peerReviewState);
+    final latest = j.peerReviews.isEmpty ? null : j.peerReviews.last;
+    final by = latest == null ? '' : '${latest.reviewerName ?? 'the peer reviewer'} on ${_d(latest.decidedAt)}';
+    final line = switch (j.peerReviewState) {
+      'approved' => 'Approved by $by${(latest?.comment ?? '').isEmpty ? '' : ': ${latest!.comment}'}',
+      'changes_requested' => 'Changes requested by $by: ${latest?.comment ?? ''}',
+      'lapsed' => 'Approved by $by, then the check sheets or evidence changed. The peer reviewer must approve again before the certificate issues.',
+      _ => 'The peer reviewer has not decided yet. The certificate cannot issue until they approve.',
+    };
+    final canComment = CurrentUser.isPeerReviewer || CurrentUser.canRecord;
+    return SectionCard(
+      key: const ValueKey('peer-review-card'),
+      title: 'Peer review',
+      subtitle: 'Existing stationary container system on a reg 17.91 report: the peer reviewer reads the final check sheets and evidence, comments and approves.',
+      trailing: StatusBadge(label: label, tone: tone, icon: icon),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(line, style: t.bodyMedium),
+        if (j.peerReviewComments.isNotEmpty) ...[
+          const SizedBox(height: Space.md),
+          Text('Comments', style: t.labelMedium),
+          for (final c in j.peerReviewComments)
+            Container(
+              margin: const EdgeInsets.only(top: Space.sm),
+              padding: const EdgeInsets.all(Space.md),
+              decoration: BoxDecoration(color: Neutral.canvas, borderRadius: BorderRadius.circular(Radii.sm)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text([c.authorName ?? 'Someone', if (c.at != null) _d(c.at)].join(' · '), style: t.bodySmall),
+                const SizedBox(height: 2),
+                Text(c.body, style: t.bodyMedium),
+              ]),
+            ),
+        ],
+        if (canComment || CurrentUser.isPeerReviewer) ...[
+          const SizedBox(height: Space.md),
+          Wrap(spacing: Space.sm, runSpacing: Space.sm, children: [
+            if (CurrentUser.isPeerReviewer) ...[
+              FilledButton.icon(
+                key: const ValueKey('pr-approve'),
+                onPressed: _busy ? null : () => _peerDecide('approved'),
+                icon: const Icon(Icons.verified_outlined, size: 18),
+                label: const Text('Approve'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('pr-changes'),
+                onPressed: _busy ? null : () => _peerDecide('changes_requested'),
+                icon: const Icon(Icons.edit_note_outlined, size: 18),
+                label: const Text('Request changes'),
+              ),
+            ],
+            if (canComment)
+              TextButton.icon(
+                key: const ValueKey('pr-comment'),
+                onPressed: _busy ? null : _peerComment,
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: const Text('Comment'),
+              ),
+          ]),
+        ],
+      ]),
+    );
+  }
+
+  Future<void> _peerComment() async {
+    final body = await _askText(title: 'Peer review comment', label: 'Comment', lines: 3);
+    if (body == null || body.isEmpty) return;
+    await _send('peer_review.comment', {'jobId': widget.jobId, 'body': body}, done: 'Comment recorded');
+  }
+
+  Future<void> _peerDecide(String decision) async {
+    final approve = decision == 'approved';
+    final comment = await _askText(
+      title: approve ? 'Approve the peer review' : 'Request changes',
+      label: approve ? 'Comment (optional)' : 'What needs to change',
+      lines: 3,
+    );
+    if (comment == null || (!approve && comment.isEmpty)) return;
+    await _send(
+      'peer_review.decide',
+      {'jobId': widget.jobId, 'decision': decision, if (comment.isNotEmpty) 'comment': comment},
+      done: approve ? 'Peer review approved' : 'Changes requested',
+    );
+  }
+
+  // ── Conditions outstanding (reg 6.24; Q7) ─────────────────────────────────
+
+  /// Each condition of the conditional certificate with its due date; a
+  /// certifier verifies each. The job stays open until all are verified.
+  Widget _conditionsCard(JobRecord j) {
+    final t = Theme.of(context).textTheme;
+    final open = j.conditions.where((c) => !c.isVerified).length;
+    return SectionCard(
+      key: const ValueKey('conditions-card'),
+      title: 'Conditions',
+      subtitle: 'The assessment stays open until every condition is met and verified by a certifier (reg 6.24).',
+      trailing: StatusBadge(
+        label: open == 0 ? 'All verified' : '$open outstanding',
+        tone: open == 0 ? Tone.good : Tone.warn,
+        dense: true,
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (final c in j.conditions)
+          Container(
+            key: ValueKey('condition-${c.id}'),
+            margin: const EdgeInsets.only(top: Space.sm),
+            padding: const EdgeInsets.all(Space.md),
+            decoration: BoxDecoration(color: Neutral.canvas, borderRadius: BorderRadius.circular(Radii.sm)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(c.text, style: t.bodyMedium),
+                  const SizedBox(height: Space.xs),
+                  Wrap(spacing: Space.sm, runSpacing: Space.xs, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    if (c.regulation != null) Text('reg ${c.regulation}', style: t.bodySmall),
+                    if (c.dueDate != null) Text('Due ${_d(c.dueDate)}', style: t.bodySmall),
+                    if (c.isVerified)
+                      const StatusBadge(label: 'Verified', tone: Tone.good, dense: true)
+                    else if (c.overdue)
+                      const StatusBadge(label: 'Overdue', tone: Tone.bad, dense: true),
+                    if (c.isVerified)
+                      Text(
+                        'Verified ${_d(c.verifiedAt)} by ${c.verifiedByName ?? 'compliance certifier'}'
+                        '${(c.verificationNote ?? '').isEmpty ? '' : ': ${c.verificationNote}'}',
+                        style: t.bodySmall,
+                      ),
+                  ]),
+                ]),
+              ),
+              if (!c.isVerified && CurrentUser.canDecide)
+                TextButton(
+                  key: ValueKey('cond-verify-${c.id}'),
+                  onPressed: _busy ? null : () => _verifyCondition(c),
+                  child: const Text('Verify'),
+                ),
+            ]),
+          ),
+      ]),
+    );
+  }
+
+  Future<void> _verifyCondition(CertificateCondition c) async {
+    final note = await _askText(title: 'Verify: ${c.text}', label: 'How it was met (optional)');
+    if (note == null) return;
+    await _send(
+      'condition.verify',
+      {'jobId': widget.jobId, 'conditionId': c.id, if (note.isNotEmpty) 'note': note},
+      done: 'Condition verified',
+    );
   }
 
   // ── History: every move, who and when ────────────────────────────────────

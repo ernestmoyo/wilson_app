@@ -28,12 +28,14 @@ class _PeopleScreenState extends State<PeopleScreen> {
     'reviewer': 'Reviewer',
     'viewer': 'Viewer',
     'admin': 'Administrator',
+    'peer_reviewer': 'Peer reviewer',
   };
   static const roleHelp = {
     'certifier': 'Signs the declaration, answers the register of interests, verifies corrective actions, decides and issues certificates. Needs a WorkSafe authorisation number.',
     'reviewer': 'Records findings, comments, evidence, corrective actions and communications, and moves a job between the working stages. Cannot sign, decide or issue.',
     'viewer': 'Reads everything. Records nothing.',
     'admin': 'As a compliance certifier, for whoever administers the system.',
+    'peer_reviewer': 'Sees only jobs flagged for a reg 17.91 peer review: reads the final check sheets and evidence, comments, and approves or asks for changes. Records nothing else.',
   };
 
   @override
@@ -88,7 +90,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
           ),
         ],
       ),
-      body: !CurrentUser.canDecide
+      body: !CurrentUser.canManagePeople
           ? const Center(
               child: EmptyState(icon: Icons.lock_outline, title: 'Managing people needs a compliance certifier.'),
             )
@@ -167,6 +169,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
   static IconData _roleIcon(String role) => switch (role) {
         'certifier' || 'admin' => Icons.verified_user_outlined,
         'viewer' => Icons.visibility_outlined,
+        'peer_reviewer' => Icons.rate_review_outlined,
         _ => Icons.edit_note_outlined,
       };
 
@@ -205,6 +208,10 @@ class _PeopleScreenState extends State<PeopleScreen> {
               _roleBadge(p.role, active: p.active),
               if (!p.active) const StatusBadge(label: 'Inactive', tone: Tone.neutral, icon: Icons.block, dense: true),
               if (p.id == CurrentUser.id) const StatusBadge(label: 'You', tone: Tone.good, icon: Icons.account_circle_outlined, dense: true),
+              if (p.isCertificateHolder)
+                const StatusBadge(label: 'Certificate holder', tone: Tone.info, icon: Icons.workspace_premium_outlined, dense: true),
+              if (p.canAdminister)
+                const StatusBadge(label: 'Manages people', tone: Tone.neutral, icon: Icons.manage_accounts_outlined, dense: true),
             ]),
             const SizedBox(height: 2),
             Text(
@@ -260,6 +267,13 @@ class _PeopleScreenState extends State<PeopleScreen> {
     final authorisation = TextEditingController(text: p?.authorisationNumber ?? '');
     final passcode = TextEditingController();
     var role = p?.role ?? 'reviewer';
+    var canAdminister = p?.canAdminister ?? false;
+    // Someone who manages people without deciding hands out only the roles
+    // that do not decide (the server holds them to it too).
+    final roles = [
+      for (final r in roleNames.keys)
+        if (CurrentUser.canDecide || !const {'certifier', 'admin'}.contains(r) || r == role) r,
+    ];
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -281,10 +295,19 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 key: const ValueKey('p-role'),
                 initialValue: role,
                 decoration: const InputDecoration(labelText: 'Role'),
-                items: [for (final r in roleNames.keys) DropdownMenuItem(value: r, child: Text(roleNames[r]!))],
+                items: [for (final r in roles) DropdownMenuItem(value: r, child: Text(roleNames[r]!))],
                 onChanged: (v) => setD(() => role = v ?? role),
               ),
               Text(roleHelp[role] ?? '', style: Theme.of(ctx).textTheme.bodySmall),
+              if (CurrentUser.canDecide)
+                SwitchListTile(
+                  key: const ValueKey('p-can-administer'),
+                  contentPadding: EdgeInsets.zero,
+                  value: canAdminister,
+                  onChanged: (v) => setD(() => canAdminister = v),
+                  title: const Text('Can manage people'),
+                  subtitle: const Text('Adds people and resets passcodes, without deciding or issuing (admin and oversight).'),
+                ),
               if (role == 'certifier' || role == 'admin')
                 TextField(controller: authorisation, key: const ValueKey('p-authorisation'), decoration: const InputDecoration(labelText: 'WorkSafe authorisation number')),
               if (p == null)
@@ -310,6 +333,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
       'email': email.text.trim(),
       'role': role,
       if (authorisation.text.trim().isNotEmpty) 'authorisationNumber': authorisation.text.trim(),
+      if (CurrentUser.canDecide && canAdminister != (p?.canAdminister ?? false)) 'canAdminister': canAdminister,
     };
     final done = await _run(() async {
       if (p == null) {
