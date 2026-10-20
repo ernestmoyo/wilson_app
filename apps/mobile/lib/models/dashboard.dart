@@ -60,6 +60,7 @@ String describeEvent(String type, Map<String, dynamic> p) => switch (type) {
       'corrective_action.update' => 'marked a corrective action ${_status(p['status'])}',
       'communication.record' => 'recorded a communication: ${p['summary'] ?? ''}',
       'evidence.attach' => 'attached evidence',
+      'evidence.review' => p['state'] == 'accepted' ? 'accepted evidence' : 'marked evidence not accepted',
       'client.archive' => p['archived'] == false ? 'brought a client back to the list' : 'archived a client',
       'certificate.issue' => switch (p['decision']) {
           'refused' => 'refused the certificate',

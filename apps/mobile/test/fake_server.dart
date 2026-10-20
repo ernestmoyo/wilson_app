@@ -337,9 +337,12 @@ class FakeServer {
             x['template_code'] == p['templateCode'] &&
             x['section_ordinal'] == p['sectionOrdinal'] &&
             x['item_ordinal'] == p['itemOrdinal']);
+        // A new version (supersedesId): the old row stays, no longer current.
+        final prior = evidence.where((x) => x['id'] == p['supersedesId']).firstOrNull;
+        prior?['current'] = false;
         evidence.add({
           'id': 500 + evidence.length,
-          'finding_id': f.isEmpty ? null : f.first['id'],
+          'finding_id': prior != null ? prior['finding_id'] : (f.isEmpty ? null : f.first['id']),
           'kind': p['kind'] ?? 'photo',
           'sha256': p['sha256'],
           'storage_key': p['storageKey'],
@@ -348,7 +351,19 @@ class FakeServer {
           'bytes': p['bytes'],
           'captured_by_name': p['capturedByName'],
           'captured_at': p['capturedAt'],
+          'version': prior == null ? 1 : (prior['version'] as int? ?? 1) + 1,
+          'supersedes_id': prior?['id'],
+          'uploaded_by_name': p['capturedByName'],
+          'uploaded_at': '2026-10-20T01:00:00Z',
+          'review_state': 'submitted',
+          'current': true,
         });
+      case 'evidence.review':
+        final row = evidence.firstWhere((x) => x['id'] == p['evidenceId']);
+        row['review_state'] = p['state'];
+        row['review_note'] = p['note'];
+        row['reviewed_by_name'] = 'Reviewer On Test';
+        row['reviewed_at'] = '2026-10-20T02:00:00Z';
       case 'job.unit.remove':
         units.removeWhere((u) => u['ordinal'] == p['ordinal']);
       case 'finding.upsert':
@@ -523,6 +538,10 @@ class FakeServer {
           for (final e in (body['events'] as List).cast<Map<String, dynamic>>()) {
             if (e['type'] == 'client.archive' && rejectArchiveWith != null) {
               rejected.add({'id': e['id'], 'type': e['type'], 'clause': 'Role', 'reason': rejectArchiveWith});
+              continue;
+            }
+            if (e['type'] == 'evidence.review' && !const {'reviewer', 'admin', 'certifier'}.contains(role)) {
+              rejected.add({'id': e['id'], 'type': e['type'], 'clause': 'Role', 'reason': 'reviewing evidence needs a reviewer'});
               continue;
             }
             if (e['type'] == 'interest.declare' && rejectDeclareWith != null) {

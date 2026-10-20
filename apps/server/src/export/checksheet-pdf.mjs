@@ -21,7 +21,7 @@
 
 import PDFDocument from 'pdfkit';
 import { existsSync } from 'fs';
-import { evidenceFileNames } from './naming.mjs';
+import { versionedFileNames } from './naming.mjs';
 
 // ── data ───────────────────────────────────────────────────────────────────
 
@@ -47,6 +47,36 @@ function sheetForClass(meta, classKey) {
 export function regulationForClass(item, classKey) {
   const over = classKey ? item.regulation_refs_by_class?.[classKey] : null;
   return Array.isArray(over) && over.length ? over.join(' ') : item.regulation_raw;
+}
+
+/**
+ * A job's evidence in filing order, every version, with the labels the file
+ * names are built from, who uploaded and reviewed it, and whether it is the
+ * current version. Each row also carries `fileName` (the name in the ZIP and
+ * the PDF) and `versionLine`.
+ */
+export async function loadJobEvidence(db, jobId) {
+  const r = await db.query(`
+      SELECT e.id, e.finding_id, e.kind, e.mime, e.storage_key, e.sha256, e.bytes, e.original_name,
+             e.appendix_category, e.created_at,
+             e.supersedes_id, e.version, e.uploaded_at, e.review_state, e.reviewed_at, e.review_note,
+             ub.full_name AS uploaded_by_name, rb.full_name AS reviewed_by_name,
+             NOT EXISTS (SELECT 1 FROM evidence n WHERE n.supersedes_id = e.id) AS current,
+             COALESCE(cs.number, cs.ordinal::text) AS section_label_part,
+             COALESCE(ci.number, ci.ordinal::text) AS item_label_part
+      FROM evidence e
+      LEFT JOIN finding f ON f.id = e.finding_id
+      LEFT JOIN checksheet_item ci ON ci.id = f.item_id
+      LEFT JOIN checksheet_section cs ON cs.id = ci.section_id
+      LEFT JOIN app_user ub ON ub.id = e.uploaded_by
+      LEFT JOIN app_user rb ON rb.id = e.reviewed_by
+      WHERE e.job_id = $1 ORDER BY e.created_at, e.id`, [jobId]);
+  const rows = r.rows.map((e) => ({
+    ...e,
+    item_label: e.item_label_part != null ? `${e.section_label_part}.${e.item_label_part}` : null,
+  }));
+  const names = versionedFileNames(rows);
+  return rows.map((e) => ({ ...e, fileName: names.get(e.id), versionLine: evidenceVersionLine(e) }));
 }
 
 export async function loadChecksheetData(db, jobId, { templateOrder = () => [], kindFor = () => 'location' } = {}) {
@@ -83,23 +113,13 @@ export async function loadChecksheetData(db, jobId, { templateOrder = () => [], 
     db.query(`SELECT ordinal, fields FROM job_unit WHERE job_id = $1 ORDER BY ordinal`, [jobId]),
     db.query(`SELECT decision, conditions, requirements_not_met, issue_date, certificate_number
               FROM certificate WHERE job_id = $1`, [jobId]),
-    db.query(`
-      SELECT e.id, e.finding_id, e.kind, e.mime, e.storage_key, e.sha256, e.bytes, e.original_name,
-             e.appendix_category, e.created_at,
-             COALESCE(cs.number, cs.ordinal::text) AS section_label_part,
-             COALESCE(ci.number, ci.ordinal::text) AS item_label_part
-      FROM evidence e
-      LEFT JOIN finding f ON f.id = e.finding_id
-      LEFT JOIN checksheet_item ci ON ci.id = f.item_id
-      LEFT JOIN checksheet_section cs ON cs.id = ci.section_id
-      WHERE e.job_id = $1 ORDER BY e.created_at, e.id`, [jobId]),
+    loadJobEvidence(db, jobId),
   ]);
 
-  const evRows = evidence.rows.map((e) => ({
-    ...e,
-    item_label: e.item_label_part != null ? `${e.section_label_part}.${e.item_label_part}` : null,
-  }));
-  const fileNames = evidenceFileNames(evRows);
+  const evRows = evidence;
+  // Current versions keep their names; replaced ones go under "Previous versions/" (Q4).
+  const fileNames = new Map(evRows.map((e) => [e.id, e.fileName]));
+  const currentFor = (f) => evRows.filter((e) => e.current && Number(e.finding_id) === Number(f.id));
 
   const order = templateOrder(job.class_key) ?? [];
   const inspections = [];
@@ -134,7 +154,9 @@ export async function loadChecksheetData(db, jobId, { templateOrder = () => [], 
             return {
               number: i.number ?? String(i.ordinal), regulation: regulationForClass(i, job.class_key), action: i.action, records: i.records,
               finding: f,
-              evidence: f ? evRows.filter((e) => Number(e.finding_id) === Number(f.id)).map((e) => fileNames.get(e.id)) : [],
+              evidence: f ? currentFor(f).map((e) => fileNames.get(e.id)) : [],
+              // The version used, named (Q4): "v2 · uploaded 20/10/2026 by X · accepted by Y".
+              evidenceVersions: f ? currentFor(f).map((e) => ({ name: fileNames.get(e.id), line: evidenceVersionLine(e) })) : [],
             };
           }),
         })),
@@ -149,7 +171,7 @@ export async function loadChecksheetData(db, jobId, { templateOrder = () => [], 
     units: units.rows,
     certificate: cert.rows[0] ?? null,
     inspections,
-    evidence: evRows.map((e) => ({ ...e, fileName: fileNames.get(e.id) })),
+    evidence: evRows,
   };
 }
 
@@ -172,6 +194,22 @@ export function pdfText(s) {
 }
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('en-NZ', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Pacific/Auckland' }) : '');
+
+/** "v2 · uploaded 20/10/2026 by X · accepted by Y": which version was used, and its review. */
+export function evidenceVersionLine(e) {
+  const by = (n) => (n ? ` by ${n}` : '');
+  const parts = [`v${e.version ?? 1}`, `uploaded ${fmtDate(e.uploaded_at ?? e.created_at)}${by(e.uploaded_by_name)}`];
+  if (e.review_state === 'accepted') parts.push(`accepted${by(e.reviewed_by_name)}`);
+  else if (e.review_state === 'not_accepted') parts.push(`not accepted${by(e.reviewed_by_name)}`);
+  else parts.push('not yet reviewed');
+  return parts.join(' · ');
+}
+
+/** The evidence cell: each current file, then the version it is and its review. */
+const evidenceRuns = (it) => (it.evidenceVersions ?? it.evidence.map((name) => ({ name, line: null }))).flatMap((e) => [
+  { text: e.name, color: C.tealDark },
+  ...(e.line ? [{ text: e.line, color: C.muted, font: F.i }] : []),
+]);
 
 /** Word-wrap one paragraph run into lines of at most `width` points. */
 function wrap(doc, text, font, size, width) {
@@ -241,7 +279,7 @@ function columnsFor(kind, sheet) {
       { label: h[0] ?? 'Performance Standard Ref', w: 0.13, get: (it) => [{ text: it.regulation ?? it.number, font: F.b }] },
       { label: h[1] ?? 'Competence Requirement', w: 0.40, get: (it) => [{ text: it.action }] },
       { label: h[2] ?? 'Certifier Comments', w: 0.32, get: (it) => commentRuns(it.finding) },
-      { label: 'Evidence', w: 0.15, get: (it) => it.evidence.map((n) => ({ text: n, color: C.tealDark })) },
+      { label: 'Evidence', w: 0.15, get: evidenceRuns },
     ];
   }
   if (kind === 'cylinder') {
@@ -250,7 +288,7 @@ function columnsFor(kind, sheet) {
       { label: h[1] ?? 'Check', w: 0.30, get: (it) => [{ text: it.action }] },
       { label: h[2] ?? 'Records', w: 0.20, get: (it) => [{ text: it.records }] },
       { label: h[3] ?? 'Comments', w: 0.28, get: (it) => commentRuns(it.finding) },
-      { label: h[4] ?? 'Evidence', w: 0.16, get: (it) => it.evidence.map((n) => ({ text: n, color: C.tealDark })) },
+      { label: h[4] ?? 'Evidence', w: 0.16, get: evidenceRuns },
     ];
   }
   return [
@@ -259,7 +297,7 @@ function columnsFor(kind, sheet) {
     { label: h[2] ?? 'Action', w: 0.30, get: (it) => [{ text: it.action }] },
     { label: h[3] ?? 'Records', w: 0.20, get: (it) => [{ text: it.records }] },
     { label: h[4] ?? 'Comments', w: 0.24, get: (it) => commentRuns(it.finding) },
-    { label: ev, w: 0.12, get: (it) => it.evidence.map((n) => ({ text: n, color: C.tealDark })) },
+    { label: ev, w: 0.12, get: evidenceRuns },
   ];
 }
 

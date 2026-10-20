@@ -19,6 +19,7 @@ import { mailConfigured, sendMail } from './mail.mjs';
 import { randomUUID } from 'crypto';
 import { setAuthorised, validateChoices } from './scope.mjs';
 import { checksheetPdf, regulationForClass } from './export/checksheet-pdf.mjs';
+import { loadJobEvidence } from './export/checksheet-pdf.mjs';
 import { buildBundleZip, bundleFileName, contentDisposition, exportKey, exportStore } from './export/bundle.mjs';
 import { safeFileName } from './export/naming.mjs';
 
@@ -658,16 +659,23 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       db.query(`SELECT f.id, f.inspection_id, t.code AS template_code, s.ordinal AS section_ordinal,
                        i.ordinal AS item_ordinal, f.status, f.comment, f.verification_method,
                        f.failure_reason, f.general_comment, f.na_reason, f.decided_at, f.updated_at,
-                       (SELECT count(*)::int FROM evidence e WHERE e.finding_id = f.id) AS evidence_count
+                       (SELECT count(*)::int FROM evidence_current e WHERE e.finding_id = f.id) AS evidence_count
                 FROM finding f
                 JOIN inspection ins ON ins.id = f.inspection_id
                 JOIN checksheet_item i ON i.id = f.item_id
                 JOIN checksheet_section s ON s.id = i.section_id
                 JOIN checksheet_template t ON t.id = s.template_id
                 WHERE ins.job_id = $1 ORDER BY t.code, s.ordinal, i.ordinal`, [id]),
-      db.query(`SELECT id, finding_id, kind, sha256, storage_key, original_name, mime, bytes, provenance,
-                       captured_by_name, captured_by_occupation, captured_at, captured_where, retain_until
-                FROM evidence WHERE job_id = $1 ORDER BY created_at`, [id]),
+      // Every version, the current one marked (Q3/Q4, 20 Oct 2026).
+      db.query(`SELECT e.id, e.finding_id, e.kind, e.sha256, e.storage_key, e.original_name, e.mime, e.bytes, e.provenance,
+                       e.captured_by_name, e.captured_by_occupation, e.captured_at, e.captured_where, e.retain_until,
+                       e.version, e.supersedes_id, e.uploaded_by, ub.full_name AS uploaded_by_name, e.uploaded_at,
+                       e.review_state, e.reviewed_by, rb.full_name AS reviewed_by_name, e.reviewed_at, e.review_note,
+                       NOT EXISTS (SELECT 1 FROM evidence n WHERE n.supersedes_id = e.id) AS current
+                FROM evidence e
+                LEFT JOIN app_user ub ON ub.id = e.uploaded_by
+                LEFT JOIN app_user rb ON rb.id = e.reviewed_by
+                WHERE e.job_id = $1 ORDER BY e.created_at, e.id`, [id]),
       db.query(`SELECT id, decision, register_number, certificate_number, issue_date, in_force_date,
                        expiry_date, conditions, conditions_due, requirements_not_met, worksafe_register_due
                 FROM certificate WHERE job_id = $1`, [id]),
@@ -822,8 +830,29 @@ export function buildApp(db, { allowedOrigin, requireAuth = process.env.AUTH_REQ
       canIssueConditional: blockers.length === 0,
       unresolvedNonCompliances: nc.rows[0].n,
       blockers,
+      warnings: await issuanceWarnings(id),
     });
   }));
+
+  /**
+   * What the certifier should see before issuing but that does not stop it
+   * (Q3, 20 Oct 2026): current evidence the reviewer has not accepted.
+   */
+  async function issuanceWarnings(jobId) {
+    const warnings = [];
+    const open = (await loadJobEvidence(db, jobId)).filter((e) => e.current && e.review_state !== 'accepted');
+    if (open.length) {
+      const n = open.length;
+      warnings.push({
+        kind: 'evidence_not_accepted',
+        clause: 'IPS 21(1)(e)',
+        reason: `${n} evidence file${n === 1 ? '' : 's'} not yet accepted by a reviewer: ` +
+          open.map((e) => `${e.fileName} (${e.review_state === 'not_accepted' ? 'not accepted' : 'submitted'})`).join(', '),
+        evidence: open.map((e) => ({ id: e.id, name: e.fileName, version: e.version, review_state: e.review_state, review_note: e.review_note ?? null })),
+      });
+    }
+    return warnings;
+  }
 
   /**
    * An action taken through a REST route rather than a sync event (issuing,
