@@ -225,12 +225,21 @@ class _JobScreenState extends State<JobScreen> with SingleTickerProviderStateMix
               ),
         actions: [
           SyncIndicator(sync: widget.sync, onTap: _busy ? null : _syncNow),
-          TextButton.icon(
-            key: const ValueKey('to-jobs'),
-            onPressed: () => context.go('/'),
-            icon: const Icon(Icons.view_list_outlined, size: 18),
-            label: const Text('Clients'),
-          ),
+          // On a phone the words give their room to the job's name.
+          if (MediaQuery.sizeOf(context).width < 600)
+            IconButton(
+              key: const ValueKey('to-jobs'),
+              tooltip: 'Clients',
+              onPressed: () => context.go('/'),
+              icon: const Icon(Icons.view_list_outlined),
+            )
+          else
+            TextButton.icon(
+              key: const ValueKey('to-jobs'),
+              onPressed: () => context.go('/'),
+              icon: const Icon(Icons.view_list_outlined, size: 18),
+              label: const Text('Clients'),
+            ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),

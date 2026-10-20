@@ -132,7 +132,7 @@ void main() {
       expect(find.text('G2 Chiller · Check sheet'), findsOneWidget);
     });
 
-    testWidgets('progress strip: answered, findings, to go', (t) async {
+    testWidgets('progress strip: answered, findings, and what is left on the To answer chip', (t) async {
       await sized(t, ipadLandscape);
       final insp = g2();
       answerSections(insp, 1); // section 1: 4 items compliant
@@ -145,7 +145,8 @@ void main() {
       final answered = general.sections.first.items.length + 1;
       await t.pumpWidget(MaterialApp(home: ChecksheetScreen(inspection: insp)));
       await t.pumpAndSettle();
-      expect(find.text('$answered of 36 answered · 1 finding · ${36 - answered} to go'), findsOneWidget);
+      expect(find.text('$answered of 36 answered · 1 finding'), findsOneWidget);
+      expect(find.text('To answer · ${36 - answered}'), findsOneWidget);
       expect(find.text('To answer · ${36 - answered}'), findsOneWidget);
       expect(find.text('Findings · 1'), findsOneWidget);
       expect(find.text('Cannot grant yet'), findsOneWidget);

@@ -372,7 +372,8 @@ class _ChecksheetScreenState extends State<ChecksheetScreen> {
     final decision = sheetDecision(insp, stage: widget.stage);
 
     final summary = Text(
-      '$answered of $total answered · $findings finding${findings == 1 ? '' : 's'} · $toGo to go',
+      // What is left to answer is on the "To answer" chip beside it.
+      '$answered of $total answered · $findings finding${findings == 1 ? '' : 's'}',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Neutral.strong),

@@ -129,7 +129,8 @@ ThemeData buildTheme() {
     outlineVariant: Neutral.line,
     brightness: Brightness.light,
   );
-  final text = _textTheme();
+  // Every style carries the family, button and chip labels included.
+  final text = _textTheme().apply(fontFamily: _font);
   final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
 
   return ThemeData(

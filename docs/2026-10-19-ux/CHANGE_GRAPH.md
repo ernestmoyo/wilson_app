@@ -97,3 +97,13 @@ Readers to keep whole: the widget tests (keys and texts listed in audit §6 — 
 - **Waits on Bryan:** conditions with due date, refusal notice, renewal reminders (regulatory backlog, not styling).
 
 Every phase: tests first (keys in audit §6 kept), full Flutter suite + analyze + web build, a browser walk on the local copy with the replayed jobs, then deploy only on the owner's word.
+
+## 8. Results (20 Oct 2026)
+
+Built on `feat/graph-model`: U1 foundations (9d62d9f), U4 board/people/login (337947a), U3 job (a90a1b9), U2 check sheet (a933aec), plus review fixes.
+
+- **Flutter:** 143 passed, 2 skipped (was 103); `flutter analyze` 1 pre-existing notice (was 2). Server untouched.
+- **Visual review:** the browser walk could not run (Chrome on this machine rendered no Flutter page at all, the live site included), so every screen was rendered from the test harness with the real fonts at iPad landscape, portrait and phone sizes, and reviewed. Found and fixed: button and chip labels lacked the font family (would have fallen back to Roboto on web); the Evidence Portfolio header broke mid-word; the progress summary was cut off; the job title was squeezed to one letter on a phone.
+- **Decisions taken by the builders:** table layout from 760 px (iPad portrait), section list from 1100 px; Conditional and Clear answer in the ⋮ menu beside the answers; the board's tiles only for groups the server reports (no "Waiting for review"/"Certificates to send" tile: no data for them yet); New job asks Scope first.
+- **Not verified:** a real browser walk; a real iPad; the web build on Vercel.
+- **Still open:** certificate preview before issue (needs server work); evidence capture has no URL; dark mode; the "Next step" wording at final validation says "Answer the register of interests" while the primary button is Issue certificate.

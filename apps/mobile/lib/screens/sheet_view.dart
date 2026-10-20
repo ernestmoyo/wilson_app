@@ -170,7 +170,7 @@ class SheetViewState extends State<SheetView> {
   // Item | Check | Records | Comments | Evidence; the handler sheet has
   // Ref | Requirement | Comments. Comments is wider than the workbook's
   // because the answer sits at its head.
-  static const _flexLocation = [6, 11, 28, 22, 34, 9];
+  static const _flexLocation = [6, 11, 26, 22, 34, 11];
   static const _flexFiveCol = [6, 0, 34, 21, 30, 9];
   static const _flexThreeCol = [7, 0, 47, 0, 35, 11];
   List<int> get _flex => sheet.kind == 'location'
