@@ -1153,273 +1153,273 @@ JOIN checksheet_template t ON t.id = sec.template_id
 WHERE t.code = 'wks17-class-6-1a-6-1b-6-1c-8-2a-8' AND t.meta->>'contentHash' = '7d144406bd01756fb531ce29ef62f27425a8eeccfacbc42b46d66af749fb62b7' AND sec.ordinal = 9
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
--- wks17-general — 8 sections, 36 items — content e80a9847c792
+-- wks17-general — 8 sections, 36 items — content 667c0621e5cf
 INSERT INTO checksheet_template (code, revision, title, ps_reference, class_scope, status, meta)
 SELECT 'wks17-general',
        COALESCE((SELECT max(revision) FROM checksheet_template WHERE code = 'wks17-general'), 0) + 1,
-       'General location requirements', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'current', '{"contentHash":"e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066","sheet":{"title":null,"evidenceColumnLabel":"Evidence Portfolio","banner":null,"columnHeaders":["Item","Regulation","Action","Records","Comments"],"note":"NB: Non compliances are in red","declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":"Section 1/2","kind":"location","subjectBlockTitle":null,"subjectBlock":[],"unitBlockTitle":null,"unitBlock":null,"authorisation":null,"certificate":null},"sheetByClass":{"class_6_8":{"title":"Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","banner":"General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"class_2_3":{"title":"Requirements for Class 2 and 3.1","banner":null,"declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.34 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"class_5_1":{"title":"Check sheet Location Class 5.1.1 and 5.1.2 substances","banner":"General location requirements specific to class 5.1.1 and 5.1.2 substances","declaration":null}}}'::jsonb
+       'General location requirements', 'Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard', '{}', 'current', '{"contentHash":"667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62","sheet":{"title":null,"evidenceColumnLabel":"Evidence Portfolio","banner":null,"columnHeaders":["Item","Regulation","Action","Records","Comments"],"note":"NB: Non compliances are in red","declaration":null,"documentControl":null,"scopeOfAuthorisation":null,"reference":null,"footer":"Section 1/2","kind":"location","subjectBlockTitle":null,"subjectBlock":[],"unitBlockTitle":null,"unitBlock":null,"authorisation":null,"certificate":null},"sheetByClass":{"class_6_8":{"title":"Check sheet Location Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","banner":"General location requirements specific to Class 6.1A, 6.1B, 6.1C, 8.2A, and 8.2B substances","declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 13.38 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"class_2_3":{"title":"Requirements for Class 2 and 3.1","banner":null,"declaration":"Declaration: I verify that I have examined the evidence and conducted the compliance audit as per Regulation 10.34 of the Health and Safety at Work (Hazardous Substances) Regulations 2017. All photographs in the report were personally taken by me at the specified site on the date of the report, unless stated otherwise within the report (IPS Clause 21(4)).Please note that this audit utilized an iPad and tape measure, with appropriate personal protective equipment worn on-site (IPS Clause 21(1)(d)). The issuance of a compliance certificate has been validated through inquiry, inspection, assessment, or examination, as detailed in this report (IPS Clause 21(1)(e)). In accordance with r.6.22(2) and IPS Clause 23(1), I affirm that I have assessed and found no conflict of interest or reasonably foreseeable conflict of interest in performing my duties as a compliance certifier/proxy. Site Assessor confirmation (Digital signature) IPS Clause 21(5)"},"class_5_1":{"title":"Check sheet Location Class 5.1.1 and 5.1.2 substances","banner":"General location requirements specific to class 5.1.1 and 5.1.2 substances","declaration":null}}}'::jsonb
 WHERE NOT EXISTS (
-  SELECT 1 FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+  SELECT 1 FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 );
 UPDATE checksheet_template
    SET status = 'superseded',
-       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066')
- WHERE code = 'wks17-general' AND (meta->>'contentHash') IS DISTINCT FROM 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND status <> 'superseded';
+       superseded_by = (SELECT id FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62')
+ WHERE code = 'wks17-general' AND (meta->>'contentHash') IS DISTINCT FROM '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND status <> 'superseded';
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 1, '1', 'Determining which regulations apply'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', '{}', '{"class_6_8":["10.34","10.36","12.17","12.42","13.38"],"class_2_3":["10.34"],"class_5_1":["12.17"]}'::jsonb, '10.34 10.36 12.17 12.42 13.38', NULL, 'Verify that the hazardous substances are present at the site— (a) in quantities exceeding the threshold quantities specified in the Regulations for the hazardous substances; and (b) for periods of time that trigger the relevant requirement to establish a hazardous substance location under the Regulations', 'A record of— (a) the maximum quantities of the hazardous substances, identified by subclass; and (b) the thresholds that are exceeded', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 1
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', '{}', NULL, 'All', NULL, 'Ascertain— (a) whether the PCBU has been granted any exemption or approval that is relevant to the hazardous substance location; and (b) the extent of the exemption or approval including any conditions; and (c) whether any provisions of Schedule 1 (Transitional, Savings, and related provisions) of the Regulations apply', 'A copy of the exemption or approval A note recording the provisions of Schedule 1 of the Regulations that apply (if any)', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 1
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 1
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 2, '2', 'Notification requirements'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', '{}', '{"class_6_8":["13.34(4)"],"class_2_3":["10.34(1)(a)"],"class_5_1":["12.8(4)"]}'::jsonb, '13.34(4)', NULL, 'Verify— (a) either— (i) the notification that has been made; or (ii) the most recent location compliance certificate; and (b) the details of the notification or the most recent location compliance certificate including: (i) the name of the company and the PCBU; and (ii) the street address of the workplace; and (c) either— (i) that the maximum quantity and classification of hazardous substances held are consistent with the notification or most recent location compliance certificate; or (ii) if the quantity of hazardous substances held exceeds the quantity notified or set out in the location compliance certificate, that a new notification has been made', 'A record of— (a) either— (i) the notification; or (ii) the location compliance certificate; or (iii) a unique reference to identify the notification or certificate; and (b) the quantities notified for each relevant class of substance; and (c) the quantities present', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 2
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 2
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 3, '3', 'Information, instruction, and training'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['4.5']::text[], NULL, '4.5', NULL, 'Verify that there is a process for each worker to receive relevant information and training', 'A record of the process', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 3
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['4.5(2)']::text[], NULL, '4.5(2)', NULL, 'Verify that the requirement to provide information to workers is met', 'A sample record of the worker’s instruction and training or a reference to the worker’s instruction and training', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 3
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['4.5(5)']::text[], NULL, '4.5(5)', NULL, 'Verify that there is a record of the training and instruction referred to in regulation 4.5(3) for each worker and that this record is available for inspection', 'A sample record of the worker’s instruction and training or a reference to the worker’s instruction and training', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 3
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['4.5(6)']::text[], NULL, '4.5(6)', NULL, 'Verify that where information, instruction, and training were not required for a worker, the PCBU can demonstrate that the worker’s previous experience is equivalent', 'A record of the process the PCBU followed, a sample of one of the records obtained from the PCBU, or a reference to the process or record', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 3
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 3
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 4, '4', 'Signage'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['2.5(1)']::text[], NULL, '2.5(1)', NULL, 'Determine whether signs are required', 'A record of the quantities present, as compared to the threshold quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 4
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['2.5(2)']::text[], NULL, '2.5(2)', NULL, 'Verify that the signs are compliant', 'Photographs of the signs', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 4
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['2.6(1)']::text[], NULL, '2.6(1)', NULL, 'Verify that compliant signage is positioned at all required entrances to the building and land', 'A record of required entrances to the building and land or marked up plan Photographs of the signs if practical. The photographs must include sufficient landscape details to confirm the location. If photographs are not practical, a note confirming compliance', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 4
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['2.6(3)']::text[], NULL, '2.6(3)', NULL, 'Verify that compliant signage is displayed at each required room or compartment entrance', 'A list of all rooms or a marked-up plan Photographs of the signs if practical If photographs are not practical, a note confirming compliance', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 4
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, '5', ARRAY['2.6(4)']::text[], NULL, '2.6(4)', NULL, 'Verify that compliant signage is displayed immediately next to each outdoor area', 'A list of all outdoor areas or a marked-up plan Photographs of the signs if practical If photographs are not practical, a note confirming compliance', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 4
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 4
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 5, '5', 'Fire extinguishers'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['5.3(1)']::text[], NULL, '5.3(1)', NULL, 'Determine whether fire extinguishers are required', 'A record of the quantities present, as compared to the threshold quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 5
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['5.3(1)']::text[], NULL, '5.3(1)', NULL, 'Verify that the correct numbers of fire extinguishers are present', 'A record of the following: (a) the required extinguishers: (b) confirmation that the extinguishers are in place by marking up the plan, making a note, or similar: (c) the test dates of all required extinguishers', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 5
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['5.4(1)']::text[], NULL, '5.4(1)', NULL, 'Verify that the fire extinguishers are clearly visible and readily accessible in an emergency', 'A record of proximity, visibility, and accessibility of fire extinguishers to the hazardous substance location', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 5
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['5.5']::text[], NULL, '5.5', NULL, 'Verify the capability of the fire extinguishers', 'A record of the ratings of sample extinguishers or hose diameter of a hydrant system', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 5
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 5
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 6, '6', 'Emergency response plans (ERP)'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', ARRAY['5.6(1)']::text[], NULL, '5.6(1)', NULL, 'Determine whether an ERP is required', 'A record of the quantities present, as compared to the threshold quantities', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['5.7(2)']::text[], NULL, '5.7(2)', NULL, 'Verify that the ERP describes all emergencies that are reasonably foreseeable', 'A copy of the ERP or sections of it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['5.7(3)(a)']::text[], NULL, '5.7(3)(a)', NULL, 'Verify that the ERP describes the actions to be taken', 'A copy of the ERP, sections of it, or a reference to it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['5.7(3)(b)']::text[], NULL, '5.7(3)(b)', NULL, 'Verify that the ERP identifies each person with responsibility and gives the required information', 'A copy of the ERP, sections of it, or a reference to it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, '5', ARRAY['5.7(3)(c)']::text[], NULL, '5.7(3)(c)', NULL, 'Verify that the ERP specifies the prescribed actions', 'A copy of the ERP, sections of it, or a reference to it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 6, '6', ARRAY['5.7(3)(d)']::text[], NULL, '5.7(3)(d)', NULL, 'Verify that the ERP provides an inventory and compliant site plan', 'A copy of the ERP, sections of it, or a reference to it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 7, '7', ARRAY['5.7(4)']::text[], NULL, '5.7(4)', NULL, 'Verify that the ERP— (a) specifies the required extra information for emergencies involving a fire; and (b) provides for retention of liquid or liquid oxidising substance or organic peroxide present', 'A copy of the ERP, sections of it, or a reference to it', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 8, '8', ARRAY['5.8']::text[], NULL, '5.8', NULL, 'The ERP is implemented in the event of an emergency', 'A record of the implementation of it for events during the previous 12 months (if applicable)', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 9, '9', ARRAY['5.9']::text[], NULL, '5.9', NULL, 'Verify that all equipment, materials, and responsible people are available within the times specified in the ERP', 'A note of the sampling or a record of the tests carried out', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 10, '10', ARRAY['5.10']::text[], NULL, '5.10', NULL, 'Verify that the PCBU is able to confirm the plan is available to every person responsible for executing any part of the plan and emergency service providers identified in the plan', 'A note recording how the plan has been made available A reference to its location', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 11, '11', ARRAY['5.11']::text[], NULL, '5.11', NULL, 'Verify that if Fire and Emergency New Zealand (FENZ) has been given the opportunity to review the ERP, any recommendations have been given consideration by the PCBU', 'A record of advice to FENZ and a note of any recommendations from FENZ', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 12, '12', ARRAY['5.12']::text[], NULL, '5.12', NULL, 'Verify the ERP has been tested, that new persons are competent, that new procedures are workable, and that records of the tests are held', 'A reference to the tests and actions taken A record of the PCBU records', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 6
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 6
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 7, '7', 'Secondary containment'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
-SELECT sec.id, 1, '1', '{}', '{"class_6_8":["13.3"],"class_2_3":["10.34(1)(h)"],"class_5_1":["12.13"]}'::jsonb, '13.3', NULL, 'Determine whether secondary containment is required', 'A record of— (a) the quantities present as compared to the threshold quantities; and (b) the minimum time periods the substances are present', false
+SELECT sec.id, 1, '1', '{}', '{"class_6_8":["13.30"],"class_2_3":["10.34(1)(h)"],"class_5_1":["12.13"]}'::jsonb, '13.30', NULL, 'Determine whether secondary containment is required', 'A record of— (a) the quantities present as compared to the threshold quantities; and (b) the minimum time periods the substances are present', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', ARRAY['10.31', '10.32', '10.33']::text[], '{"class_6_8":["10.31","10.32","10.33","12.14","12.15","12.16","12.39","12.40","12.41","13.31","13.32","13.33","17.100","17.101"],"class_2_3":["10.31","10.32","10.33"],"class_5_1":["10.31","10.32","10.33","12.14","12.15","12.16","12.39","12.40","12.41","13.31","13.32","13.33","17.100","17.101"]}'::jsonb, '10.31 10.32 10.33 12.14 12.15 12.16 12.39 12.40 12.41 13.31 13.32 13.33 17.100 17.101', NULL, 'Verify that— (a) the capacity of the secondary containment system is at least as great as the prescribed minimum; and (b) the capacity of the secondary containment system for stationary tanks and process containers is based on the water capacity of the tank or process container; and (c) the secondary containment will contain the substance without leakage and will enable recovery of the substance; and (d) there are controls to prevent contamination by incompatible substances or material For class 6 and 8 substances, verify that there are controls to prevent people from being directly exposed to any toxic or biological corrosive substances contained in the secondary containment system', 'A record of— (a) the maximum pooling capacity; and (b) the prescribed capacity of the secondary containment; and (c) the actual capacity of the secondary containment; and (d) the nature of the construction; and (e) the impervious nature of the secondary containment system, including tests and inspections undertaken on it; and (f) the process to recover the substances; and (g) for class 3, 4, or 5 substances, controls that prevent ignition; and (h) for toxic or biological corrosive substances, controls that prevent people from being directly exposed e.g. signage, site induction instructions; and (i) controls that prevent the substance from being contaminated with incompatible substances', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 3, '3', ARRAY['10.30']::text[], '{"class_6_8":["10.30","12.13","12.38","13.30"],"class_2_3":["10.30"],"class_5_1":["10.30","12.13","12.38","13.30"]}'::jsonb, '10.30 12.13 12.38 13.30', NULL, 'If containers of different capacities are held at the place, verify that the secondary containment system has a capacity of at least the sum of each individual container category', 'A record to confirm that either— (a) containers of different sizes are not held at one place; or (b) if they are held, the secondary containment capacity is at least the sum of each individual container capacity', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 4, '4', ARRAY['10.30']::text[], '{"class_6_8":["10.30","12.13","12.38","13.30"],"class_2_3":["10.30"],"class_5_1":["10.30","12.13","12.38","13.30"]}'::jsonb, '10.30 12.13 12.38 13.30', NULL, 'Verify that the secondary containment is able to contain the leaked hazardous substance', 'A record of one of the results of the verification. This can include: (a) for an above ground tank with integral secondary containment, no evidence of leakage into or from the interstitial space: (b) for a below ground tank with secondary containment, no evidence of leakage into or from the interstitial space: (c) for a below ground tank, no evidence of losses from the stock reconciliation records: (d) for a single skin above ground tank with a capacity of 250,000 L or greater, evidence of flood test: (e) for a single skin above ground tank with a capacity of up to 250,000 L, either the results of a technical inspection or a flood test: (f) the distance between the tank and the inside of the bund wall, including whether the distance is sufficient to enable leaks to fall inside the bund', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 5, '6', ARRAY['17.102(4)', '17.102(5)']::text[], NULL, '17.102(4) 17.102(5)', NULL, 'Verify that the aggregate capacity of any group of stationary tanks does not exceed 25,000,000 L unless a greater amount is approved by WorkSafe', 'A record of the quantity in each group of tanks and a reference to any approval by WorkSafe', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 6, '7', ARRAY['17.102(6)', '17.102(7)']::text[], NULL, '17.102(6) 17.102(7)', NULL, 'Verify that any intermediate secondary containment system is compliant', 'A record of the details of the secondary containment system', false
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 7
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 7
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 INSERT INTO checksheet_section (template_id, ordinal, number, title)
 SELECT id, 8, '8', 'Site Plan'
-FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066'
+FROM checksheet_template WHERE code = 'wks17-general' AND meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62'
 ON CONFLICT (template_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 1, '1', '{}', '{"class_6_8":["13.34(5)(b)"],"class_2_3":["10.26(4)(b)"],"class_5_1":["13.34(5)(b)"]}'::jsonb, '13.34(5)(b)', NULL, 'Verify that the site plan— (a) is of the relevant place and is specific to that place; and (b) is accurate and includes all prescribed information', 'A copy of the site plan, including: (a) the dimensions in relation to the site boundary: (b) a north point accurately orientated: (c) hazardous substance locations: (d) hazardous areas: (e) separation distances from protected places and public places, if prescribed: (f) relevant controlled zone distances', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 8
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 8
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 INSERT INTO checksheet_item (section_id, ordinal, number, regulation_refs, regulation_refs_by_class, regulation_raw, guidance_url, action, records, evidence_required)
 SELECT sec.id, 2, '2', '{}', '{"class_6_8":["13.34(5)(b)"],"class_2_3":["10.26(4)(b)"],"class_5_1":["13.34(5)(b)"]}'::jsonb, '13.34(5)(b)', NULL, 'Verify that the site plan has sufficient detail to determine its purpose', 'A copy of the site plan, including: (a) the scale that enables the plan to meet its purpose: (b) where relevant, elevation drawings: (c) where relevant, a legend or key that defines colours, shaded areas, symbols, abbreviations, etc.: (d) if relevant, and the scale and complexity of the workplace so demand, separate drawings provided to meet the purpose', true
 FROM checksheet_section sec
 JOIN checksheet_template t ON t.id = sec.template_id
-WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = 'e80a9847c79202df58886919d6062be4d872e52340355488844aaef737294066' AND sec.ordinal = 8
+WHERE t.code = 'wks17-general' AND t.meta->>'contentHash' = '667c0621e5cf02bde226712734ec9986d84305b5562cc5eb7ddbf064c26f3f62' AND sec.ordinal = 8
 ON CONFLICT (section_id, ordinal) DO NOTHING;
 
 COMMIT;

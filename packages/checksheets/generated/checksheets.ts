@@ -2414,7 +2414,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
     "title": "General location requirements",
     "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
     "classScope": [],
-    "revision": 2,
+    "revision": 3,
     "status": "draft",
     "sheet": {
       "title": null,
@@ -2868,7 +2868,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
             "regulationRefs": [],
             "regulationRefsByClass": {
               "class_6_8": [
-                "13.3"
+                "13.30"
               ],
               "class_2_3": [
                 "10.34(1)(h)"
@@ -2877,7 +2877,7 @@ export const CHECKSHEET_TEMPLATES: readonly ChecksheetTemplate[] = [
                 "12.13"
               ]
             },
-            "regulationRaw": "13.3",
+            "regulationRaw": "13.30",
             "guidanceUrl": null,
             "action": "Determine whether secondary containment is required",
             "records": "A record of— (a) the quantities present as compared to the threshold quantities; and (b) the minimum time periods the substances are present",

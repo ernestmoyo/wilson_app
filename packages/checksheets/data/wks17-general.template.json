@@ -3,7 +3,7 @@
   "title": "General location requirements",
   "psReference": "Health and Safety at Work (Hazardous Substances—Location Compliance Certification for Classes 2 to 6, and 8) Performance Standard",
   "classScope": [],
-  "revision": 2,
+  "revision": 3,
   "effectiveFrom": null,
   "supersededBy": null,
   "status": "draft",
@@ -427,7 +427,7 @@
         }
       ]
     },
-    "revisionNote": "Class 2/3.1 view from the Class 3.1 r10.34 workbook: notification 13.34(4)->10.34(1)(a), secondary containment 13.3->10.34(1)(h) and 10.30 only, site plan 13.34(5)(b)->10.26(4)(b), declaration 17.91->10.34. New class 5.1.1/5.1.2 view. 17.102(6)) cleaned for every class. Class 6/8 wording otherwise unchanged."
+    "revisionNote": "Class 2/3.1 view from the Class 3.1 r10.34 workbook: notification 13.34(4)->10.34(1)(a), secondary containment 13.3->10.34(1)(h) and 10.30 only, site plan 13.34(5)(b)->10.26(4)(b), declaration 17.91->10.34. New class 5.1.1/5.1.2 view. 17.102(6)) cleaned for every class. Class 6/8 wording otherwise unchanged. Rev 3 (20 Oct 2026): class 6/8 secondary containment 13.3->13.30 (a dropped zero; reg 13.3 is about application records, 13.30 is secondary containment)."
   },
   "sheet": {
     "evidenceColumnLabel": "Evidence Portfolio",
@@ -852,14 +852,14 @@
           "ordinal": 1,
           "number": "1",
           "regulationRefs": [],
-          "regulationRaw": "13.3",
+          "regulationRaw": "13.30",
           "guidanceUrl": null,
           "action": "Determine whether secondary containment is required",
           "records": "A record of— (a) the quantities present as compared to the threshold quantities; and (b) the minimum time periods the substances are present",
           "evidenceRequired": false,
           "regulationRefsByClass": {
             "class_6_8": [
-              "13.3"
+              "13.30"
             ],
             "class_2_3": [
               "10.34(1)(h)"
