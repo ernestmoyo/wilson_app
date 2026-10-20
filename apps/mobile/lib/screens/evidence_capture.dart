@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../bootstrap.dart' show CurrentUser;
+import '../models/evidence.dart';
 import '../models/finding.dart';
 import '../models/inspection.dart';
 import '../sync/sync_service.dart';
@@ -70,6 +72,10 @@ class EvidenceCaptureScreen extends StatefulWidget {
   /// Opens a stored document; defaults to the browser / system viewer.
   final UrlOpener openUrl;
 
+  /// The signed-in role (defaults to [CurrentUser.role]); decides who sees
+  /// Accept / Not accepted and Replace. The server enforces it regardless.
+  final String? role;
+
   const EvidenceCaptureScreen({
     super.key,
     required this.inspection,
@@ -79,6 +85,7 @@ class EvidenceCaptureScreen extends StatefulWidget {
     required this.capturedByOccupation,
     this.pickDocument = pickPdf,
     this.openUrl = _openExternally,
+    this.role,
   });
 
   @override
@@ -101,6 +108,19 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
   List<Map<String, dynamic>>? _attached;
 
   bool get _isDocument => _mime == 'application/pdf';
+
+  /// The current version being replaced, if Replace was pressed (Q3/Q4).
+  EvidenceFile? _replacing;
+
+  /// An evidence.review on its way to the server.
+  bool _reviewing = false;
+
+  String get _role => widget.role ?? CurrentUser.role;
+
+  /// Who accepts evidence (Q3): reviewer, admin or certifier; never a viewer
+  /// or a peer reviewer.
+  bool get _canReview => const {'reviewer', 'admin', 'certifier'}.contains(_role);
+  bool get _canReplace => _role != 'viewer' && _role != 'peer_reviewer';
 
   @override
   void initState() {
@@ -221,6 +241,8 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
         'mime': _mime,
         'bytes': _bytes!.length,
         'provenance': 'app',
+        // The next version of a file already on record; the old one is kept.
+        if (_replacing != null) 'supersedesId': _replacing!.id,
         if (_isDocument) 'originalName': _name,
         // IPS 21(4)(a)–(c): for a document, who attached it, when and (if
         // given) where it applies.
@@ -250,10 +272,139 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
     }
   }
 
-  static String attachedTitle(Map<String, dynamic> e) {
-    final name = (e['original_name'] as String?)?.trim();
-    if (name != null && name.isNotEmpty) return name;
-    return e['kind'] == 'document' ? 'Document' : 'Photograph';
+  /// Accept the current version, or mark it not accepted with the reason
+  /// (Q3, IPS 21(1)(e)). One sync event, recorded with the person.
+  Future<void> _review(EvidenceFile e, String state, {String? note}) async {
+    setState(() {
+      _reviewing = true;
+      _error = null;
+    });
+    try {
+      final ev = await widget.sync.outbox.enqueue('evidence.review', {
+        'jobId': ?widget.inspection.jobId,
+        'evidenceId': e.id,
+        'state': state,
+        'note': ?note,
+      });
+      await widget.sync.flush();
+      final out = ev.outcome;
+      if (out != null && out.isRejected) {
+        await widget.sync.dismissRejected(ev.id);
+        if (mounted) setState(() => _error = '${out.clause == null ? '' : '${out.clause}: '}${out.reason ?? 'not recorded'}');
+        return;
+      }
+      if (out == null) {
+        if (mounted) setState(() => _error = 'Not sent yet: the review goes when the connection is back.');
+        return;
+      }
+      await _loadAttached();
+      if (mounted) showDone(context, state == 'accepted' ? 'Evidence accepted' : 'Marked not accepted');
+    } catch (err) {
+      if (mounted) setState(() => _error = err.toString());
+    } finally {
+      if (mounted) setState(() => _reviewing = false);
+    }
+  }
+
+  /// Not accepted needs a reason: ask for it before anything is sent.
+  Future<void> _reject(EvidenceFile e) async {
+    final note = await showDialog<String>(context: context, builder: (_) => _RejectDialog(title: e.title));
+    if (note != null && note.trim().isNotEmpty) await _review(e, 'not_accepted', note: note.trim());
+  }
+
+  static Tone _reviewTone(EvidenceFile e) =>
+      e.isAccepted ? Tone.good : e.isNotAccepted ? Tone.bad : Tone.info;
+
+  /// One version of a file: name, "v2 · 20 Oct 2026 · name", the review
+  /// badge and, for the current version, what this person may do with it.
+  Widget _evidenceTile(EvidenceFile e, {required bool current}) {
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      key: ValueKey('evidence-${e.id}'),
+      padding: const EdgeInsets.symmetric(vertical: Space.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => _open(e.raw),
+            child: Row(children: [
+              Icon(e.isDocument ? Icons.picture_as_pdf_outlined : Icons.photo_outlined, color: Brand.ribbon),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(e.title, style: t.bodyLarge),
+                  Text(e.versionLine, style: t.bodySmall),
+                ]),
+              ),
+              const SizedBox(width: Space.sm),
+              StatusBadge(label: e.reviewLabel, tone: _reviewTone(e), dense: true),
+              const SizedBox(width: Space.xs),
+              const Icon(Icons.open_in_new, size: 18, color: Neutral.faint),
+            ]),
+          ),
+          if (e.reviewLine != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 36, top: 2),
+              child: Text(e.reviewLine!, style: TextStyle(fontSize: 13, color: _reviewTone(e).fg)),
+            ),
+          if (current && (_canReview || _canReplace))
+            Padding(
+              padding: const EdgeInsets.only(left: 28),
+              child: Wrap(spacing: Space.xs, children: [
+                if (_canReview && !e.isAccepted)
+                  TextButton.icon(
+                    key: ValueKey('ev-accept-${e.id}'),
+                    onPressed: _reviewing ? null : () => _review(e, 'accepted'),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Accept'),
+                  ),
+                if (_canReview && !e.isNotAccepted)
+                  TextButton.icon(
+                    key: ValueKey('ev-reject-${e.id}'),
+                    onPressed: _reviewing ? null : () => _reject(e),
+                    icon: const Icon(Icons.highlight_off, size: 18),
+                    label: const Text('Not accepted'),
+                  ),
+                if (_canReplace)
+                  TextButton.icon(
+                    key: ValueKey('ev-replace-${e.id}'),
+                    onPressed: () => setState(() {
+                      _replacing = e;
+                      _error = null;
+                    }),
+                    icon: const Icon(Icons.upload_file_outlined, size: 18),
+                    label: const Text('Replace'),
+                  ),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Current versions, each with its earlier versions under an expander.
+  List<Widget> _attachedList() {
+    final all = [for (final m in _attached!) EvidenceFile.fromJson(m)];
+    final current = all.where((e) => e.current).toList();
+    return [
+      for (final e in current) ...[
+        _evidenceTile(e, current: true),
+        if (EvidenceFile.previousVersions(e, all).isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: ExpansionTile(
+              key: ValueKey('ev-previous-${e.id}'),
+              tilePadding: EdgeInsets.zero,
+              title: Text('Previous versions (${EvidenceFile.previousVersions(e, all).length})',
+                  style: Theme.of(context).textTheme.bodyMedium),
+              children: [
+                for (final p in EvidenceFile.previousVersions(e, all)) _evidenceTile(p, current: false),
+              ],
+            ),
+          ),
+        const Divider(height: 1),
+      ],
+    ];
   }
 
   @override
@@ -269,6 +420,14 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
+          if (_replacing != null)
+            Notice(
+              'Replacing ${_replacing!.title} (v${_replacing!.version}). Take or choose the new file and attach it '
+              'as version ${_replacing!.version + 1}; the current file is kept as a previous version.',
+              key: const ValueKey('ev-replacing'),
+              tone: Tone.info,
+              onClose: () => setState(() => _replacing = null),
+            ),
           if (_bytes == null)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
@@ -369,7 +528,11 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
             icon: _saving
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.cloud_upload_outlined),
-            label: Text(_saving ? 'Uploading…' : 'Attach as record'),
+            label: Text(_saving
+                ? 'Uploading…'
+                : _replacing != null
+                    ? 'Attach as version ${_replacing!.version + 1}'
+                    : 'Attach as record'),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -381,23 +544,7 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
           if (_attached != null && _attached!.isNotEmpty) ...[
             const SizedBox(height: 24),
             Text('Attached to this item', style: Theme.of(context).textTheme.titleSmall),
-            for (final e in _attached!)
-              ListTile(
-                key: ValueKey('evidence-${e['id']}'),
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  e['kind'] == 'document' ? Icons.picture_as_pdf_outlined : Icons.photo_outlined,
-                  color: Brand.ribbon,
-                ),
-                title: Text(attachedTitle(e)),
-                subtitle: Text([
-                  if (e['captured_by_name'] != null) '${e['captured_by_name']}',
-                  if (e['captured_at'] != null) '${e['captured_at']}'.split('T').first,
-                  if (e['bytes'] != null) '${((int.tryParse('${e['bytes']}') ?? 0) / 1024).toStringAsFixed(0)} KB',
-                ].join('  ·  ')),
-                trailing: const Icon(Icons.open_in_new, size: 18),
-                onTap: () => _open(e),
-              ),
+            ..._attachedList(),
           ],
         ],
       ),
@@ -410,5 +557,54 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
           SizedBox(width: 100, child: Text(k, style: const TextStyle(fontSize: 13, color: Neutral.muted))),
           Expanded(child: Text(v, style: const TextStyle(fontSize: 14, color: Neutral.strong))),
         ]),
+      );
+}
+
+/// "Not accepted" asks why (IPS 21(1)(e)): the note goes back to whoever
+/// supplied the file. The button stays off until there is a reason.
+class _RejectDialog extends StatefulWidget {
+  final String title;
+  const _RejectDialog({required this.title});
+
+  @override
+  State<_RejectDialog> createState() => _RejectDialogState();
+}
+
+class _RejectDialogState extends State<_RejectDialog> {
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Not accepted'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Why does ${widget.title} not show compliance?'),
+            const SizedBox(height: Space.sm),
+            TextField(
+              key: const ValueKey('ev-note'),
+              controller: _note,
+              autofocus: true,
+              maxLines: 3,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(hintText: 'e.g. Label unreadable; send the current revision'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(
+            key: const ValueKey('ev-reject-confirm'),
+            onPressed: _note.text.trim().isEmpty ? null : () => Navigator.of(context).pop(_note.text.trim()),
+            child: const Text('Not accepted'),
+          ),
+        ],
       );
 }

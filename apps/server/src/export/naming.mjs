@@ -64,3 +64,42 @@ export function evidenceFileNames(rows) {
   }
   return names;
 }
+
+export const PREVIOUS_VERSIONS = 'Previous versions/';
+
+/**
+ * Names when evidence has versions (Q4, 20 Oct 2026). The current version of
+ * each file takes the name the file has always had (counted in the order the
+ * first version was filed, so a replacement keeps its slot); every earlier
+ * version goes under "Previous versions/" with the same name plus " (v1)".
+ *
+ * @param {object[]} rows evidence rows as for evidenceFileNames, plus
+ *   { supersedes_id, version }
+ * @returns {Map<id, string>} for every row
+ */
+export function versionedFileNames(rows) {
+  const byId = new Map(rows.map((r) => [String(r.id), r]));
+  const successor = new Map();
+  for (const r of rows) if (r.supersedes_id != null) successor.set(String(r.supersedes_id), r);
+  const rootOf = (r) => {
+    let x = r;
+    for (let guard = 0; x.supersedes_id != null && byId.has(String(x.supersedes_id)) && guard < 1000; guard++) x = byId.get(String(x.supersedes_id));
+    return x;
+  };
+  const headOf = (r) => {
+    let x = r;
+    for (let guard = 0; successor.has(String(x.id)) && guard < 1000; guard++) x = successor.get(String(x.id));
+    return x;
+  };
+  const order = new Map(rows.map((r, k) => [String(r.id), k]));
+  const current = rows
+    .filter((r) => !successor.has(String(r.id)))
+    .sort((a, b) => order.get(String(rootOf(a).id)) - order.get(String(rootOf(b).id)));
+  const names = evidenceFileNames(current);
+  for (const r of rows) {
+    if (!successor.has(String(r.id))) continue;
+    const head = names.get(headOf(r).id);
+    names.set(r.id, PREVIOUS_VERSIONS + head.replace(/(\.[a-z0-9]{1,4})?$/i, (e) => ` (v${r.version ?? 1})${e}`));
+  }
+  return names;
+}

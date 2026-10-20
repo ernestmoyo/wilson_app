@@ -183,6 +183,9 @@ const handlers = {
       if (p.jobId == null) p.jobId = own.rows[0].job_id;
       else if (Number(own.rows[0].job_id) !== Number(p.jobId)) throw reject(`inspection ${p.inspectionId} is not part of job ${p.jobId}`);
     }
+    // A new version of a file already on record (Q3/Q4, 20 Oct 2026): same
+    // job, same finding, version + 1; the replaced row stays as it is.
+    const prior = p.supersedesId == null ? null : await priorVersion(db, p);
     if (p.findingId) {
       const own = await db.query(`SELECT i.job_id, f.inspection_id FROM finding f JOIN inspection i ON i.id = f.inspection_id WHERE f.id = $1`, [p.findingId]);
       if (!own.rows.length) throw reject(`finding ${p.findingId} not found`);
@@ -200,12 +203,22 @@ const handlers = {
         findingId = f.rows[0]?.id ?? null;
       }
     }
+    if (prior) {
+      // No finding named: the new version files where the old one did.
+      if (findingId == null && !p.findingId && !p.templateCode) findingId = prior.finding_id;
+      if (String(findingId ?? '') !== String(prior.finding_id ?? '')) {
+        throw reject(`a new version must be on the same finding as the version it replaces (evidence ${prior.id})`);
+      }
+      if (p.inspectionId == null) p.inspectionId = prior.inspection_id;
+      if (p.appendixCategory === undefined) p.appendixCategory = prior.appendix_category;
+    }
     const r = await db.query(
       `INSERT INTO evidence
          (job_id, inspection_id, finding_id, kind, sha256, storage_key, mime, bytes,
           captured_by_name, captured_by_occupation, captured_at, captured_where,
-          gps_lat, gps_lon, device_info, provenance, appendix_category, original_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+          gps_lat, gps_lon, device_info, provenance, appendix_category, original_name,
+          supersedes_id, version, uploaded_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING id`,
       [p.jobId, p.inspectionId ?? null, findingId,
        p.kind ?? 'photo', p.sha256, p.storageKey ?? p.sha256, p.mime, p.bytes,
@@ -215,9 +228,41 @@ const handlers = {
        p.provenance ?? 'app', p.appendixCategory ?? null,
        // The name a document arrived with ("ERP rev 2.pdf"), so lists and the
        // export bundle can show it instead of a hash.
-       textOrNull(p.originalName)]
+       textOrNull(p.originalName),
+       prior?.id ?? null, prior ? Number(prior.version) + 1 : 1, ctx.userId ?? null]
     );
-    return { evidenceId: r.rows[0].id, findingId };
+    return { evidenceId: r.rows[0].id, findingId, ...(prior ? { supersedesId: prior.id, version: Number(prior.version) + 1 } : {}) };
+  },
+
+  /**
+   * The reviewer's assessment of one piece of evidence (Q3, 20 Oct 2026):
+   * accepted as showing compliance, or not accepted with the reason. Only the
+   * current version is reviewed; who and when come from the session.
+   */
+  async 'evidence.review'(db, p, ctx) {
+    if (ctx.role && !EVIDENCE_REVIEWERS.has(ctx.role)) {
+      throw reject(`Role: reviewing evidence needs a reviewer or a compliance certifier; signed in as ${ctx.role}`, 'P0001');
+    }
+    if (p.evidenceId == null) throw reject('evidenceId is required');
+    if (p.state !== 'accepted' && p.state !== 'not_accepted') throw reject("state must be 'accepted' or 'not_accepted'");
+    const note = textOrNull(p.note);
+    if (p.state === 'not_accepted' && !note) {
+      throw reject('IPS 21(1)(e): evidence that is not accepted must say why (a note for the person who supplied it)', 'P0001');
+    }
+    if (!ctx.userId) throw reject('IPS 21(1)(e): a review needs an authenticated reviewer', 'P0001');
+    const cur = await db.query(
+      `SELECT e.id, e.job_id, EXISTS (SELECT 1 FROM evidence n WHERE n.supersedes_id = e.id) AS replaced
+       FROM evidence e WHERE e.id = $1`, [p.evidenceId]);
+    if (!cur.rows.length) throw reject(`evidence ${p.evidenceId} not found`);
+    const e = cur.rows[0];
+    if (p.jobId != null && Number(e.job_id) !== Number(p.jobId)) throw reject(`evidence ${p.evidenceId} is not part of job ${p.jobId}`);
+    if (e.replaced) throw reject(`evidence ${p.evidenceId} has been replaced (superseded) by a later version: review the current version`);
+    const r = await db.query(
+      `UPDATE evidence SET review_state = $2, review_note = $3, reviewed_by = $4,
+                           reviewed_at = COALESCE($5::timestamptz, now())
+       WHERE id = $1 RETURNING id, review_state`,
+      [p.evidenceId, p.state, note, ctx.userId, ctx.occurredAt ?? null]);
+    return { evidenceId: r.rows[0].id, state: r.rows[0].review_state, jobId: e.job_id };
   },
 
   /** Move a job through the process flow. The DB trigger enforces legality. */
@@ -410,6 +455,29 @@ const handlers = {
     return { clientId: r.rows[0].id, archived };
   },
 };
+
+/** Who may accept evidence (Q3): not a viewer, not a peer reviewer. */
+export const EVIDENCE_REVIEWERS = new Set(['reviewer', 'admin', 'certifier']);
+
+/** The version [p.supersedesId] names, checked: same job, not already replaced. */
+async function priorVersion(db, p) {
+  const id = p.supersedesId;
+  if (!(Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[1-9][0-9]{0,17}$/.test(id))) {
+    throw reject('supersedesId must be a positive integer');
+  }
+  const r = await db.query(
+    `SELECT e.id, e.job_id, e.inspection_id, e.finding_id, e.version, e.appendix_category,
+            EXISTS (SELECT 1 FROM evidence n WHERE n.supersedes_id = e.id) AS replaced
+     FROM evidence e WHERE e.id = $1`, [id]);
+  if (!r.rows.length) throw reject(`evidence ${id} not found: nothing to replace`);
+  const prior = r.rows[0];
+  if (p.jobId == null) p.jobId = prior.job_id;
+  else if (Number(prior.job_id) !== Number(p.jobId)) {
+    throw reject(`a new version must be on the same job as the version it replaces (evidence ${id} is on job ${prior.job_id})`);
+  }
+  if (prior.replaced) throw reject(`evidence ${id} is already replaced by a later version: replace the current version`);
+  return prior;
+}
 
 export const EVENT_TYPES = Object.keys(handlers);
 
