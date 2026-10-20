@@ -202,3 +202,34 @@ Built as four packages in parallel (contract: `PHASE1_CONTRACT.md`), then harden
   - Argenta job 20 vs job 1
   - legal vs trading name
   - archive blocking writes (B8 of 16 Oct)
+
+## 10. Answers (Tatenda Katai, 20 October 2026) and what they change
+
+| Q | Answer (short) | Changes |
+|---|---|---|
+| Q1 sheets to come | 2.1.2 aerosols, existing AG/BG tanks, dispensers, process containers: being prepared, will be sent | Nothing to build until they arrive. The extraction pipeline is ready (one JSON per sheet, revision n+1). |
+| Q2 Argenta file | The "Class 3.2 and 4" tab is a general sheet for **3.2, 4.1.1, 4.1.2A–F**; the example assessed a 4.1.1 substance | **New sheet set** `class_3_2_4` from that tab (r10.36). Check the authorisation entry: Appendix A lists 4.1.1 only (≤ 2,000), so 3.2 and 4.1.2A–F substances need a confirmation before the set offers them (reg 6.22(1)). |
+| Q3 accepted evidence | The **reviewer** assesses and accepts evidence that shows compliance; replaced files are **kept** | Evidence gets a state (submitted / accepted / not accepted) set by a reviewer, with who and when. Replacing a file adds a version, never deletes the old one. |
+| Q4 version assessed | Record the **upload date** (and keep previous versions); the version used must be **identified in the downloaded package** | Evidence versions: `supersedes` link, uploaded_at/by. The checksheet PDF and ZIP name the version that was accepted ("v2, uploaded 20/10/2026 by …"); older versions go in a "previous versions" folder. |
+| Q5 peer review | Only for **SCS on a 17.91 report**. The peer reviewer has **separate access**: sees only the final check sheets and evidence, comments, and **formally approves** in a peer-review section | New role `peer_reviewer` (read-only to the job's sheets and evidence + comments + approve). A `peer_review` record (reviewer, decision, comment, snapshot hash). Issue blocked for SCS/17.91 jobs until approved; edits after approval lapse it. |
+| Q6 roles and sending | Being finalised. **Six people**: two may issue (all certificates in **Bryan Wilson's name**), three reviewers (one with admin and oversight), one peer reviewer (changes over time, own login). Sender address: not yet answered | Roles: `certifier` (2), `reviewer` (3, one with `admin`), `peer_reviewer` (1). The second issuer signs in as themselves; the certificate still names Bryan Wilson (TST100250) as certifier, and the audit trail records who actually issued it. Send address waits. |
+| Q7 completion checks | A conditional certificate must **state the deadline**; the assessment **stays open** until every condition is met and **approved by the certifier** | Deadline: **built 20 Oct** (below). Open-until-met: the job stays in a "conditions outstanding" state after a conditional issue; each condition is verified by a certifier; the job closes only when all are verified, with a reminder before the deadline. |
+
+### Built 20 October 2026 (with the owner's go)
+
+- **Certificate wording follows the decision and the class** (`packages/checksheets/lib/render-certificate.mjs` `locationWording`, `CLASS_REGULATION`): granted = reg 6.23 + class regulation (2/3.1 → 10.34, 5.1 → 12.17, 6/8 → 13.38); conditional = reg 6.24, "with the exception of the requirements set out below, which must be met by <date>"; refused = **notice of refusal** under reg 6.23(2), no in-force or expiry date, never "have been met".
+- **Conditions deadline** (Q7, reg 6.24(2)): migration `014_conditions_due.sql` (nullable column + check ≤ 3 months); the issue route requires it for a conditional decision (422, clause reg 6.24(2)); the Issue dialog offers it (default: the latest allowed); the job shows it.
+- **Requirements not met** are filled from the open non-compliances when none are typed ("General 4.4 (reg 2.6(3)): reason"), so a conditional certificate or refusal never says "None".
+- **13.3 → 13.30** on the class 6/8 secondary-containment item (general template rev 3). Inspections already open keep the revision they started on.
+- Proof: new `apps/server/test/certificate-wording.test.mjs` (9 steps); all 14 server suites, 4 db tests, 144 Flutter tests green.
+
+### Still open after the answers
+
+1. Sender address for certificates (Q6, pending).
+2. The full list of the six people and their emails (Q6, pending).
+3. Authorisation for 3.2 and 4.1.2A–F (Appendix A has 4.1.1 only) before the class 3.2/4 set offers them.
+4. From the regulatory check: the refusal notice to WorkSafe (IPS cl 11, 15 working days, 13 fields), renewal period by class, Appendix A quantity limits, register entry date; 11.3 → 11.30 and 13.34(5)(b) → 12.8(5)(b) on the class 2/3.1 and 5.1 sheets.
+
+### Phase 2 (ready to build on the owner's go)
+
+- P2-A evidence review and versions (Q3, Q4) · P2-B peer reviewer role and approval for SCS/17.91 (Q5) · P2-C roles: second issuer, reviewer admin (Q6) · P2-D conditions outstanding until verified (Q7) · P2-E class 3.2/4 sheet set from the Argenta tab (Q2).
