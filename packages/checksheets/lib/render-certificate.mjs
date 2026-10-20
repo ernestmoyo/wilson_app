@@ -38,7 +38,7 @@ export const nzDate = (iso) => {
  */
 /** Assure Safety's contact details as text, with inline icons. */
 export const COMPANY = {
-  address: '59A Vintage Drive, Henderson, Auckland (0612)',
+  address: '1 Matakohe Road, Westgate, Auckland, New Zealand',
   email: 'compliancecertifier@assuresafety.co.nz',
   website: 'www.assuresafety.co.nz',
   phone: '+64 21 204 8493',

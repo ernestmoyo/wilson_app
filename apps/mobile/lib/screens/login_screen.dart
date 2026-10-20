@@ -80,6 +80,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       alignment: Alignment.centerLeft,
                       child: Image.asset('assets/brand/logo-white.png', height: 44, fit: BoxFit.contain),
                     ),
+                    const SizedBox(height: Space.sm),
+                    // The website's own line, so the app and assuresafety.co.nz
+                    // read as one company.
+                    Row(
+                      children: [
+                        Icon(Icons.verified_outlined, size: 16, color: Tone.good.fg),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text('WorkSafe-authorised compliance certification',
+                              style: t.labelMedium?.copyWith(color: Tone.good.fg)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text('Whakapūmautia te Haumaru Aotearoa',
+                        style: t.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
                     const SizedBox(height: Space.lg),
                     Text('Sign in', style: t.headlineSmall),
                     const SizedBox(height: Space.xs),

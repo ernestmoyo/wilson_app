@@ -134,7 +134,7 @@ await step('the non-compliance report lists the item in the sheet\'s words with 
   expect(r.text.includes('Verify that compliant signage'), 'requirement wording missing');
   expect(r.text.includes('no signage at the room entrance'), 'reason missing');
   expect(r.text.includes('Install compliant signage at the entrance'), 'corrective action missing');
-  expect(r.text.includes('59A Vintage Drive'), 'letterhead missing');
+  expect(r.text.includes('1 Matakohe Road, Westgate'), 'letterhead missing');
 });
 
 await step('sending records a communication even with no mail server configured', async () => {

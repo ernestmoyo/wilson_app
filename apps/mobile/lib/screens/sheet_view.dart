@@ -371,8 +371,9 @@ class SheetViewState extends State<SheetView> {
           children: [
             Image.asset('assets/brand/logo-white.png', height: 56, fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => const SizedBox.shrink()),
-            const Spacer(),
-            const CompanyDetails(),
+            const SizedBox(width: 16),
+            // The contact block wraps rather than pushing past a narrow sheet.
+            const Expanded(child: Align(alignment: Alignment.centerRight, child: CompanyDetails())),
           ],
         ),
       );

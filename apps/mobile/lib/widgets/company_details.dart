@@ -5,7 +5,7 @@ import '../theme.dart';
 /// Assure Safety's contact block, as text rather than the bitmap the workbook
 /// pastes. Same four facts the letterhead carries; crisp at any size.
 class CompanyInfo {
-  static const address = '59A Vintage Drive, Henderson, Auckland (0612)';
+  static const address = '1 Matakohe Road, Westgate, Auckland, New Zealand';
   static const email = 'compliancecertifier@assuresafety.co.nz';
   static const website = 'www.assuresafety.co.nz';
   static const phone = '+64 21 204 8493';
@@ -20,7 +20,12 @@ class CompanyDetails extends StatelessWidget {
         children: [
           Icon(icon, size: fontSize + 3, color: Brand.teal),
           const SizedBox(width: 6),
-          Text(text, style: TextStyle(fontSize: fontSize, color: Colors.black87, height: 1.2)),
+          // Gives way rather than overflowing a narrow letterhead.
+          Flexible(
+            child: Text(text,
+                textAlign: TextAlign.end,
+                style: TextStyle(fontSize: fontSize, color: Neutral.strong, height: 1.2)),
+          ),
         ],
       );
 
@@ -33,9 +38,8 @@ class CompanyDetails extends StatelessWidget {
           const SizedBox(height: 3),
           _line(Icons.mail_outline, CompanyInfo.email),
           const SizedBox(height: 3),
-          Row(mainAxisSize: MainAxisSize.min, children: [
+          Wrap(alignment: WrapAlignment.end, spacing: 14, runSpacing: 3, children: [
             _line(Icons.language, CompanyInfo.website),
-            const SizedBox(width: 14),
             _line(Icons.phone_outlined, CompanyInfo.phone),
           ]),
         ],
