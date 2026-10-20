@@ -6,6 +6,7 @@ import 'auth/session.dart';
 import 'bootstrap.dart';
 import 'models/inspection.dart';
 import 'screens/checksheet_screen.dart';
+import 'screens/item_screen.dart';
 import 'screens/job_screen.dart';
 import 'screens/jobs_board.dart';
 import 'screens/people_screen.dart';
@@ -15,6 +16,7 @@ import 'sync/outbox.dart';
 import 'sync/prefs_outbox_store.dart';
 import 'sync/sync_service.dart';
 import 'theme.dart';
+import 'widgets/ui.dart';
 
 /// Where the server is. Built in with --dart-define=API_BASE=…; when absent
 /// on web, the app assumes it is served from the same origin as the API
@@ -90,6 +92,7 @@ class AppSession extends ChangeNotifier {
 /// The route graph. Every screen has a URL, so the browser's back button,
 /// a refresh and a shared link all land where a person expects:
 ///   /login · / (jobs board) · /jobs/:id (hub) · /jobs/:id/sheet (check sheet)
+///   · /jobs/:id/sheet/item/:template/:section/:item (one item)
 /// Nothing that needs the server renders before the saved session (and
 /// its token) is loaded: a deep link to /jobs/1 would otherwise fire its
 /// first request with no token and be refused.
@@ -138,6 +141,23 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
                   path: 'sheet',
                   builder: (context, state) => _gated(app,
                       () => SheetRoute(app: app, jobId: int.parse(state.pathParameters['id']!))),
+                  routes: [
+                    // One item of the sheet (UX B10): a refresh or a shared
+                    // link lands on the item, and back returns to the sheet.
+                    GoRoute(
+                      path: 'item/:template/:section/:item',
+                      builder: (context, state) => _gated(
+                        app,
+                        () => ItemRoute(
+                          app: app,
+                          jobId: int.parse(state.pathParameters['id']!),
+                          templateCode: state.pathParameters['template']!,
+                          sectionOrdinal: int.tryParse(state.pathParameters['section']!) ?? -1,
+                          itemOrdinal: int.tryParse(state.pathParameters['item']!) ?? -1,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -158,41 +178,106 @@ class SheetRoute extends StatefulWidget {
   State<SheetRoute> createState() => _SheetRouteState();
 }
 
-class _SheetRouteState extends State<SheetRoute> {
-  late final Future<(Inspection, String)> _load = _open();
+/// Opens (or reuses) the job's inspection, with the job's stage. Shared by
+/// the sheet and item routes, so both hold the same Inspection.
+Future<(Inspection, String)> _openSheet(AppSession app, int jobId) async {
+  final job = await fetchJob(app.api, jobId);
+  final insp = app.inspections[jobId] ??
+      (app.inspections[jobId] = await openInspectionForJob(app.api, app.sync, jobId));
+  // Opening the sheet from an early stage walks the job to site inspection
+  // (openInspectionForJob); the sheet must say so, not the stage read a
+  // moment before.
+  final walked = CurrentUser.canRecord && const {'enquiry', 'application', 'document_review'}.contains(job.stage);
+  return (insp, walked ? 'site_inspection' : job.stage);
+}
 
-  Future<(Inspection, String)> _open() async {
-    final job = await fetchJob(widget.app.api, widget.jobId);
-    final insp = widget.app.inspections[widget.jobId] ??
-        (widget.app.inspections[widget.jobId] =
-            await openInspectionForJob(widget.app.api, widget.app.sync, widget.jobId));
-    // Opening the sheet from an early stage walks the job to site inspection
-    // (openInspectionForJob); the context bar must say so, not the stage read
-    // a moment before.
-    final walked = CurrentUser.canRecord && const {'enquiry', 'application', 'document_review'}.contains(job.stage);
-    return (insp, walked ? 'site_inspection' : job.stage);
-  }
+Widget _loadFailed(String title, Object error) => Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Notice('$error'),
+        ),
+      ),
+    );
+
+class _SheetRouteState extends State<SheetRoute> {
+  late final Future<(Inspection, String)> _load = _openSheet(widget.app, widget.jobId);
 
   @override
   Widget build(BuildContext context) => FutureBuilder(
         future: _load,
         builder: (context, snap) {
-          if (snap.hasError) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Check sheet')),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text('${snap.error}', style: const TextStyle(color: Brand.nonCompliant)),
-                ),
-              ),
-            );
-          }
+          if (snap.hasError) return _loadFailed(Wording.checkSheet, snap.error!);
           if (!snap.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
           final (insp, stage) = snap.data!;
           return ChecksheetScreen(inspection: insp, sync: widget.app.sync, stage: stage);
         },
       );
+}
+
+/// /jobs/:id/sheet/item/:template/:section/:item — one item of the sheet.
+/// Previous / Next replace the address, so the bar always names the item
+/// on screen and back still returns to the sheet.
+class ItemRoute extends StatefulWidget {
+  final AppSession app;
+  final int jobId;
+  final String templateCode;
+  final int sectionOrdinal;
+  final int itemOrdinal;
+  const ItemRoute({
+    super.key,
+    required this.app,
+    required this.jobId,
+    required this.templateCode,
+    required this.sectionOrdinal,
+    required this.itemOrdinal,
+  });
+
+  @override
+  State<ItemRoute> createState() => _ItemRouteState();
+}
+
+class _ItemRouteState extends State<ItemRoute> {
+  /// The sheet already open this run is used as is (Previous / Next and
+  /// coming from the sheet never wait); a cold deep link opens it first.
+  late final Future<Inspection>? _load =
+      widget.app.inspections.containsKey(widget.jobId) ? null : _openSheet(widget.app, widget.jobId).then((r) => r.$1);
+
+  @override
+  Widget build(BuildContext context) {
+    final cached = widget.app.inspections[widget.jobId];
+    if (cached != null) return _item(context, cached);
+    return FutureBuilder(
+      future: _load,
+      builder: (context, snap) {
+        if (snap.hasError) return _loadFailed(Wording.checkSheet, snap.error!);
+        if (!snap.hasData) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return _item(context, snap.data!);
+      },
+    );
+  }
+
+  Widget _item(BuildContext context, Inspection insp) {
+    final t = insp.templates.where((x) => x.code == widget.templateCode).firstOrNull;
+    final s = t?.sections.where((x) => x.ordinal == widget.sectionOrdinal).firstOrNull;
+    final i = s?.items.where((x) => x.ordinal == widget.itemOrdinal).firstOrNull;
+    if (t == null || s == null || i == null) {
+      return _loadFailed(Wording.checkSheet,
+          'No such item on this job\'s check sheet: ${widget.templateCode} ${widget.sectionOrdinal}/${widget.itemOrdinal}');
+    }
+    return ItemScreen(
+      inspection: insp,
+      template: t,
+      section: s,
+      item: i,
+      finding: insp.findingFor(t, s, i),
+      sync: widget.app.sync,
+      // go, not push/replace: the address bar follows (imperative routes do
+      // not change the URL), and back still pops to the sheet.
+      onGo: (s2, i2) => GoRouter.of(context).go(ItemScreen.pathFor(widget.jobId, t.code, s2.ordinal, i2.ordinal)),
+    );
+  }
 }
 
 class AssureFieldApp extends StatefulWidget {

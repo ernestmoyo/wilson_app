@@ -10,6 +10,8 @@ import '../models/finding.dart';
 import '../models/inspection.dart';
 import '../sync/sync_service.dart';
 import '../theme.dart';
+import '../widgets/brand_bar.dart';
+import '../widgets/ui.dart';
 
 /// A document picked from the device: the name it arrived with and its bytes.
 class PickedDocument {
@@ -258,28 +260,27 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
   Widget build(BuildContext context) {
     final f = widget.finding;
     return Scaffold(
-      appBar: AppBar(title: const Text('Capture evidence')),
+      appBar: BrandBar(
+        title: 'Add evidence',
+        // The item by its sheet name and number, never the internal code.
+        subtitle: '${Wording.itemRef(f.templateCode, f.sectionOrdinal, f.itemOrdinal)} · ${widget.inspection.locationName}',
+        actions: [SyncIndicator(sync: widget.sync)],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Text(
-            '${f.templateCode} · section ${f.sectionOrdinal} · item ${f.itemOrdinal}',
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-          const SizedBox(height: 12),
-
           if (_bytes == null)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F6F6),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFDCE3E3)),
+                color: Neutral.canvas,
+                borderRadius: BorderRadius.circular(Radii.md),
+                border: Border.all(color: Neutral.line),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.photo_camera_outlined, size: 40, color: Brand.teal),
+                  const Icon(Icons.photo_camera_outlined, size: 40, color: Brand.ribbon),
                   const SizedBox(height: 12),
                   Wrap(spacing: 10, runSpacing: 8, alignment: WrapAlignment.center, children: [
                     FilledButton.icon(
@@ -300,7 +301,7 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
                   ]),
                   const SizedBox(height: 8),
                   const Text('Photographs (JPEG, PNG) or PDF, up to 50 MB',
-                      style: TextStyle(fontSize: 11, color: Colors.black45)),
+                      style: TextStyle(fontSize: 13, color: Neutral.muted)),
                 ],
               ),
             )
@@ -309,25 +310,25 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF3F6F6),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFDCE3E3)),
+                  color: Neutral.canvas,
+                  borderRadius: BorderRadius.circular(Radii.md),
+                  border: Border.all(color: Neutral.line),
                 ),
                 child: Row(children: [
-                  const Icon(Icons.picture_as_pdf_outlined, size: 36, color: Brand.teal),
+                  const Icon(Icons.picture_as_pdf_outlined, size: 36, color: Brand.ribbon),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(_name ?? 'Document', style: const TextStyle(fontWeight: FontWeight.w700))),
+                  Expanded(child: Text(_name ?? 'Document', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
                 ]),
               )
             else
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(Radii.md),
                 child: Image.memory(_bytes!, height: 260, fit: BoxFit.cover, width: double.infinity),
               ),
             const SizedBox(height: 8),
             Text(
               'sha256 ${_sha256!.substring(0, 16)}…  ·  ${(_bytes!.length / 1024).toStringAsFixed(0)} KB  ·  $_mime',
-              style: const TextStyle(fontSize: 11, color: Colors.black54, fontFamily: 'monospace'),
+              style: const TextStyle(fontSize: 12, color: Neutral.muted, fontFamily: 'monospace'),
             ),
             TextButton.icon(
               onPressed: () => setState(() {
@@ -343,7 +344,7 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
 
           const SizedBox(height: 16),
           Text(_isDocument ? 'Record of the document' : 'Record of the photograph — IPS cl. 21(4)',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .4)),
+              style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           _ro(_isDocument ? 'Attached by' : 'Taken by', '${widget.capturedByName} — ${widget.capturedByOccupation}'),
           _ro('Date', _capturedAt?.toLocal().toString().substring(0, 16) ?? '— (set on capture)'),
@@ -359,7 +360,7 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
 
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: Brand.nonCompliant, fontSize: 13)),
+            Notice(_error!),
           ],
 
           const SizedBox(height: 20),
@@ -373,22 +374,20 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
           const SizedBox(height: 8),
           const Text(
             'Uploads need connectivity. The finding itself is saved regardless.',
-            style: TextStyle(fontSize: 11, color: Colors.black45),
+            style: TextStyle(fontSize: 13, color: Neutral.muted),
             textAlign: TextAlign.center,
           ),
 
           if (_attached != null && _attached!.isNotEmpty) ...[
             const SizedBox(height: 24),
-            const Text('Attached to this item',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .4)),
+            Text('Attached to this item', style: Theme.of(context).textTheme.titleSmall),
             for (final e in _attached!)
               ListTile(
                 key: ValueKey('evidence-${e['id']}'),
                 contentPadding: EdgeInsets.zero,
-                dense: true,
                 leading: Icon(
                   e['kind'] == 'document' ? Icons.picture_as_pdf_outlined : Icons.photo_outlined,
-                  color: Brand.teal,
+                  color: Brand.ribbon,
                 ),
                 title: Text(attachedTitle(e)),
                 subtitle: Text([
@@ -408,8 +407,8 @@ class _EvidenceCaptureScreenState extends State<EvidenceCaptureScreen> {
   Widget _ro(String k, String v) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(children: [
-          SizedBox(width: 90, child: Text(k, style: const TextStyle(fontSize: 12, color: Colors.black54))),
-          Expanded(child: Text(v, style: const TextStyle(fontSize: 13))),
+          SizedBox(width: 100, child: Text(k, style: const TextStyle(fontSize: 13, color: Neutral.muted))),
+          Expanded(child: Text(v, style: const TextStyle(fontSize: 14, color: Neutral.strong))),
         ]),
       );
 }

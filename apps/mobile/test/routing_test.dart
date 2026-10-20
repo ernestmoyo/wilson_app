@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:assure_field/app.dart';
 import 'package:assure_field/auth/session.dart';
@@ -48,8 +49,29 @@ void main() {
 
   testWidgets('a deep link to /jobs/7/sheet opens the check sheet directly', (t) async {
     await pumpAt(t, '/jobs/7/sheet');
-    expect(find.text('Check sheet'), findsOneWidget);
+    expect(find.text('G2 Chiller · Check sheet'), findsOneWidget);
     expect(find.textContaining('Determining which regulations apply'), findsWidgets);
+  });
+
+  testWidgets('an item has its own URL: deep link, next item, back to the sheet', (t) async {
+    // General 4.4 is the fake server's non-compliance (reason recorded).
+    await pumpAt(t, '/jobs/7/sheet/item/wks17-general/4/4');
+    expect(find.textContaining('Signage'), findsWidgets);
+    expect(find.text('reg 2.6(3): no signage at the room entrance'), findsOneWidget);
+
+    await t.tap(find.byKey(const ValueKey('item-next')));
+    await t.pumpAndSettle();
+    final router = GoRouter.of(t.element(find.byKey(const ValueKey('item-next'))));
+    expect(router.routerDelegate.currentConfiguration.uri.path, '/jobs/7/sheet/item/wks17-general/4/5');
+
+    await t.tap(find.byTooltip('Back'));
+    await t.pumpAndSettle();
+    expect(find.text('G2 Chiller · Check sheet'), findsOneWidget);
+  });
+
+  testWidgets('an unknown item URL says so instead of failing', (t) async {
+    await pumpAt(t, '/jobs/7/sheet/item/wks17-general/99/1');
+    expect(find.textContaining('No such item'), findsOneWidget);
   });
 
   testWidgets('back from the sheet returns to the hub, then the board; the logo goes home', (t) async {
@@ -59,7 +81,7 @@ void main() {
     expect(find.byKey(const ValueKey('now-card')), findsOneWidget);
     await t.tap(find.byKey(const ValueKey('open-sheet')));
     await t.pumpAndSettle();
-    expect(find.text('Check sheet'), findsOneWidget);
+    expect(find.text('G2 Chiller · Check sheet'), findsOneWidget);
 
     // Job (top right) pops back to the hub, as the browser's back does.
     await t.tap(find.byKey(const ValueKey('to-job')));
